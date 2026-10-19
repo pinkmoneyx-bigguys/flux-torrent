@@ -28,6 +28,7 @@ set_source_files_properties(qml/shell/TitleBar.qml PROPERTIES QT_RESOURCE_ALIAS 
 set_source_files_properties(qml/shell/Sidebar.qml PROPERTIES QT_RESOURCE_ALIAS shell/Sidebar.qml)
 set_source_files_properties(qml/shell/StatusPill.qml PROPERTIES QT_RESOURCE_ALIAS shell/StatusPill.qml)
 set_source_files_properties(qml/shell/EmptyPage.qml PROPERTIES QT_RESOURCE_ALIAS shell/EmptyPage.qml)
+set_source_files_properties(qml/firstrun/FirstRunWindow.qml PROPERTIES QT_RESOURCE_ALIAS firstrun/FirstRunWindow.qml)
 set_source_files_properties(qml/pages/TransfersPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/TransfersPage.qml)
 set_source_files_properties(qml/pages/SearchPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/SearchPage.qml)
 set_source_files_properties(qml/pages/RssPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/RssPage.qml)
@@ -62,6 +63,7 @@ qt_add_qml_module(qbt_qmlgui
         qml/shell/Sidebar.qml
         qml/shell/StatusPill.qml
         qml/shell/EmptyPage.qml
+        qml/firstrun/FirstRunWindow.qml
         qml/pages/TransfersPage.qml
         qml/pages/SearchPage.qml
         qml/pages/RssPage.qml
@@ -81,6 +83,10 @@ qt_add_qml_module(qbt_qmlgui
         backend/sessionfacade.cpp
         backend/systemprefs.h
         backend/systemprefs.cpp
+        migration/firstrun.h
+        migration/firstrun.cpp
+        migration/profilemigrator.h
+        migration/profilemigrator.cpp
 )
 
 # Compiled to .qsb for every RHI backend, served as qrc:/flux/shaders/glass.frag.qsb

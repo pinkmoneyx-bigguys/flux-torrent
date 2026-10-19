@@ -2,6 +2,49 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU" sourcelanguage="en">
 <context>
+    <name>FirstRunWindow</name>
+    <message>
+        <source>Migrate your torrents from qBittorrent?</source>
+        <translation>Перенести раздачи из qBittorrent?</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n torrent(s) in your qBittorrent profile</source>
+        <translation>
+            <numerusform>Раздач в профиле qBittorrent: %n</numerusform>
+            <numerusform>Раздач в профиле qBittorrent: %n</numerusform>
+            <numerusform>Раздач в профиле qBittorrent: %n</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>After the move, Flux manages these torrents. Don&apos;t run them in qBittorrent at the same time.</source>
+        <translation>После переноса раздачами управляет Flux. Не запускайте их в qBittorrent одновременно.</translation>
+    </message>
+    <message>
+        <source>Close qBittorrent to migrate your torrents</source>
+        <translation>Закройте qBittorrent, чтобы перенести раздачи</translation>
+    </message>
+    <message>
+        <source>Flux already has torrents of its own, so nothing was moved. Start fresh to keep them.</source>
+        <translation>В Flux уже есть свои раздачи, поэтому ничего не перенесено. Начните с чистого листа, чтобы сохранить их.</translation>
+    </message>
+    <message>
+        <source>The transfer did not finish. Your qBittorrent profile was not touched.</source>
+        <translation>Перенос не завершён. Профиль qBittorrent не затронут.</translation>
+    </message>
+    <message>
+        <source>Start fresh</source>
+        <translation>Начать с чистого листа</translation>
+    </message>
+    <message>
+        <source>Migrating…</source>
+        <translation>Перенос…</translation>
+    </message>
+    <message>
+        <source>Migrate</source>
+        <translation>Перенести</translation>
+    </message>
+</context>
+<context>
     <name>FluxProgressBar</name>
     <message>
         <source>Progress</source>

@@ -2,6 +2,7 @@ find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
 
 set(qmlGuiTestFiles
     testformat.cpp
+    testprofilemigrator.cpp
     testsessionfacade.cpp
     testsystemprefs.cpp
 )
@@ -15,6 +16,12 @@ foreach(testFile ${qmlGuiTestFiles})
 
     add_dependencies(check "${testFilename}")
 endforeach()
+
+# The first-run flow end to end: real dialog on the offscreen platform, a throw-away profile
+add_executable(testfirstrun testfirstrun.cpp)
+target_link_libraries(testfirstrun PRIVATE Qt::Test Qt6::Quick qbt_qmlgui qbt_qmlguiplugin qbt_base)
+add_test(NAME testfirstrun COMMAND testfirstrun)
+add_dependencies(check testfirstrun)
 
 # Qt Quick Test: runs every tst_*.qml under qml/ (later QML tasks add their files there)
 add_executable(flux_qml qmltests.cpp)

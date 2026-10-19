@@ -101,6 +101,8 @@
 #include "gui/windowstate.h"
 #elif defined(QBT_QML_GUI)
 #include "qmlgui/fluxshell.h"
+#include "qmlgui/migration/firstrun.h"
+#include "qmlgui/migration/profilemigrator.h"
 #endif // DISABLE_GUI
 
 #ifndef DISABLE_WEBUI
@@ -274,7 +276,12 @@ Application::Application(int &argc, char **argv)
     qRegisterMetaType<Log::Msg>("Log::Msg");
     qRegisterMetaType<Log::Peer>("Log::Peer");
 
+#ifdef QBT_QML_GUI
+    // Names the profile (%APPDATA%\Flux, %LOCALAPPDATA%\Flux) and its settings file (Flux.ini): set before Profile
+    setApplicationName(Flux::applicationName());
+#else
     setApplicationName(u"qBittorrent"_s);
+#endif
     setOrganizationDomain(u"qbittorrent.org"_s);
 #if !defined(DISABLE_GUI)
     setDesktopFileName(u"org.qbittorrent.qBittorrent"_s);
@@ -874,6 +881,25 @@ int Application::exec()
 #ifdef Q_OS_WIN
     applyMemoryPriority();
     adjustThreadPriority();
+#endif
+
+#ifdef QBT_QML_GUI
+    // Offer the torrents of an installed qBittorrent. Before the session exists, which would otherwise
+    // start writing into the profile that is about to be filled.
+    switch (Flux::runFirstRun())
+    {
+    case Flux::FirstRunOutcome::Migrated:
+        // The new process must find no running instance: release the one we hold before starting it
+        delete m_instanceManager;
+        m_instanceManager = nullptr;
+        QProcess::startDetached(applicationFilePath(), arguments().mid(1));
+        return 0;
+    case Flux::FirstRunOutcome::Closed:
+        return 0;
+    case Flux::FirstRunOutcome::NotNeeded:
+    case Flux::FirstRunOutcome::StartedFresh:
+        break;
+    }
 #endif
 
     Net::ProxyConfigurationManager::initInstance();

@@ -111,6 +111,9 @@ public:
     bool hasKey(const QString &key) const;
     bool isEmpty() const;
 
+    // Drops the unsaved changes and reads the settings file again (it was replaced behind our back)
+    void reload();
+
 public slots:
     bool save();
 
