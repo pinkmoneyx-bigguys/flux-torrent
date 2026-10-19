@@ -756,7 +756,9 @@ void Preferences::setStoreOpenedSearchTabResults(const bool enabled)
 
 bool Preferences::isWebUIEnabled() const
 {
-#ifdef DISABLE_GUI
+#if defined(DISABLE_GUI) && !defined(QBT_QML_GUI)
+    // Flux (QBT_QML_GUI) is a GUI application even though it is built without the Widgets GUI:
+    // it must not open a network listener nobody asked for
     const bool defaultValue = true;
 #else
     const bool defaultValue = false;

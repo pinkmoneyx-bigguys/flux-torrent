@@ -2,6 +2,7 @@ find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
 
 set(qmlGuiTestFiles
     testformat.cpp
+    testpreferences.cpp
     testprofilemigrator.cpp
     testsessionfacade.cpp
     testsystemprefs.cpp
