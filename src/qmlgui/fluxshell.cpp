@@ -39,8 +39,10 @@
 
 #include "base/global.h"
 
-FluxShell::FluxShell(QObject *parent)
+FluxShell::FluxShell(QObject *parent, const QString &module, const QString &type)
     : QObject(parent)
+    , m_module {module}
+    , m_type {type}
 {
     // Installed before the engine exists, so the first load of the QML already sees it
     if (loadTranslation(m_translator, QLocale::system()))
@@ -63,14 +65,18 @@ bool FluxShell::loadTranslation(QTranslator &translator, const QLocale &locale)
     return translator.load(locale, u"flux"_s, u"_"_s, u":/i18n"_s);
 }
 
-void FluxShell::show()
+bool FluxShell::show()
 {
     if (!m_engine->rootObjects().isEmpty())
-        return;
+        return true;
 
-    m_engine->loadFromModule(u"Flux"_s, u"Main"_s);
+    m_engine->loadFromModule(m_module, m_type);
     if (m_engine->rootObjects().isEmpty())
-        qCritical("Failed to load the Flux.Main QML component.");
+    {
+        qCritical("Failed to load the %s.%s QML component.", qUtf8Printable(m_module), qUtf8Printable(m_type));
+        return false;
+    }
+    return true;
 }
 
 void FluxShell::activate()

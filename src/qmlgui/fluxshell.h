@@ -29,6 +29,7 @@
 #pragma once
 
 #include <QObject>
+#include <QString>
 #include <QTranslator>
 
 class QLocale;
@@ -40,10 +41,12 @@ class FluxShell final : public QObject
     Q_DISABLE_COPY_MOVE(FluxShell)
 
 public:
-    explicit FluxShell(QObject *parent = nullptr);
+    // `module` / `type` name the root QML component; they are parameters only so that a failed load can be tested
+    explicit FluxShell(QObject *parent = nullptr, const QString &module = QStringLiteral("Flux"), const QString &type = QStringLiteral("Main"));
     ~FluxShell() override;
 
-    void show();
+    // Loads the UI. Returns false if the root component could not be created: there is then no window
+    bool show();
     void activate();
 
     QQmlApplicationEngine *engine() const;
@@ -54,4 +57,6 @@ public:
 private:
     QTranslator m_translator;
     QQmlApplicationEngine *m_engine = nullptr;
+    QString m_module;
+    QString m_type;
 };

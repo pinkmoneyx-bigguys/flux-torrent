@@ -892,7 +892,12 @@ int Application::exec()
         // The new process must find no running instance: release the one we hold before starting it
         delete m_instanceManager;
         m_instanceManager = nullptr;
-        QProcess::startDetached(applicationFilePath(), arguments().mid(1));
+        if (!QProcess::startDetached(applicationFilePath(), arguments().mid(1)))
+        {
+            const QString message = u"Failed to restart Flux after importing the qBittorrent profile. Start it again manually."_s;
+            LogMsg(message, Log::CRITICAL);
+            qCritical("%s", qUtf8Printable(message));
+        }
         return 0;
     case Flux::FirstRunOutcome::Closed:
         return 0;
@@ -997,7 +1002,14 @@ int Application::exec()
         delete m_startupProgressDialog;
 #elif defined(QBT_QML_GUI)
         m_fluxShell = new FluxShell(this);
-        m_fluxShell->show();
+        if (!m_fluxShell->show())
+        {
+            // Without a window the process would keep seeding unseen and hold the single-instance lock, so
+            // every later launch would only activate nothing. Leave through the normal shutdown instead.
+            LogMsg(tr("Failed to load the user interface. Flux will exit."), Log::CRITICAL);
+            QMetaObject::invokeMethod(this, [] { QCoreApplication::exit(EXIT_FAILURE); }, Qt::QueuedConnection);
+            return;
+        }
 #endif // DISABLE_GUI
 
 #ifndef DISABLE_WEBUI

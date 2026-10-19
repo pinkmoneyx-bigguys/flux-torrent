@@ -24,6 +24,12 @@ target_link_libraries(testfirstrun PRIVATE Qt::Test Qt6::Quick qbt_qmlgui qbt_qm
 add_test(NAME testfirstrun COMMAND testfirstrun)
 add_dependencies(check testfirstrun)
 
+# FluxShell's load-failure reporting, on the offscreen platform (no window is ever created)
+add_executable(testfluxshell testfluxshell.cpp)
+target_link_libraries(testfluxshell PRIVATE Qt::Test Qt6::Quick qbt_qmlgui qbt_qmlguiplugin qbt_base)
+add_test(NAME testfluxshell COMMAND testfluxshell)
+add_dependencies(check testfluxshell)
+
 # Qt Quick Test: runs every tst_*.qml under qml/ (later QML tasks add their files there)
 add_executable(flux_qml qmltests.cpp)
 target_compile_definitions(flux_qml PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
