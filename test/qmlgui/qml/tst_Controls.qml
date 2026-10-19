@@ -55,6 +55,7 @@ TestCase {
         tryCompare(sw.knob, "x", 3, 1000)
         tryCompare(cb.mark, "opacity", 0, 1000)
         tryVerify(() => sw.track.color.a < 0.15, 1000)
+        tryVerify(() => seg.itemAt(0).background.color.a > 0.139 && seg.itemAt(2).background.color.a < 0.07, 1000)
     }
 
     // --- PillButton -------------------------------------------------------------------------------
@@ -220,6 +221,33 @@ TestCase {
         keyClick(Qt.Key_Left)
         compare(seg.currentIndex, 1)
         compare(spy.count, 3)
+    }
+
+    function test_segmentedKeyboardSelectionIsInstant() {
+        const selected = Qt.rgba(1, 1, 1, 0.14)
+        seg.itemAt(0).forceActiveFocus()
+        keyClick(Qt.Key_Right)
+        compare(seg.currentIndex, 1)
+        verify(Qt.colorEqual(seg.itemAt(1).background.color, selected),
+               "pill is at its final colour: " + seg.itemAt(1).background.color)
+        keyClick(Qt.Key_Right)
+        compare(seg.currentIndex, 2)
+        verify(Qt.colorEqual(seg.itemAt(2).background.color, selected))
+    }
+
+    function test_segmentedSpaceSelectionIsInstant() {
+        seg.itemAt(1).forceActiveFocus()
+        keyClick(Qt.Key_Space)
+        compare(seg.currentIndex, 1)
+        verify(Qt.colorEqual(seg.itemAt(1).background.color, Qt.rgba(1, 1, 1, 0.14)),
+               "pill is at its final colour: " + seg.itemAt(1).background.color)
+    }
+
+    function test_segmentedMouseSelectionStillAnimates() {
+        mouseClick(seg.itemAt(2))
+        compare(seg.currentIndex, 2)
+        verify(seg.itemAt(2).background.color.a < 0.14, "pill is fading in: " + seg.itemAt(2).background.color.a)
+        tryVerify(() => seg.itemAt(2).background.color.a > 0.139, 1000)
     }
 
     // --- FluxProgressBar --------------------------------------------------------------------------

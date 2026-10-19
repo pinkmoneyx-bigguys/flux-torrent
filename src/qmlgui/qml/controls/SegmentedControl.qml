@@ -18,6 +18,26 @@ Item {
     Accessible.name: qsTr("Options")
 
     // The i-th segment button, or null: for tests and for callers that need to anchor to it
+    // Keyboard selection (arrows, Space) is never animated. The flag goes up on key-down and drops on the
+    // turn after the key-up was handled (Space selects on release), or when no segment keeps the focus.
+    property bool _kbd: false
+
+    function _isSelectKey(key) {
+        return key === Qt.Key_Left || key === Qt.Key_Right || key === Qt.Key_Space
+    }
+
+    function _releaseKbdLater() {
+        Qt.callLater(() => root._kbd = false)
+    }
+
+    function _anySegmentFocused() {
+        for (let i = 0; i < repeater.count; ++i) {
+            if (repeater.itemAt(i).activeFocus)
+                return true
+        }
+        return false
+    }
+
     function itemAt(i) {
         return repeater.itemAt(i)
     }
@@ -69,10 +89,26 @@ Item {
 
                 onClicked: root._pick(index)
 
+                Keys.onPressed: event => { // Space only: arrows are taken by the specific handlers below
+                    if (event.key === Qt.Key_Space && !event.isAutoRepeat)
+                        root._kbd = true
+                }
+                Keys.onReleased: event => {
+                    if (root._isSelectKey(event.key) && !event.isAutoRepeat)
+                        root._releaseKbdLater()
+                }
+                // focus moves between segments while an arrow is down: only drop the flag when it left them all
+                onActiveFocusChanged: {
+                    if (!activeFocus)
+                        Qt.callLater(() => { if (!root._anySegmentFocused()) root._kbd = false })
+                }
+
                 Keys.onLeftPressed: event => root._move(index - 1)
                 Keys.onRightPressed: event => root._move(index + 1)
 
                 background: Item {
+                    property alias color: pillBg.color
+
                     Rectangle {
                         id: pillBg
                         anchors.fill: parent
@@ -80,7 +116,7 @@ Item {
                         color: seg.selected ? Qt.rgba(1, 1, 1, 0.14)
                                             : Qt.rgba(1, 1, 1, seg.hovered ? 0.06 : 0)
                         Behavior on color {
-                            enabled: !Theme.reducedMotion
+                            enabled: !Theme.reducedMotion && !root._kbd
                             ColorAnimation { duration: Theme.durFast }
                         }
                     }
@@ -120,6 +156,7 @@ Item {
     function _move(i) {
         if (i < 0 || i >= repeater.count)
             return
+        _kbd = true // the specific arrow handlers run before Keys.onPressed, so raise the flag here
         _pick(i)
         repeater.itemAt(i).forceActiveFocus(Qt.TabFocusReason)
     }

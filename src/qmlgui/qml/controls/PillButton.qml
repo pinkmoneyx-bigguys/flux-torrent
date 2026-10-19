@@ -42,7 +42,7 @@ AbstractButton {
             root._kbd = true
     }
     Keys.onReleased: event => {
-        if (event.key === Qt.Key_Space)
+        if (event.key === Qt.Key_Space && !event.isAutoRepeat)
             Qt.callLater(() => root._kbd = false)
     }
     onActiveFocusChanged: if (!activeFocus) _kbd = false
