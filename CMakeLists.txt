@@ -22,10 +22,15 @@ include(FeatureOptionsSetup)
 
 # features, list is loosely sorted by user's interests
 feature_option(GUI "Build GUI application" ON)
+feature_option(QML_GUI "Build Flux Qt Quick GUI" OFF)
 feature_option(WEBUI "Enable built-in HTTP server for remote control" ON)
 feature_option(STACKTRACE "Enable stacktrace support" ON)
 feature_option(TESTING "Build internal testing suite" OFF)
 feature_option(VERBOSE_CONFIGURE "Show information about PACKAGES_FOUND and PACKAGES_NOT_FOUND in the configure output (only useful for debugging the CMake build scripts)" OFF)
+
+if (QML_GUI AND GUI)
+    message(FATAL_ERROR "QML_GUI requires GUI=OFF")
+endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     feature_option_dependent(DBUS
@@ -53,6 +58,9 @@ endif()
 
 # go check the packages
 include(CheckPackages)
+if (QML_GUI)
+    find_package(Qt6 ${minQt6Version} REQUIRED COMPONENTS Qml Quick QuickControls2 ShaderTools Svg QuickTest)
+endif()
 # configure for specific platform
 include(CommonConfig)
 

@@ -65,6 +65,12 @@ Q_IMPORT_PLUGIN(QICOPlugin)
 
 #else // DISABLE_GUI
 #include <cstdio>
+
+#ifdef QBT_QML_GUI
+#include <QQuickStyle>
+#include <QQuickWindow>
+#include <QSGRendererInterface>
+#endif
 #endif // DISABLE_GUI
 
 #include "base/global.h"
@@ -182,6 +188,12 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_UNIX
     adjustLocale();
     adjustFileDescriptorLimit();
+#endif
+
+#ifdef QBT_QML_GUI
+    // Must be set before the Application (QGuiApplication) is created
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+    QQuickStyle::setStyle(u"Basic"_s);
 #endif
 
     // `app` must be declared out of try block to allow display message box in case of exception

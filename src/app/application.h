@@ -40,6 +40,8 @@
 
 #ifndef DISABLE_GUI
 #include <QApplication>
+#elif defined(QBT_QML_GUI)
+#include <QGuiApplication>
 #endif
 
 #include "base/bittorrent/addtorrentparams.h"
@@ -81,8 +83,14 @@ using BaseIApplication = IGUIApplication;
 class QSessionManager;
 #endif
 #else // DISABLE_GUI
-using AddTorrentManagerImpl = AddTorrentManager;
+#ifdef QBT_QML_GUI
+class FluxShell;
+
+using BaseApplication = QGuiApplication;
+#else
 using BaseApplication = QCoreApplication;
+#endif
+using AddTorrentManagerImpl = AddTorrentManager;
 using BaseIApplication = IApplication;
 #endif // DISABLE_GUI
 
@@ -225,6 +233,8 @@ private:
     DesktopIntegration *m_desktopIntegration = nullptr;
     MainWindow *m_window = nullptr;
     QProgressDialog *m_startupProgressDialog = nullptr;
+#elif defined(QBT_QML_GUI)
+    FluxShell *m_fluxShell = nullptr;
 #endif
 
 #ifndef DISABLE_WEBUI

@@ -99,6 +99,8 @@
 #include "gui/shutdownconfirmdialog.h"
 #include "gui/uithememanager.h"
 #include "gui/windowstate.h"
+#elif defined(QBT_QML_GUI)
+#include "qmlgui/fluxshell.h"
 #endif // DISABLE_GUI
 
 #ifndef DISABLE_WEBUI
@@ -526,6 +528,14 @@ void Application::processMessage(const QString &message)
         {
             createStartupProgressDialog();
         }
+
+        return;
+    }
+#elif defined(QBT_QML_GUI)
+    if (message.isEmpty())
+    {
+        if (m_fluxShell)
+            m_fluxShell->activate(); // show UI
 
         return;
     }
@@ -959,6 +969,9 @@ int Application::exec()
         m_window = new MainWindow(this, windowState, instanceName());
 
         delete m_startupProgressDialog;
+#elif defined(QBT_QML_GUI)
+        m_fluxShell = new FluxShell(this);
+        m_fluxShell->show();
 #endif // DISABLE_GUI
 
 #ifndef DISABLE_WEBUI
@@ -1411,6 +1424,9 @@ void Application::cleanup()
         // though we created a ShutdownBlockReason
         m_window->cleanup();
     }
+#elif defined(QBT_QML_GUI)
+    delete m_fluxShell;
+    m_fluxShell = nullptr;
 #endif // DISABLE_GUI
 
 #ifndef DISABLE_WEBUI

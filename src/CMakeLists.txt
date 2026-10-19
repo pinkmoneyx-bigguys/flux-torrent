@@ -7,6 +7,10 @@ if (GUI)
     add_subdirectory(gui)
 endif()
 
+if (QML_GUI)
+    add_subdirectory(qmlgui)
+endif()
+
 if (WEBUI)
     add_subdirectory(webui)
 endif()
