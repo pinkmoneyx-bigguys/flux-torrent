@@ -5,6 +5,14 @@ set_source_files_properties(qml/Main.qml PROPERTIES QT_RESOURCE_ALIAS Main.qml)
 set_source_files_properties(qml/Theme.qml PROPERTIES QT_RESOURCE_ALIAS Theme.qml)
 set_source_files_properties(qml/Icons.qml PROPERTIES QT_RESOURCE_ALIAS Icons.qml)
 set_source_files_properties(qml/controls/Icon.qml PROPERTIES QT_RESOURCE_ALIAS controls/Icon.qml)
+set_source_files_properties(qml/controls/GlowHalo.qml PROPERTIES QT_RESOURCE_ALIAS controls/GlowHalo.qml)
+set_source_files_properties(qml/controls/PillButton.qml PROPERTIES QT_RESOURCE_ALIAS controls/PillButton.qml)
+set_source_files_properties(qml/controls/IconButton.qml PROPERTIES QT_RESOURCE_ALIAS controls/IconButton.qml)
+set_source_files_properties(qml/controls/GlassSwitch.qml PROPERTIES QT_RESOURCE_ALIAS controls/GlassSwitch.qml)
+set_source_files_properties(qml/controls/GlassCheckBox.qml PROPERTIES QT_RESOURCE_ALIAS controls/GlassCheckBox.qml)
+set_source_files_properties(qml/controls/SegmentedControl.qml PROPERTIES QT_RESOURCE_ALIAS controls/SegmentedControl.qml)
+set_source_files_properties(qml/controls/FluxProgressBar.qml PROPERTIES QT_RESOURCE_ALIAS controls/FluxProgressBar.qml)
+set_source_files_properties(qml/controls/Toast.qml PROPERTIES QT_RESOURCE_ALIAS controls/Toast.qml)
 set_source_files_properties(qml/glass/GlassBackground.qml PROPERTIES QT_RESOURCE_ALIAS glass/GlassBackground.qml)
 set_source_files_properties(qml/glass/GlassPanel.qml PROPERTIES QT_RESOURCE_ALIAS glass/GlassPanel.qml)
 
@@ -22,6 +30,14 @@ qt_add_qml_module(qbt_qmlgui
         qml/Theme.qml
         qml/Icons.qml
         qml/controls/Icon.qml
+        qml/controls/GlowHalo.qml
+        qml/controls/PillButton.qml
+        qml/controls/IconButton.qml
+        qml/controls/GlassSwitch.qml
+        qml/controls/GlassCheckBox.qml
+        qml/controls/SegmentedControl.qml
+        qml/controls/FluxProgressBar.qml
+        qml/controls/Toast.qml
         qml/glass/GlassBackground.qml
         qml/glass/GlassPanel.qml
     RESOURCES
