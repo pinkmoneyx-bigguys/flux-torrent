@@ -16,6 +16,10 @@
         </translation>
     </message>
     <message>
+        <source>The torrents and settings of your qBittorrent profile</source>
+        <translation>Раздачи и настройки из профиля qBittorrent</translation>
+    </message>
+    <message>
         <source>After the move, Flux manages these torrents. Don&apos;t run them in qBittorrent at the same time.</source>
         <translation>После переноса раздачами управляет Flux. Не запускайте их в qBittorrent одновременно.</translation>
     </message>

@@ -65,6 +65,13 @@ TestCase {
         verify(text("count").text.indexOf("3") >= 0, "the count is shown: " + text("count").text)
     }
 
+    function test_unknownTorrentCount() {
+        dlg.torrentCount = -1
+        compare(text("count").text, "The torrents and settings of your qBittorrent profile")
+        FluxTestI18n.setLanguage("ru")
+        compare(text("count").text, "Раздачи и настройки из профиля qBittorrent")
+    }
+
     function test_runningBlocksMigrate() {
         dlg.qbtRunning = true
         verify(!dlg.migrateButton.enabled, "Migrate is blocked")

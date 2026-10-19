@@ -271,3 +271,8 @@ endif()
 if (DBUS)
     target_link_libraries(qbt_base PUBLIC Qt::DBus)
 endif()
+
+if (QML_GUI)
+    # Flux (src/qmlgui) shares a few upstream classes: they check this define for their Flux-only parts
+    target_compile_definitions(qbt_base PUBLIC QBT_QML_GUI)
+endif()

@@ -10,7 +10,7 @@ import Flux
 Window {
     id: root
 
-    // Torrents found in the qBittorrent profile
+    // Torrents found in the qBittorrent profile, -1 if unknown
     property int torrentCount: 0
     // qBittorrent is running: its torrents cannot be moved safely until it is closed
     property bool qbtRunning: false
@@ -139,7 +139,10 @@ Window {
                         objectName: "count"
                         Layout.fillWidth: true
                         // %n: the Russian form is the same for every count, so it needs no declension
-                        text: qsTr("%n torrent(s) in your qBittorrent profile", "", root.torrentCount)
+                        // -1: the torrent database could not be read, so the number is not known
+                        text: root.torrentCount >= 0
+                              ? qsTr("%n torrent(s) in your qBittorrent profile", "", root.torrentCount)
+                              : qsTr("The torrents and settings of your qBittorrent profile")
                         color: Theme.textDim
                         font.family: Theme.fontText
                         font.pixelSize: 14

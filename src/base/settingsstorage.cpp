@@ -32,7 +32,9 @@
 #include <chrono>
 #include <memory>
 
+#ifdef QBT_QML_GUI
 #include <QCoreApplication>
+#endif
 #include <QFile>
 #include <QHash>
 
@@ -47,8 +49,12 @@ using namespace std::chrono_literals;
 SettingsStorage *SettingsStorage::m_instance = nullptr;
 
 SettingsStorage::SettingsStorage()
-    // the same file name as the profile directory: qBittorrent.ini for qBittorrent, Flux.ini for Flux
+#ifdef QBT_QML_GUI
+    // Flux: the file is named after the application, like the profile directory (Flux.ini)
     : m_nativeSettingsName {QCoreApplication::applicationName()}
+#else
+    : m_nativeSettingsName {u"qBittorrent"_s}
+#endif
 {
     readNativeSettings();
 
@@ -233,6 +239,7 @@ bool SettingsStorage::isEmpty() const
     return m_data.isEmpty();
 }
 
+#ifdef QBT_QML_GUI
 void SettingsStorage::reload()
 {
     const QWriteLocker locker {&m_lock};
@@ -241,3 +248,4 @@ void SettingsStorage::reload()
     m_dirty = false;
     readNativeSettings();
 }
+#endif

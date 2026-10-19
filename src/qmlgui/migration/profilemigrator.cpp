@@ -26,8 +26,10 @@
  * exception statement from your version.
  */
 
+
 #include "profilemigrator.h"
 
+#include <algorithm>
 #include <utility>
 
 #include <QDir>
@@ -35,6 +37,11 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QList>
+#include <QSettings>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QStringList>
+#include <QTemporaryDir>
 #include <QtSystemDetection>
 
 #ifdef Q_OS_WIN
@@ -47,19 +54,59 @@
 namespace
 {
     const QString STAGING_SUFFIX = u".fluxtmp"_s;
+    const QString REPLACED_SUFFIX = u".fluxold"_s;
+    const QString BACKUP_SUFFIX = u".bak"_s;
     const QString QBT_SETTINGS_FILE = u"qBittorrent.ini"_s;
     const QString FLUX_SETTINGS_FILE = u"Flux.ini"_s;
-    const QString BACKUP_SUFFIX = u".bak"_s;
+    const QString DATABASE_NAME = u"torrents.db"_s;
+    // the database and its write-ahead log / shared-memory companions (journal_mode = WAL)
+    const QStringList DATABASE_FILES = {DATABASE_NAME, (DATABASE_NAME + u"-wal"_s), (DATABASE_NAME + u"-shm"_s)};
 
     struct CopyItem
     {
         QString from;
         QString to;
+        // An .ini that every Flux start may have created already: replaced after being kept as .bak, and
+        // the paths into the qBittorrent profile in it are redirected to the Flux one
+        bool isSettings = false;
     };
 
-    bool isNonEmptyDir(const QString &path)
+    Flux::RenameHook &renameHook()
     {
-        return QFileInfo(path).isDir() && !QDir(path).isEmpty(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
+        static Flux::RenameHook hook;
+        return hook;
+    }
+
+    bool renameStaged(const QString &from, const QString &to)
+    {
+        if (renameHook() && !renameHook()(from, to))
+            return false;
+        return QFile::rename(from, to);
+    }
+
+    // Whether there is a file below `path`, not counting the staging files of an interrupted attempt
+    bool hasFiles(const QString &path)
+    {
+        if (!QFileInfo(path).isDir())
+            return false;
+
+        QDirIterator it {path, (QDir::Files | QDir::Hidden | QDir::System), QDirIterator::Subdirectories};
+        while (it.hasNext())
+        {
+            if (!it.next().endsWith(STAGING_SUFFIX))
+                return true;
+        }
+        return false;
+    }
+
+    void removeStagingFilesIn(const QString &path)
+    {
+        if (!QFileInfo(path).isDir())
+            return;
+
+        QDirIterator it {path, {QString(u'*' + STAGING_SUFFIX)}, (QDir::Files | QDir::Hidden), QDirIterator::Subdirectories};
+        while (it.hasNext())
+            QFile::remove(it.next());
     }
 
     // Adds every file below `fromDir` (if it exists) to `items`, keeping the relative layout under `toDir`
@@ -73,14 +120,14 @@ namespace
         while (it.hasNext())
         {
             const QString file = it.next();
-            items.append({file, (toDir + u'/' + base.relativeFilePath(file))});
+            items.append({file, (toDir + u'/' + base.relativeFilePath(file)), false});
         }
     }
 
-    void addFile(QList<CopyItem> &items, const QString &fromFile, const QString &toFile)
+    void addFile(QList<CopyItem> &items, const QString &fromFile, const QString &toFile, const bool isSettings = false)
     {
         if (QFileInfo(fromFile).isFile())
-            items.append({fromFile, toFile});
+            items.append({fromFile, toFile, isSettings});
     }
 
     void removeStagingFiles(const QList<CopyItem> &items)
@@ -89,15 +136,131 @@ namespace
             QFile::remove(item.to + STAGING_SUFFIX);
     }
 
+    // `value` with the leading directory `fromDir` replaced by `toDir`, if it lies inside `fromDir`
+    // (any case, any slash style). Null if it does not.
+    QString redirected(const QString &value, const QString &fromDir, const QString &toDir)
+    {
+        QString normalized = value;
+        normalized.replace(u'\\', u'/');
+        QString from = fromDir;
+        from.replace(u'\\', u'/');
+        if (from.isEmpty() || !normalized.startsWith(from, Qt::CaseInsensitive))
+            return {};
+        // "<dir>-old" is another directory
+        if ((normalized.size() > from.size()) && (normalized.at(from.size()) != u'/'))
+            return {};
+        return toDir + normalized.mid(from.size());
+    }
+
+    // The copy of qBittorrent's settings must not point Flux into the qBittorrent profile (the log
+    // directory, for instance, which Flux would write to and rotate). Every string, or list of strings, that
+    // lies inside one of the `directories` (from -> to) is moved to the Flux equivalent. A file where
+    // nothing needs to change is left alone, byte for byte.
+    bool rewriteProfilePaths(const QString &iniPath, const QList<std::pair<QString, QString>> &directories)
+    {
+        QSettings ini {iniPath, QSettings::IniFormat};
+        bool changed = false;
+
+        const auto redirect = [&directories](const QString &value) -> QString
+        {
+            for (const auto &[fromDir, toDir] : directories)
+            {
+                const QString result = redirected(value, fromDir, toDir);
+                if (!result.isNull())
+                    return result;
+            }
+            return {};
+        };
+
+        const QStringList keys = ini.allKeys();
+        for (const QString &key : keys)
+        {
+            const QVariant value = ini.value(key);
+            if (value.metaType().id() == QMetaType::QString)
+            {
+                const QString result = redirect(value.toString());
+                if (!result.isNull())
+                {
+                    ini.setValue(key, result);
+                    changed = true;
+                }
+            }
+            else if (value.metaType().id() == QMetaType::QStringList)
+            {
+                QStringList list = value.toStringList();
+                bool listChanged = false;
+                for (QString &entry : list)
+                {
+                    const QString result = redirect(entry);
+                    if (!result.isNull())
+                    {
+                        entry = result;
+                        listChanged = true;
+                    }
+                }
+                if (listChanged)
+                {
+                    ini.setValue(key, list);
+                    changed = true;
+                }
+            }
+        }
+
+        if (!changed)
+            return true;
+        ini.sync();
+        return ini.status() == QSettings::NoError;
+    }
+
+    // Number of rows of the `torrents` table (src/base/bittorrent/dbresumedatastorage.cpp), -1 if unreadable.
+    // The database is read from a temporary copy: SQLite may rewrite the -shm file or the log of a database
+    // that is opened, and the qBittorrent profile must stay exactly as it is.
+    int countDatabaseTorrents(const QString &dbPath)
+    {
+        const QTemporaryDir tempDir;
+        if (!tempDir.isValid())
+            return -1;
+        const QString copy = tempDir.filePath(DATABASE_NAME);
+        if (!QFile::copy(dbPath, copy))
+            return -1;
+        if (QFileInfo::exists(dbPath + u"-wal"_s))
+            QFile::copy((dbPath + u"-wal"_s), (copy + u"-wal"_s));
+
+        static int counter = 0;
+        const QString connection = u"flux-profile-migrator-%1"_s.arg(++counter);
+        int count = -1;
+        {
+            auto db = QSqlDatabase::addDatabase(u"QSQLITE"_s, connection);
+            db.setDatabaseName(copy);
+            if (db.open())
+            {
+                QSqlQuery query {db};
+                if (query.exec(u"SELECT COUNT(*) FROM `torrents`"_s) && query.next())
+                    count = query.value(0).toInt();
+            }
+        }
+        QSqlDatabase::removeDatabase(connection);
+        return count;
+    }
+
+    // Whether qBittorrent keeps the resume data in torrents.db rather than BT_backup
+    bool usesDatabase(const Flux::QbtProfileLocation &profile)
+    {
+        if (!QFileInfo(profile.dataDir.data() + u'/' + DATABASE_NAME).isFile())
+            return false;
+
+        // the qBittorrent profile has qBittorrent.ini, a migrated Flux one has Flux.ini
+        QString iniPath = profile.configDir.data() + u'/' + QBT_SETTINGS_FILE;
+        if (!QFileInfo::exists(iniPath))
+            iniPath = profile.configDir.data() + u'/' + FLUX_SETTINGS_FILE;
+        const QSettings ini {iniPath, QSettings::IniFormat};
+        return ini.value(u"BitTorrent/Session/ResumeDataStorageType"_s).toString().compare(u"SQLite"_s, Qt::CaseInsensitive) == 0;
+    }
+
     QString &qbittorrentProcessName()
     {
         static QString name = u"qbittorrent.exe"_s;
         return name;
-    }
-
-    bool isFastresume(const QString &path)
-    {
-        return path.endsWith(u".fastresume"_s, Qt::CaseInsensitive);
     }
 }
 
@@ -126,6 +289,9 @@ std::optional<Flux::QbtProfileLocation> Flux::findQbittorrentProfile()
 
 int Flux::countTorrents(const QbtProfileLocation &profile)
 {
+    if (usesDatabase(profile))
+        return countDatabaseTorrents(profile.dataDir.data() + u'/' + DATABASE_NAME);
+
     const QString backupDir = profile.dataDir.data() + u"/BT_backup"_s;
     if (!QFileInfo(backupDir).isDir())
         return 0;
@@ -176,6 +342,13 @@ void Flux::setQbittorrentProcessName(const QString &exeName)
     qbittorrentProcessName() = exeName;
 }
 
+
+
+void Flux::setRenameHook(RenameHook hook)
+{
+    renameHook() = std::move(hook);
+}
+
 Flux::MigrationResult Flux::migrateProfile(const QbtProfileLocation &from, const Path &toConfigDir,
                                            const Path &toDataDir, const bool overwrite)
 {
@@ -198,25 +371,34 @@ Flux::MigrationResult Flux::migrateProfile(const QbtProfileLocation &from, const
         return result;
     }
 
-    // Plan: everything but Flux.ini, which is committed last
+    // Plan. The settings files come last: they are committed after everything they describe.
     QList<CopyItem> items;
     addFile(items, (fromConfig + u"/categories.json"_s), (toConfig + u"/categories.json"_s));
     addFile(items, (fromConfig + u"/watched_folders.json"_s), (toConfig + u"/watched_folders.json"_s));
     addTree(items, (fromConfig + u"/rss"_s), (toConfig + u"/rss"_s));
     addTree(items, (fromData + u"/BT_backup"_s), (toData + u"/BT_backup"_s));
     addTree(items, (fromData + u"/rss"_s), (toData + u"/rss"_s));
-    const QString targetSettings = toConfig + u'/' + FLUX_SETTINGS_FILE;
-    items.append({sourceSettings, targetSettings});
+    // qBittorrent 5.x can keep the resume data in a SQLite database instead of BT_backup
+    for (const QString &name : DATABASE_FILES)
+        addFile(items, (fromData + u'/' + name), (toData + u'/' + name));
+    // Flux reads the statistics and the RSS auto-download rules under the names qBittorrent gave them
+    addFile(items, (fromConfig + u"/qBittorrent-data.ini"_s), (toConfig + u"/qBittorrent-data.ini"_s), true);
+    addFile(items, (fromConfig + u"/qBittorrent-rss.ini"_s), (toConfig + u"/qBittorrent-rss.ini"_s), true);
+    addFile(items, sourceSettings, (toConfig + u'/' + FLUX_SETTINGS_FILE), true);
 
-    // Refuse to mix with, or replace, data that Flux already has. Flux.ini is exempt: every start of Flux
-    // creates it, and it is kept as a backup below.
+    // A process killed in the middle of an earlier attempt leaves staging files behind: they are ours
+    removeStagingFilesIn(toConfig);
+    removeStagingFilesIn(toData);
+
+    // Refuse to mix with, or replace, data that Flux already has. The settings files are exempt:
+    // every start of Flux creates them, and they are kept as .bak below.
     if (!overwrite)
     {
-        const bool occupied = isNonEmptyDir(toData + u"/BT_backup"_s)
-            || isNonEmptyDir(toData + u"/rss"_s)
-            || isNonEmptyDir(toConfig + u"/rss"_s)
+        bool occupied = hasFiles(toData + u"/BT_backup"_s) || hasFiles(toData + u"/rss"_s) || hasFiles(toConfig + u"/rss"_s)
             || QFileInfo::exists(toConfig + u"/categories.json"_s)
             || QFileInfo::exists(toConfig + u"/watched_folders.json"_s);
+        for (const QString &name : DATABASE_FILES)
+            occupied = occupied || QFileInfo::exists(toData + u'/' + name);
         if (occupied)
         {
             result.error = u"target-not-empty"_s;
@@ -234,6 +416,8 @@ Flux::MigrationResult Flux::migrateProfile(const QbtProfileLocation &from, const
         }
     }
 
+    const int expectedTorrents = countTorrents(from);
+
     // Stage: copy every file to "<target>.fluxtmp". Nothing in the target is touched yet.
     for (qsizetype i = 0; i < items.size(); ++i)
     {
@@ -246,6 +430,9 @@ Flux::MigrationResult Flux::migrateProfile(const QbtProfileLocation &from, const
             failure = u"Cannot remove the leftover file %1"_s.arg(QDir::toNativeSeparators(staging));
         else if (QFile file {item.from}; !file.copy(staging))
             failure = u"Cannot copy %1: %2"_s.arg(QDir::toNativeSeparators(item.from), file.errorString());
+        else if ((item.from == sourceSettings)
+                 && !rewriteProfilePaths(staging, {{fromConfig, toConfig}, {fromData, toData}}))
+            failure = u"Cannot update the paths in %1"_s.arg(QDir::toNativeSeparators(item.to));
 
         if (!failure.isEmpty())
         {
@@ -255,45 +442,63 @@ Flux::MigrationResult Flux::migrateProfile(const QbtProfileLocation &from, const
         }
     }
 
-    // Commit: move the staged files into place; the settings file is the last one
-    int torrents = 0;
-    for (qsizetype i = 0; i < items.size(); ++i)
+    // Commit: move the staged files into place. A replaced file is kept next to its new version
+    // until everything is in place, so that any failure can put the target back as it was.
+    struct Committed
     {
-        const CopyItem &item = items.at(i);
-        const bool isSettings = (i == items.size() - 1);
-        QString failure;
-
+        QString path;
+        QString replaced; // where the previous file waits, empty if there was none
+    };
+    QList<Committed> committed;
+    QString failure;
+    for (const CopyItem &item : asConst(items))
+    {
+        QString replaced;
         if (QFileInfo::exists(item.to))
         {
-            if (isSettings)
+            replaced = item.to + (item.isSettings ? BACKUP_SUFFIX : REPLACED_SUFFIX);
+            if (item.isSettings && QFile::exists(replaced))
+                QFile::remove(replaced);
+            if (!QFile::rename(item.to, replaced))
             {
-                const QString backup = item.to + BACKUP_SUFFIX;
-                if (QFile::exists(backup) && !QFile::remove(backup))
-                    failure = u"Cannot replace the backup %1"_s.arg(QDir::toNativeSeparators(backup));
-                else if (!QFile::rename(item.to, backup))
-                    failure = u"Cannot back up %1"_s.arg(QDir::toNativeSeparators(item.to));
-            }
-            else if (!QFile::remove(item.to))
-            {
-                failure = u"Cannot replace %1"_s.arg(QDir::toNativeSeparators(item.to));
+                failure = u"Cannot set aside %1"_s.arg(QDir::toNativeSeparators(item.to));
+                break;
             }
         }
 
-        if (failure.isEmpty() && !QFile::rename((item.to + STAGING_SUFFIX), item.to))
-            failure = u"Cannot move the copy into place: %1"_s.arg(QDir::toNativeSeparators(item.to));
-
-        if (!failure.isEmpty())
+        if (!renameStaged((item.to + STAGING_SUFFIX), item.to))
         {
-            removeStagingFiles(items.sliced(i));
-            result.error = u"The transfer was interrupted after %1 file(s). %2"_s.arg(QString::number(i), failure);
-            return result;
+            if (!replaced.isEmpty())
+                QFile::rename(replaced, item.to);
+            failure = u"Cannot move the copy into place: %1"_s.arg(QDir::toNativeSeparators(item.to));
+            break;
         }
+        committed.append({item.to, replaced});
+    }
 
-        if (isFastresume(item.to) && item.to.contains(u"/BT_backup/"_s))
-            ++torrents;
+    if (!failure.isEmpty())
+    {
+        // Undo, newest first: remove what was placed, put back what was set aside
+        for (auto it = committed.crbegin(); it != committed.crend(); ++it)
+        {
+            QFile::remove(it->path);
+            if (!it->replaced.isEmpty())
+                QFile::rename(it->replaced, it->path);
+        }
+        removeStagingFiles(items);
+        result.error = u"The transfer was interrupted and has been undone. %1"_s.arg(failure);
+        return result;
+    }
+
+    for (const Committed &entry : asConst(committed))
+    {
+        if (!entry.replaced.isEmpty() && entry.replaced.endsWith(REPLACED_SUFFIX))
+            QFile::remove(entry.replaced);
     }
 
     result.ok = true;
-    result.torrentsCopied = torrents;
+    // Unknown (-1) if the database could not be read before the copy: ask the copy
+    result.torrentsCopied = (expectedTorrents >= 0) ? expectedTorrents
+                                                     : std::max(0, countTorrents({toConfigDir, toDataDir}));
     return result;
 }

@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <functional>
 #include <optional>
 
 #include <QString>
@@ -53,7 +54,8 @@ namespace Flux
     // The same lookup in the real %APPDATA% and %LOCALAPPDATA% of the current user
     std::optional<QbtProfileLocation> findQbittorrentProfile();
 
-    // Number of torrents in the profile: the *.fastresume files of BT_backup
+    // Number of torrents in the profile: the rows of torrents.db if qBittorrent keeps its resume data in
+    // SQLite (-1 if the database cannot be read), otherwise the *.fastresume files of BT_backup
     int countTorrents(const QbtProfileLocation &profile);
 
     // Whether a process with this executable name (e.g. "qbittorrent.exe", case-insensitive) is running
@@ -75,11 +77,18 @@ namespace Flux
     // Copies, leaving the qBittorrent profile untouched:
     //   <config>/qBittorrent.ini                                  -> <toConfig>/Flux.ini
     //   <config>/{categories.json, watched_folders.json, rss/**}  -> <toConfig>/...
-    //   <data>/{BT_backup/**, rss/**}                             -> <toData>/...
+    //   <config>/{qBittorrent-data.ini, qBittorrent-rss.ini}      -> <toConfig>/... (the names Flux reads)
+    //   <data>/{BT_backup/**, rss/**, torrents.db[-wal|-shm]}     -> <toData>/...
+    // Paths into the qBittorrent profile inside the copied .ini files are redirected to the Flux profile.
     // Every file is first copied next to its destination under a temporary name and the files are moved
-    // into place only after all copies succeeded, so a failure leaves the target as it was.
-    // Existing data is never replaced unless `overwrite` is set. The one exception is Flux.ini, which
-    // every Flux start creates: it is replaced after being kept as Flux.ini.bak.
+    // into place only after all copies succeeded. If anything fails the target is put back exactly as it was
+    // (replaced files included), so the migration can simply be tried again.
+    // Existing data is never replaced unless `overwrite` is set. The exceptions are the .ini files, which
+    // every Flux start may create: they are replaced after being kept as <name>.bak.
     MigrationResult migrateProfile(const QbtProfileLocation &from, const Path &toConfigDir, const Path &toDataDir,
                                    bool overwrite);
+
+    // Tests only: called before a staged file is moved into place; returning false makes that move fail
+    using RenameHook = std::function<bool(const QString &from, const QString &to)>;
+    void setRenameHook(RenameHook hook);
 }

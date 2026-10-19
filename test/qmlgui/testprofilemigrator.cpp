@@ -28,9 +28,15 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QObject>
+#include <QScopeGuard>
+#include <QSettings>
+#include <QSqlDatabase>
+#include <QSqlError>
+#include <QSqlQuery>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QTest>
@@ -50,6 +56,18 @@ namespace
         if (!file.open(QIODevice::WriteOnly))
             qFatal("Cannot write %s", qUtf8Printable(path));
         file.write(content);
+    }
+
+    // Relative paths of all files below `root`, sorted
+    QStringList listFiles(const QString &root)
+    {
+        QStringList files;
+        QDirIterator it {root, QDir::Files | QDir::Hidden, QDirIterator::Subdirectories};
+        const QDir base {root};
+        while (it.hasNext())
+            files.append(base.relativeFilePath(it.next()));
+        files.sort();
+        return files;
     }
 
     QByteArray readFile(const QString &path)
@@ -78,6 +96,62 @@ namespace
         writeFile(qbt.dataDir() + u"/BT_backup/b.torrent"_s, "t-b");
         if (withRss)
             writeFile(qbt.dataDir() + u"/rss/feeds.json"_s, "{}");
+        return qbt;
+    }
+
+    // A resume-data database with the schema of src/base/bittorrent/dbresumedatastorage.cpp (version 6)
+    void writeResumeDb(const QString &path, const int torrents)
+    {
+        QDir().mkpath(QFileInfo(path).absolutePath());
+        const QString connection = u"testprofilemigrator-db"_s;
+        {
+            auto db = QSqlDatabase::addDatabase(u"QSQLITE"_s, connection);
+            db.setDatabaseName(path);
+            if (!db.open())
+                qFatal("Cannot create %s", qUtf8Printable(path));
+            QSqlQuery query {db};
+            const QStringList statements = {
+                u"CREATE TABLE `meta` (`id` INTEGER PRIMARY KEY, `name` TEXT NOT NULL UNIQUE, `value` BLOB)"_s,
+                u"INSERT INTO `meta` (`name`, `value`) VALUES ('version', 6)"_s,
+                (u"CREATE TABLE `torrents` (`id` INTEGER PRIMARY KEY, `torrent_id` BLOB NOT NULL UNIQUE,"
+                 u" `queue_position` INTEGER NOT NULL DEFAULT -1, `name` TEXT, `category` TEXT, `tags` TEXT,"
+                 u" `comment` TEXT, `target_save_path` TEXT, `download_path` TEXT, `content_layout` TEXT NOT NULL,"
+                 u" `ratio_limit` INTEGER NOT NULL, `seeding_time_limit` INTEGER NOT NULL,"
+                 u" `inactive_seeding_time_limit` INTEGER NOT NULL, `share_limit_action` TEXT NOT NULL DEFAULT 'Default',"
+                 u" `has_outer_pieces_priority` INTEGER NOT NULL, `has_seed_status` INTEGER NOT NULL,"
+                 u" `operating_mode` TEXT NOT NULL, `stopped` INTEGER NOT NULL,"
+                 u" `stop_condition` TEXT NOT NULL DEFAULT 'None', `ssl_certificate` TEXT, `ssl_private_key` TEXT,"
+                 u" `ssl_dh_params` TEXT, `libtorrent_resume_data` BLOB NOT NULL, `metadata` BLOB)"_s)
+            };
+            for (const QString &statement : statements)
+            {
+                if (!query.exec(statement))
+                    qFatal("%s", qUtf8Printable(query.lastError().text()));
+            }
+            for (int i = 0; i < torrents; ++i)
+            {
+                query.prepare(u"INSERT INTO `torrents` (`torrent_id`, `queue_position`, `name`, `content_layout`,"
+                              u" `ratio_limit`, `seeding_time_limit`, `inactive_seeding_time_limit`,"
+                              u" `has_outer_pieces_priority`, `has_seed_status`, `operating_mode`, `stopped`,"
+                              u" `libtorrent_resume_data`) VALUES (?, ?, ?, 'Original', -2, -2, -2, 0, 0, 'AutoManaged', 0, ?)"_s);
+                query.addBindValue(QByteArray::number(i + 1000));
+                query.addBindValue(i);
+                query.addBindValue(u"torrent %1"_s.arg(i));
+                query.addBindValue(QByteArray("resume"));
+                if (!query.exec())
+                    qFatal("%s", qUtf8Printable(query.lastError().text()));
+            }
+        }
+        QSqlDatabase::removeDatabase(connection);
+    }
+
+    // The qBittorrent 5.x profile that keeps its resume data in torrents.db instead of BT_backup
+    FakeQbt makeSqliteQbt(const QString &root, const int torrents)
+    {
+        const FakeQbt qbt {(root + u"/appdata"_s), (root + u"/local"_s)};
+        writeFile(qbt.configDir() + u"/qBittorrent.ini"_s,
+                  "[BitTorrent]\r\nSession\\ResumeDataStorageType=SQLite\r\n");
+        writeResumeDb(qbt.dataDir() + u"/torrents.db"_s, torrents);
         return qbt;
     }
 
@@ -288,6 +362,201 @@ private slots:
         QVERIFY(!QFileInfo::exists(toConfig + u"/Flux.ini"_s));
         QVERIFY(QFileInfo(toData + u"/BT_backup/b.torrent"_s).isDir());
         QVERIFY(QDir(toData + u"/BT_backup"_s).entryList({u"*.fluxtmp"_s}, QDir::Files).isEmpty());
+    }
+
+    void countsSqliteTorrents() const
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const FakeQbt qbt = makeSqliteQbt(dir.path(), 3);
+        QCOMPARE(Flux::countTorrents(locationOf(qbt)), 3);
+    }
+
+    void unreadableDatabaseCountsAsUnknown() const
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const FakeQbt qbt = makeSqliteQbt(dir.path(), 1);
+        writeFile(qbt.dataDir() + u"/torrents.db"_s, "this is not a database");
+        QCOMPARE(Flux::countTorrents(locationOf(qbt)), -1);
+    }
+
+    void migratesSqliteProfile() const
+    {
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeSqliteQbt(src.path(), 3);
+        const QString toData = dst.path() + u"/data"_s;
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(dst.path() + u"/config"_s), Path(toData), false);
+
+        QVERIFY2(result.ok, qUtf8Printable(result.error));
+        QCOMPARE(result.torrentsCopied, 3);
+        QCOMPARE(readFile(toData + u"/torrents.db"_s), readFile(qbt.dataDir() + u"/torrents.db"_s));
+        QCOMPARE(Flux::countTorrents({Path(dst.path() + u"/config"_s), Path(toData)}), 3);
+    }
+
+    void copiesDatabaseJournalFiles() const
+    {
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeSqliteQbt(src.path(), 1);
+        writeFile(qbt.dataDir() + u"/torrents.db-wal"_s, "wal-bytes");
+        writeFile(qbt.dataDir() + u"/torrents.db-shm"_s, "shm-bytes");
+        const QString toData = dst.path() + u"/data"_s;
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(dst.path() + u"/config"_s), Path(toData), false);
+
+        QVERIFY2(result.ok, qUtf8Printable(result.error));
+        QCOMPARE(readFile(toData + u"/torrents.db-wal"_s), QByteArray("wal-bytes"));
+        QCOMPARE(readFile(toData + u"/torrents.db-shm"_s), QByteArray("shm-bytes"));
+    }
+
+    void refusesExistingTargetDatabase() const
+    {
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeSqliteQbt(src.path(), 3);
+        const QString toData = dst.path() + u"/data"_s;
+        writeFile(toData + u"/torrents.db"_s, "mine");
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(dst.path() + u"/config"_s), Path(toData), false);
+
+        QVERIFY(!result.ok);
+        QCOMPARE(result.error, u"target-not-empty"_s);
+        QCOMPARE(readFile(toData + u"/torrents.db"_s), QByteArray("mine"));
+        QVERIFY(!QFileInfo::exists(dst.path() + u"/config/Flux.ini"_s));
+    }
+
+    void copiesStatisticsAndRssSettings() const
+    {
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeFakeQbt(src.path());
+        writeFile(qbt.configDir() + u"/qBittorrent-data.ini"_s, "[Stats]\r\nAllStats=@Variant(stats)\r\n");
+        writeFile(qbt.configDir() + u"/qBittorrent-rss.ini"_s, "[AutoDownloader]\r\nRules=@Variant(rules)\r\n");
+        const QString toConfig = dst.path() + u"/config"_s;
+        // Flux reads these under the qBittorrent names; an earlier Flux run may have created them
+        writeFile(toConfig + u"/qBittorrent-data.ini"_s, "[Stats]\r\nold=1\r\n");
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(dst.path() + u"/data"_s), false);
+
+        QVERIFY2(result.ok, qUtf8Printable(result.error));
+        QCOMPARE(readFile(toConfig + u"/qBittorrent-data.ini"_s), readFile(qbt.configDir() + u"/qBittorrent-data.ini"_s));
+        QCOMPARE(readFile(toConfig + u"/qBittorrent-rss.ini"_s), readFile(qbt.configDir() + u"/qBittorrent-rss.ini"_s));
+        QCOMPARE(readFile(toConfig + u"/qBittorrent-data.ini.bak"_s), QByteArray("[Stats]\r\nold=1\r\n"));
+    }
+
+    void pathsIntoTheQbittorrentProfileAreRewritten() const
+    {
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeFakeQbt(src.path());
+        const QString toConfig = dst.path() + u"/config"_s;
+        const QString toData = dst.path() + u"/data"_s;
+        {
+            QSettings ini {qbt.configDir() + u"/qBittorrent.ini"_s, QSettings::IniFormat};
+            ini.setValue(u"Application/FileLogger/Path"_s, QString(qbt.dataDir() + u"/logs"_s));
+            // another spelling of the same place: upper case, backslashes
+            ini.setValue(u"Some/Dir"_s, QString(QDir::toNativeSeparators(qbt.configDir()).toUpper() + u"\\sub"_s));
+            ini.setValue(u"Some/List"_s, QStringList {(qbt.dataDir() + u"/a"_s), u"D:/keep"_s});
+            ini.setValue(u"Downloads/SavePath"_s, u"D:/Downloads"_s);
+            // looks like the profile directory, but is a different one
+            ini.setValue(u"Some/Sibling"_s, QString(qbt.dataDir() + u"-old/logs"_s));
+            ini.setValue(u"Some/Number"_s, 42);
+        }
+        const QByteArray original = readFile(qbt.configDir() + u"/qBittorrent.ini"_s);
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(toData), false);
+
+        QVERIFY2(result.ok, qUtf8Printable(result.error));
+        QSettings ini {toConfig + u"/Flux.ini"_s, QSettings::IniFormat};
+        QCOMPARE(ini.value(u"Application/FileLogger/Path"_s).toString(), toData + u"/logs"_s);
+        QCOMPARE(QDir::fromNativeSeparators(ini.value(u"Some/Dir"_s).toString()).toLower(), (toConfig + u"/sub"_s).toLower());
+        QCOMPARE(ini.value(u"Some/List"_s).toStringList(), QStringList({(toData + u"/a"_s), u"D:/keep"_s}));
+        QCOMPARE(ini.value(u"Downloads/SavePath"_s).toString(), u"D:/Downloads"_s);
+        QCOMPARE(ini.value(u"Some/Sibling"_s).toString(), qbt.dataDir() + u"-old/logs"_s);
+        QCOMPARE(ini.value(u"Some/Number"_s).toInt(), 42);
+        // the source profile keeps pointing at itself
+        QCOMPARE(readFile(qbt.configDir() + u"/qBittorrent.ini"_s), original);
+    }
+
+    void commitFailureRollsBack() const
+    {
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeFakeQbt(src.path());
+        const QString toConfig = dst.path() + u"/config"_s;
+        const QString toData = dst.path() + u"/data"_s;
+        // the second BT_backup file cannot be moved into place
+        Flux::setRenameHook([](const QString &, const QString &to) { return !to.endsWith(u"/b.fastresume"_s); });
+        const auto resetHook = qScopeGuard([] { Flux::setRenameHook({}); });
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(toData), false);
+
+        QVERIFY(!result.ok);
+        QVERIFY(result.error != u"target-not-empty"_s);
+        QVERIFY2(result.error.contains(u"b.fastresume"_s), qUtf8Printable(result.error));
+        QCOMPARE(result.torrentsCopied, 0);
+        // not a single migrated file is left: the next attempt starts from scratch
+        QVERIFY(listFiles(toData).isEmpty());
+        QVERIFY(listFiles(toConfig).isEmpty());
+
+        // and the retry works
+        Flux::setRenameHook({});
+        const auto retry = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(toData), false);
+        QVERIFY2(retry.ok, qUtf8Printable(retry.error));
+        QCOMPARE(retry.torrentsCopied, 2);
+    }
+
+    void commitFailureRestoresReplacedFiles() const
+    {
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeFakeQbt(src.path());
+        const QString toConfig = dst.path() + u"/config"_s;
+        const QString toData = dst.path() + u"/data"_s;
+        writeFile(toData + u"/BT_backup/a.fastresume"_s, "old");
+        writeFile(toConfig + u"/Flux.ini"_s, "[Flux]\r\nmine=1\r\n");
+        const QStringList before = listFiles(dst.path());
+        Flux::setRenameHook([](const QString &, const QString &to) { return !to.endsWith(u"/Flux.ini"_s); });
+        const auto resetHook = qScopeGuard([] { Flux::setRenameHook({}); });
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(toData), true);
+
+        QVERIFY(!result.ok);
+        QCOMPARE(listFiles(dst.path()), before);
+        QCOMPARE(readFile(toData + u"/BT_backup/a.fastresume"_s), QByteArray("old"));
+        QCOMPARE(readFile(toConfig + u"/Flux.ini"_s), QByteArray("[Flux]\r\nmine=1\r\n"));
+    }
+
+    void staleStagingFilesDoNotBlockTheMigration() const
+    {
+        // A process killed while copying leaves *.fluxtmp files behind
+        QTemporaryDir src;
+        QTemporaryDir dst;
+        QVERIFY(src.isValid() && dst.isValid());
+        const FakeQbt qbt = makeFakeQbt(src.path());
+        const QString toConfig = dst.path() + u"/config"_s;
+        const QString toData = dst.path() + u"/data"_s;
+        writeFile(toData + u"/BT_backup/a.fastresume.fluxtmp"_s, "half");
+        writeFile(toData + u"/BT_backup/old-name.torrent.fluxtmp"_s, "half");
+        writeFile(toConfig + u"/categories.json.fluxtmp"_s, "half");
+
+        const auto result = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(toData), false);
+
+        QVERIFY2(result.ok, qUtf8Printable(result.error));
+        QCOMPARE(result.torrentsCopied, 2);
+        QCOMPARE(readFile(toData + u"/BT_backup/a.fastresume"_s), QByteArray("fr-a"));
+        QVERIFY(QDir(toData + u"/BT_backup"_s).entryList({u"*.fluxtmp"_s}, QDir::Files).isEmpty());
+        QVERIFY(!QFileInfo::exists(toConfig + u"/categories.json.fluxtmp"_s));
     }
 
     void missingSourceFails() const
