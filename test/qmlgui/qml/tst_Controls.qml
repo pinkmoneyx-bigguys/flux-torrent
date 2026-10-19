@@ -244,10 +244,33 @@ TestCase {
     }
 
     function test_segmentedMouseSelectionStillAnimates() {
+        tryVerify(() => !seg._kbd, 1000)
         mouseClick(seg.itemAt(2))
         compare(seg.currentIndex, 2)
         verify(seg.itemAt(2).background.color.a < 0.14, "pill is fading in: " + seg.itemAt(2).background.color.a)
         tryVerify(() => seg.itemAt(2).background.color.a > 0.139, 1000)
+    }
+
+    function test_segmentedKeyboardFlagClearsAfterKeyUp() {
+        seg.itemAt(0).forceActiveFocus()
+        keyClick(Qt.Key_Right)
+        compare(seg.currentIndex, 1)
+        tryVerify(() => !seg._kbd, 1000)
+        mouseClick(seg.itemAt(2))
+        compare(seg.currentIndex, 2)
+        verify(seg.itemAt(2).background.color.a < 0.14, "mouse selection animates again: " + seg.itemAt(2).background.color.a)
+    }
+
+    function test_segmentedKeyboardFlagClearsOnFocusLoss() {
+        seg.itemAt(1).forceActiveFocus()
+        keyPress(Qt.Key_Space) // key stays down: no release will reach the segment
+        verify(seg._kbd)
+        pill.forceActiveFocus() // focus leaves the control
+        tryVerify(() => !seg._kbd, 1000)
+        keyRelease(Qt.Key_Space)
+        mouseClick(seg.itemAt(2))
+        compare(seg.currentIndex, 2)
+        verify(seg.itemAt(2).background.color.a < 0.14, "mouse selection animates again: " + seg.itemAt(2).background.color.a)
     }
 
     // --- FluxProgressBar --------------------------------------------------------------------------

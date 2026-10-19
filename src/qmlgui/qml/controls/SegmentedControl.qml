@@ -17,7 +17,6 @@ Item {
     Accessible.role: Accessible.Grouping
     Accessible.name: qsTr("Options")
 
-    // The i-th segment button, or null: for tests and for callers that need to anchor to it
     // Keyboard selection (arrows, Space) is never animated. The flag goes up on key-down and drops on the
     // turn after the key-up was handled (Space selects on release), or when no segment keeps the focus.
     property bool _kbd: false
@@ -38,6 +37,7 @@ Item {
         return false
     }
 
+    // The i-th segment button, or null: for tests and for callers that need to anchor to it
     function itemAt(i) {
         return repeater.itemAt(i)
     }
