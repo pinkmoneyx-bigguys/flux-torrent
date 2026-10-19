@@ -26,11 +26,14 @@
  * exception statement from your version.
  */
 
+#include <QByteArray>
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
+#include <QMap>
 #include <QObject>
 #include <QScopeGuard>
 #include <QSettings>
@@ -74,6 +77,33 @@ namespace
     {
         QFile file {path};
         return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+    }
+
+    // Size and SHA-256 of every file below `root` (hidden and journal files included), keyed by the path relative to
+    // `root`; directories are entries of their own. Any added, removed, resized or rewritten entry changes the result
+    QMap<QString, QByteArray> snapshotTree(const QString &root)
+    {
+        QMap<QString, QByteArray> entries;
+        const QDir base {root};
+        QDirIterator it {root, QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System,
+                         QDirIterator::Subdirectories};
+        while (it.hasNext())
+        {
+            const QFileInfo info {it.next()};
+            const QString relative = base.relativeFilePath(info.filePath());
+            if (info.isDir())
+            {
+                entries.insert(relative, QByteArray("dir"));
+                continue;
+            }
+            QFile file {info.filePath()};
+            if (!file.open(QIODevice::ReadOnly))
+                qFatal("Cannot read %s", qUtf8Printable(info.filePath()));
+            QCryptographicHash hash {QCryptographicHash::Sha256};
+            hash.addData(&file);
+            entries.insert(relative, QByteArray::number(info.size()) + "|" + hash.result().toHex());
+        }
+        return entries;
     }
 
     // A fake qBittorrent profile: <root>/appdata/qBittorrent and <root>/local/qBittorrent
@@ -199,7 +229,9 @@ private slots:
         QTemporaryDir dir;
         QVERIFY(dir.isValid());
         const FakeQbt qbt = makeFakeQbt(dir.path());
+        const auto before = snapshotTree(dir.path());
         QCOMPARE(Flux::countTorrents(locationOf(qbt)), 2);
+        QCOMPARE(snapshotTree(dir.path()), before);
 
         QTemporaryDir empty;
         QCOMPARE(Flux::countTorrents({Path(empty.path()), Path(empty.path())}), 0);
@@ -213,11 +245,15 @@ private slots:
         const FakeQbt qbt = makeFakeQbt(src.path());
         const QString toConfig = dst.path() + u"/config"_s;
         const QString toData = dst.path() + u"/data"_s;
+        const auto sourceBefore = snapshotTree(src.path());
+        QVERIFY(!sourceBefore.isEmpty());
 
         const Flux::MigrationResult result = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(toData), false);
 
         QVERIFY2(result.ok, qUtf8Printable(result.error));
         QCOMPARE(result.torrentsCopied, 2);
+        // the qBittorrent profile is byte for byte what it was: nothing added, removed or rewritten
+        QCOMPARE(snapshotTree(src.path()), sourceBefore);
         QVERIFY(QFileInfo::exists(toConfig + u"/Flux.ini"_s));
         QCOMPARE(readFile(toConfig + u"/Flux.ini"_s), readFile(qbt.configDir() + u"/qBittorrent.ini"_s));
         QVERIFY(!readFile(toConfig + u"/Flux.ini"_s).isEmpty());
@@ -227,9 +263,10 @@ private slots:
         QCOMPARE(readFile(toData + u"/BT_backup/a.fastresume"_s), QByteArray("fr-a"));
         QCOMPARE(readFile(toData + u"/BT_backup/b.torrent"_s), QByteArray("t-b"));
 
-        // the source profile is left as it was
+        // the source profile is left as it was, also by counting its torrents
         QVERIFY(QFileInfo::exists(qbt.configDir() + u"/qBittorrent.ini"_s));
         QCOMPARE(Flux::countTorrents(locationOf(qbt)), 2);
+        QCOMPARE(snapshotTree(src.path()), sourceBefore);
 
         // no staging files are left behind
         QVERIFY(QDir(toData + u"/BT_backup"_s).entryList({u"*.fluxtmp"_s}, QDir::Files).isEmpty());
@@ -279,12 +316,17 @@ private slots:
         const QString toConfig = dst.path() + u"/config"_s;
         const QString toData = dst.path() + u"/data"_s;
         writeFile(toData + u"/BT_backup/mine.fastresume"_s, "mine");
+        const auto sourceBefore = snapshotTree(src.path());
+        const auto targetBefore = snapshotTree(dst.path());
 
         const auto result = Flux::migrateProfile(locationOf(qbt), Path(toConfig), Path(toData), false);
 
         QVERIFY(!result.ok);
         QCOMPARE(result.error, u"target-not-empty"_s);
         QCOMPARE(result.torrentsCopied, 0);
+        // a refusal touches neither profile
+        QCOMPARE(snapshotTree(src.path()), sourceBefore);
+        QCOMPARE(snapshotTree(dst.path()), targetBefore);
         QCOMPARE(readFile(toData + u"/BT_backup/mine.fastresume"_s), QByteArray("mine"));
         // nothing was copied next to it
         QCOMPARE(QDir(toData + u"/BT_backup"_s).entryList(QDir::Files).size(), 1);
@@ -369,7 +411,12 @@ private slots:
         QTemporaryDir dir;
         QVERIFY(dir.isValid());
         const FakeQbt qbt = makeSqliteQbt(dir.path(), 3);
+        writeFile(qbt.dataDir() + u"/torrents.db-wal"_s, "wal-bytes");
+        writeFile(qbt.dataDir() + u"/torrents.db-shm"_s, "shm-bytes");
+        const auto before = snapshotTree(dir.path());
         QCOMPARE(Flux::countTorrents(locationOf(qbt)), 3);
+        // opening the database to count must neither leave journal files nor change a byte of the original
+        QCOMPARE(snapshotTree(dir.path()), before);
     }
 
     void unreadableDatabaseCountsAsUnknown() const
@@ -387,7 +434,13 @@ private slots:
         QTemporaryDir dst;
         QVERIFY(src.isValid() && dst.isValid());
         const FakeQbt qbt = makeSqliteQbt(src.path(), 3);
+        // the journal files of a database that is in use belong to the profile too
+        writeFile(qbt.dataDir() + u"/torrents.db-wal"_s, "wal-bytes");
+        writeFile(qbt.dataDir() + u"/torrents.db-shm"_s, "shm-bytes");
         const QString toData = dst.path() + u"/data"_s;
+        const auto sourceBefore = snapshotTree(src.path());
+        QVERIFY(sourceBefore.contains(u"local/qBittorrent/torrents.db-wal"_s));
+        QVERIFY(sourceBefore.contains(u"local/qBittorrent/torrents.db-shm"_s));
 
         const auto result = Flux::migrateProfile(locationOf(qbt), Path(dst.path() + u"/config"_s), Path(toData), false);
 
@@ -395,6 +448,7 @@ private slots:
         QCOMPARE(result.torrentsCopied, 3);
         QCOMPARE(readFile(toData + u"/torrents.db"_s), readFile(qbt.dataDir() + u"/torrents.db"_s));
         QCOMPARE(Flux::countTorrents({Path(dst.path() + u"/config"_s), Path(toData)}), 3);
+        QCOMPARE(snapshotTree(src.path()), sourceBefore);
     }
 
     void copiesDatabaseJournalFiles() const
@@ -422,11 +476,15 @@ private slots:
         const FakeQbt qbt = makeSqliteQbt(src.path(), 3);
         const QString toData = dst.path() + u"/data"_s;
         writeFile(toData + u"/torrents.db"_s, "mine");
+        const auto sourceBefore = snapshotTree(src.path());
+        const auto targetBefore = snapshotTree(dst.path());
 
         const auto result = Flux::migrateProfile(locationOf(qbt), Path(dst.path() + u"/config"_s), Path(toData), false);
 
         QVERIFY(!result.ok);
         QCOMPARE(result.error, u"target-not-empty"_s);
+        QCOMPARE(snapshotTree(src.path()), sourceBefore);
+        QCOMPARE(snapshotTree(dst.path()), targetBefore);
         QCOMPARE(readFile(toData + u"/torrents.db"_s), QByteArray("mine"));
         QVERIFY(!QFileInfo::exists(dst.path() + u"/config/Flux.ini"_s));
     }
