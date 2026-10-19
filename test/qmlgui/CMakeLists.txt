@@ -2,6 +2,7 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 
 set(qmlGuiTestFiles
     testformat.cpp
+    testsessionfacade.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})

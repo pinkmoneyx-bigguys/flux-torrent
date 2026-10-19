@@ -16,6 +16,8 @@ qt_add_qml_module(qbt_qmlgui
         fluxshell.cpp
         backend/format.h
         backend/format.cpp
+        backend/sessionfacade.h
+        backend/sessionfacade.cpp
 )
 
 target_link_libraries(qbt_qmlgui
