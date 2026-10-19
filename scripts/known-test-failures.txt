@@ -1,0 +1,6 @@
+# Upstream tests that fail on this machine for reasons outside our code. One ctest name per line.
+# Each entry needs a reason. They still run, but their result does not fail the build.
+#
+# testutilsmisc: TestUtilsMisc::testfriendlyUnitCompact expects "0.97 K", but under a Russian Windows
+# locale Qt formats "0,97 K" (decimal comma). The formatting is locale-correct; the test assumes en-US.
+testutilsmisc
