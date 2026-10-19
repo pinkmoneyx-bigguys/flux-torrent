@@ -1,8 +1,9 @@
-find_package(Qt6 REQUIRED COMPONENTS Test)
+find_package(Qt6 REQUIRED COMPONENTS Test QuickTest)
 
 set(qmlGuiTestFiles
     testformat.cpp
     testsessionfacade.cpp
+    testsystemprefs.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})
@@ -14,3 +15,10 @@ foreach(testFile ${qmlGuiTestFiles})
 
     add_dependencies(check "${testFilename}")
 endforeach()
+
+# Qt Quick Test: runs every tst_*.qml under qml/ (later QML tasks add their files there)
+add_executable(flux_qml qmltests.cpp)
+target_compile_definitions(flux_qml PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
+target_link_libraries(flux_qml PRIVATE Qt6::QuickTest qbt_qmlgui qbt_qmlguiplugin qbt_base)
+add_test(NAME flux_qml COMMAND flux_qml)
+add_dependencies(check flux_qml)
