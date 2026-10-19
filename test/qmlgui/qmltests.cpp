@@ -27,9 +27,24 @@
  */
 
 #include <QtQml>
+#include <QtQuick/QQuickWindow>
 #include <QtQuickTest>
 
 // The Flux module is a static QML module: import its plugin so "import Flux" resolves in the tests
 Q_IMPORT_QML_PLUGIN(FluxPlugin)
 
-QUICK_TEST_MAIN(flux_qml)
+class Setup : public QObject
+{
+    Q_OBJECT
+
+public slots:
+    void applicationAvailable()
+    {
+        // Render like the app does (src/app/main.cpp), so shader and grab tests see the same backend
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+    }
+};
+
+QUICK_TEST_MAIN_WITH_SETUP(flux_qml, Setup)
+
+#include "qmltests.moc"

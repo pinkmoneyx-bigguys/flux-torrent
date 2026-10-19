@@ -5,6 +5,8 @@ set_source_files_properties(qml/Main.qml PROPERTIES QT_RESOURCE_ALIAS Main.qml)
 set_source_files_properties(qml/Theme.qml PROPERTIES QT_RESOURCE_ALIAS Theme.qml)
 set_source_files_properties(qml/Icons.qml PROPERTIES QT_RESOURCE_ALIAS Icons.qml)
 set_source_files_properties(qml/controls/Icon.qml PROPERTIES QT_RESOURCE_ALIAS controls/Icon.qml)
+set_source_files_properties(qml/glass/GlassBackground.qml PROPERTIES QT_RESOURCE_ALIAS glass/GlassBackground.qml)
+set_source_files_properties(qml/glass/GlassPanel.qml PROPERTIES QT_RESOURCE_ALIAS glass/GlassPanel.qml)
 
 # Singletons must be flagged before qt_add_qml_module sees the files
 set_source_files_properties(qml/Theme.qml qml/Icons.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -20,6 +22,8 @@ qt_add_qml_module(qbt_qmlgui
         qml/Theme.qml
         qml/Icons.qml
         qml/controls/Icon.qml
+        qml/glass/GlassBackground.qml
+        qml/glass/GlassPanel.qml
     RESOURCES
         fonts/Onest-Variable.ttf
         fonts/Unbounded-Variable.ttf
@@ -34,6 +38,13 @@ qt_add_qml_module(qbt_qmlgui
         backend/sessionfacade.cpp
         backend/systemprefs.h
         backend/systemprefs.cpp
+)
+
+# Compiled to .qsb for every RHI backend, served as qrc:/flux/shaders/glass.frag.qsb
+qt_add_shaders(qbt_qmlgui "flux_shaders"
+    PREFIX "/flux"
+    FILES
+        shaders/glass.frag
 )
 
 target_link_libraries(qbt_qmlgui
