@@ -31,7 +31,8 @@
 #include <QObject>
 #include <QtQmlIntegration/qqmlintegration.h>
 
-// Windows accessibility preferences that Theme maps onto its reducedMotion / reducedTransparency tokens.
+// Windows accessibility preferences that Theme maps onto its reducedMotion / reducedTransparency tokens,
+// and the Windows build number for features that depend on it (Main.qml's window attributes).
 // Values are read once at construction; refresh() re-reads them (there is no live watching yet).
 class SystemPrefs : public QObject
 {
@@ -42,12 +43,15 @@ class SystemPrefs : public QObject
 
     Q_PROPERTY(bool reducedMotion READ reducedMotion NOTIFY changed FINAL)
     Q_PROPERTY(bool reducedTransparency READ reducedTransparency NOTIFY changed FINAL)
+    // Windows build number (Windows 11 22H2 is 22621), 0 on other systems
+    Q_PROPERTY(int windowsBuild READ windowsBuild CONSTANT FINAL)
 
 public:
     explicit SystemPrefs(QObject *parent = nullptr);
 
     bool reducedMotion() const;
     bool reducedTransparency() const;
+    int windowsBuild() const;
 
     // Re-reads the system settings; emits changed() only if a value differs from the cached one
     Q_INVOKABLE void refresh();

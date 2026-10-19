@@ -60,6 +60,9 @@ endif()
 include(CheckPackages)
 if (QML_GUI)
     find_package(Qt6 ${minQt6Version} REQUIRED COMPONENTS Qml Quick QuickControls2 ShaderTools Svg QuickTest)
+    # QWindowKit (static) links Qt private modules; declared here so every directory sees the targets
+    set(QT_NO_PRIVATE_MODULE_WARNING ON)
+    find_package(Qt6 ${minQt6Version} REQUIRED COMPONENTS CorePrivate GuiPrivate QuickPrivate)
 endif()
 # configure for specific platform
 include(CommonConfig)

@@ -29,7 +29,9 @@
 #pragma once
 
 #include <QObject>
+#include <QTranslator>
 
+class QLocale;
 class QQmlApplicationEngine;
 
 class FluxShell final : public QObject
@@ -39,12 +41,17 @@ class FluxShell final : public QObject
 
 public:
     explicit FluxShell(QObject *parent = nullptr);
+    ~FluxShell() override;
 
     void show();
     void activate();
 
     QQmlApplicationEngine *engine() const;
 
+    // Loads the embedded Flux UI translation (:/i18n/flux_<lang>.qm) that best matches `locale`
+    static bool loadTranslation(QTranslator &translator, const QLocale &locale);
+
 private:
+    QTranslator m_translator;
     QQmlApplicationEngine *m_engine = nullptr;
 };

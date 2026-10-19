@@ -36,7 +36,7 @@ TestCase {
         const names = ["download", "upload", "search", "rss", "media", "settings", "play", "pause", "trash",
                        "up", "down", "more", "folder", "film", "disc", "data", "audio", "app", "close",
                        "minimize", "maximize", "turtle", "check", "plus", "chevronDown", "filter", "columns",
-                       "magnet", "refresh"]
+                       "magnet", "refresh", "logo"]
         for (const n of names) {
             verify(typeof Icons[n] === "string", n + " is a string")
             verify(Icons[n].length > 0, n + " is not empty")

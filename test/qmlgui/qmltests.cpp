@@ -26,12 +26,57 @@
  * exception statement from your version.
  */
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QLocale>
+#include <QtCore/QTranslator>
 #include <QtQml>
 #include <QtQuick/QQuickWindow>
 #include <QtQuickTest>
 
+#include <QWKQuick/qwkquickglobal.h>
+
+#include "qmlgui/fluxshell.h"
+
 // The Flux module is a static QML module: import its plugin so "import Flux" resolves in the tests
 Q_IMPORT_QML_PLUGIN(FluxPlugin)
+
+// Exposed to the tests as FluxTestI18n: switches the UI language the way the app picks it at start
+// (FluxShell::loadTranslation) and retranslates the live QML
+class I18nSwitcher : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit I18nSwitcher(QQmlEngine *engine)
+        : QObject(engine)
+        , m_engine {engine}
+    {
+    }
+
+    ~I18nSwitcher() override
+    {
+        QCoreApplication::removeTranslator(&m_translator);
+    }
+
+    // "" restores the English source strings; returns false if no translation for `lang` is built in
+    Q_INVOKABLE bool setLanguage(const QString &lang)
+    {
+        QCoreApplication::removeTranslator(&m_translator);
+        bool ok = true;
+        if (!lang.isEmpty())
+        {
+            ok = FluxShell::loadTranslation(m_translator, QLocale(lang));
+            if (ok)
+                QCoreApplication::installTranslator(&m_translator);
+        }
+        m_engine->retranslate();
+        return ok;
+    }
+
+private:
+    QQmlEngine *m_engine = nullptr;
+    QTranslator m_translator;
+};
 
 class Setup : public QObject
 {
@@ -42,6 +87,13 @@ public slots:
     {
         // Render like the app does (src/app/main.cpp), so shader and grab tests see the same backend
         QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+    }
+
+    void qmlEngineAvailable(QQmlEngine *engine)
+    {
+        // Like FluxShell: Main.qml imports QWindowKit
+        QWK::registerTypes(engine);
+        engine->rootContext()->setContextProperty(QStringLiteral("FluxTestI18n"),new I18nSwitcher(engine));
     }
 };
 

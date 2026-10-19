@@ -28,17 +28,39 @@
 
 #include "fluxshell.h"
 
+#include <QCoreApplication>
 #include <QDebug>
+#include <QLocale>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 #include <Qt>
+
+#include <QWKQuick/qwkquickglobal.h>
 
 #include "base/global.h"
 
 FluxShell::FluxShell(QObject *parent)
     : QObject(parent)
-    , m_engine {new QQmlApplicationEngine(this)}
 {
+    // Installed before the engine exists, so the first load of the QML already sees it
+    if (loadTranslation(m_translator, QLocale::system()))
+        QCoreApplication::installTranslator(&m_translator);
+
+    m_engine = new QQmlApplicationEngine(this);
+    // QML type WindowAgent (import QWindowKit) used by Main.qml
+    QWK::registerTypes(m_engine);
+}
+
+FluxShell::~FluxShell()
+{
+    // Tear the UI down while the translator is still installed: removing it retranslates live QML
+    delete m_engine;
+    m_engine = nullptr;
+}
+
+bool FluxShell::loadTranslation(QTranslator &translator, const QLocale &locale)
+{
+    return translator.load(locale, u"flux"_s, u"_"_s, u":/i18n"_s);
 }
 
 void FluxShell::show()
@@ -60,10 +82,10 @@ void FluxShell::activate()
         if (!window)
             continue;
 
+        // Un-minimize into the previous state, so a maximized window comes back maximized
         if (window->windowStates() & Qt::WindowMinimized)
-            window->showNormal();
-        else
-            window->show();
+            window->setWindowStates(window->windowStates() & ~Qt::WindowMinimized);
+        window->show();
 
         window->raise();
         window->requestActivate();

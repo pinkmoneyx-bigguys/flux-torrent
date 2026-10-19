@@ -27,6 +27,7 @@
  */
 
 #include <QObject>
+#include <QOperatingSystemVersion>
 #include <QSignalSpy>
 #include <QTest>
 
@@ -54,6 +55,18 @@ private slots:
         QCOMPARE(prefs.reducedMotion(), motion);
         QCOMPARE(prefs.reducedTransparency(), transparency);
         QCOMPARE(spy.count(), 0);
+    }
+
+    void windowsBuild() const
+    {
+        const SystemPrefs prefs;
+#ifdef Q_OS_WIN
+        // Windows 10 and 11 report major version 10; the build number tells them apart (11 = 22000+)
+        QCOMPARE(prefs.windowsBuild(), QOperatingSystemVersion::current().microVersion());
+        QVERIFY(prefs.windowsBuild() >= 10240);
+#else
+        QCOMPARE(prefs.windowsBuild(), 0);
+#endif
     }
 };
 

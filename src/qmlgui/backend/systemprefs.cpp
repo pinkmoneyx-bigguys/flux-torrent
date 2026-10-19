@@ -28,6 +28,8 @@
 
 #include "systemprefs.h"
 
+#include <QOperatingSystemVersion>
+
 #ifdef Q_OS_WIN
 #include <QSettings>
 #include <QString>
@@ -80,6 +82,15 @@ bool SystemPrefs::reducedMotion() const
 bool SystemPrefs::reducedTransparency() const
 {
     return m_reducedTransparency;
+}
+
+int SystemPrefs::windowsBuild() const
+{
+#ifdef Q_OS_WIN
+    return QOperatingSystemVersion::current().microVersion();
+#else
+    return 0;
+#endif
 }
 
 void SystemPrefs::refresh()

@@ -4,6 +4,9 @@ import QtQuick
 // SVG path data of the icon set, all on the 24x24 grid (draw them with controls/Icon.qml).
 // Taken verbatim from the approved mockup (App4/Search4/Rss4/Settings4/Main) unless noted.
 QtObject {
+    // App logo: the wave inside the accent disc of the title bar
+    readonly property string logo: "M3 8c4.5 0 4.5 8 9 8s4.5-8 9-8"
+
     // Navigation
     readonly property string download: "M12 3v12M7 10l5 5 5-5M5 21h14"
     readonly property string search: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"
