@@ -35,4 +35,7 @@ add_executable(flux_qml qmltests.cpp)
 target_compile_definitions(flux_qml PRIVATE QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/qml")
 target_link_libraries(flux_qml PRIVATE Qt6::QuickTest qbt_qmlgui qbt_qmlguiplugin qbt_base)
 add_test(NAME flux_qml COMMAND flux_qml)
+# Opens real, visible windows on the desktop: excluded by `ctest -LE gui` (scripts/build.ps1 -Test), run
+# with -GuiTests. Tests on the offscreen platform (testfirstrun, testfluxshell) do not need the label.
+set_tests_properties(flux_qml PROPERTIES LABELS gui)
 add_dependencies(check flux_qml)

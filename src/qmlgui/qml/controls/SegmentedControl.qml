@@ -3,7 +3,7 @@ import QtQuick.Controls.Basic
 import Flux
 
 // A row of pill-shaped options; the selected one is a lighter pill with a top highlight.
-// Arrow keys move the selection (the control is a single Tab stop).
+// Arrow keys move the selection; every segment is a Tab stop of its own.
 Item {
     id: root
 

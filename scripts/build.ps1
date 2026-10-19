@@ -3,6 +3,7 @@ param(
     [ValidateSet('Widgets', 'Qml')] [string]$Gui = 'Widgets',
     [ValidateSet('RelWithDebInfo', 'Release', 'Debug')] [string]$Config = 'RelWithDebInfo',
     [switch]$Test,
+    [switch]$GuiTests,   # with -Test: also run the tests labelled `gui` (they open real windows)
     [switch]$Deploy
 )
 . (Join-Path $PSScriptRoot 'common.ps1')
@@ -46,11 +47,13 @@ if ($Test) {
     # Same as upstream's `check` target (ctest --output-on-failure), minus documented known failures
     $known = @(Get-Content (Join-Path $PSScriptRoot 'known-test-failures.txt') |
         Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object { $_.Trim() })
-    $ctestArgs = @('--test-dir', 'build\test', '--output-on-failure', '--no-tests=error')
+    # Tests labelled `gui` open real windows on the desktop; they only run on request
+    $labelArgs = if ($GuiTests) { @() } else { @('-LE', 'gui') }
+    $ctestArgs = @('--test-dir', 'build\test', '--output-on-failure', '--no-tests=error') + $labelArgs
     if ($known.Count -gt 0) { $ctestArgs += @('-E', ('^(' + ($known -join '|') + ')$')) }
     Invoke-Native 'ctest' $ctestArgs
     if ($known.Count -gt 0) {
-        & ctest --test-dir build\test --no-tests=error -R ('^(' + ($known -join '|') + ')$') | Out-Null
+        & ctest --test-dir build\test --no-tests=error @labelArgs -R ('^(' + ($known -join '|') + ')$') | Out-Null
         $state = if ($LASTEXITCODE -eq 0) { 'now PASS - remove them from known-test-failures.txt' } else { 'still fail (see known-test-failures.txt)' }
         Write-Warning ("Known failures excluded: {0} - {1}" -f ($known -join ', '), $state)
     }
