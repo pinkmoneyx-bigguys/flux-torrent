@@ -45,15 +45,12 @@ if (Test-FluxMsvc) {
 # 2. Python 3.13 (per-user, no admin), then CMake and Ninja from PyPI into its Scripts folder
 Write-Step 'Python 3.13, CMake, Ninja'
 if (Test-FluxPython313) {
-    Install-Winget 'Python.Python.3.13' @('--scope', 'user', '--override', '/quiet InstallAllUsers=0 PrependPath=1 Include_launcher=0')
+    $override = Get-FluxPythonInstallOverride -LauncherPresent ([bool](Get-Command py -ErrorAction SilentlyContinue))
+    Install-Winget 'Python.Python.3.13' @('--scope', 'user', '--override', $override)
 } else { Write-Skip 'python313' }
 if ((Test-FluxCMake) -or (Test-FluxNinja)) {
+    # cmake/ninja land in Python 3.13's Scripts folder; Update-SessionPath puts it on this session's PATH only
     Invoke-Native 'py' @('-3.13', '-m', 'pip', 'install', '--upgrade', '--quiet', 'cmake>=3.27,<4', 'ninja')
-    $scripts = (& py -3.13 -c "import sysconfig; print(sysconfig.get_path('scripts'))").Trim()
-    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-    if (($userPath -split ';') -notcontains $scripts) {
-        [Environment]::SetEnvironmentVariable('Path', "$scripts;$userPath", 'User')
-    }
     Update-SessionPath
 } else { Write-Skip 'cmake, ninja' }
 foreach ($check in 'cmake', 'ninja', 'python313') {
@@ -131,9 +128,20 @@ if (Test-FluxBoost) {
             $ProgressPreference = 'SilentlyContinue'
             Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing
         }
-        # Windows' built-in tar (libarchive); only the headers are needed
-        & "$env:SystemRoot\System32\tar.exe" -xzf $archive -C $Flux.DepsRoot ("boost_" + $Flux.BoostVersion.Replace('.', '_') + "/boost")
-        if ($LASTEXITCODE -eq 0) { break }
+        # Windows' built-in tar (libarchive); only the headers are needed. Unpack into a staging folder and
+        # move it into place, then write the marker, so an interrupted run never leaves a "valid" half tree.
+        $stage = Join-Path $Flux.DepsRoot 'boost.staging'
+        if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+        New-Item -ItemType Directory -Force -Path $stage | Out-Null
+        $leaf = Split-Path $Flux.BoostDir -Leaf
+        & "$env:SystemRoot\System32\tar.exe" -xzf $archive -C $stage "$leaf/boost"
+        if ($LASTEXITCODE -eq 0) {
+            if (Test-Path $Flux.BoostDir) { Remove-Item $Flux.BoostDir -Recurse -Force }
+            Move-Item (Join-Path $stage $leaf) $Flux.BoostDir
+            Remove-Item $stage -Recurse -Force
+            Set-Content -Path (Get-FluxBoostMarker) -Value $Flux.BoostVersion -Encoding ASCII
+            break
+        }
         Remove-Item $archive -Force
         if ($attempt -eq 2) { throw "Не удалось распаковать $name" }
     }

@@ -33,11 +33,34 @@ function Get-VsInstallPath {
     return $path.Trim()
 }
 
-# Refresh PATH from the registry so tools installed by winget in this session are visible.
+function ConvertTo-PathKey([string]$p) { $p.Trim().TrimEnd('\').ToLowerInvariant() }
+
+# Make tools installed during this run visible to the current session only: append registry PATH entries
+# that are missing (never drop entries, so an entered VS dev shell keeps cl.exe), then append Python 3.13's
+# Scripts folder (cmake, ninja). The user's persistent PATH is never modified.
 function Update-SessionPath {
-    $machine = [Environment]::GetEnvironmentVariable('Path', 'Machine')
-    $user = [Environment]::GetEnvironmentVariable('Path', 'User')
-    $env:Path = "$machine;$user"
+    $have = @{}
+    foreach ($e in ($env:Path -split ';')) { if ($e) { $have[(ConvertTo-PathKey $e)] = $true } }
+    $add = @()
+    foreach ($scope in 'Machine', 'User') {
+        foreach ($e in ([Environment]::GetEnvironmentVariable('Path', $scope) -split ';')) {
+            if ($e -and -not $have[(ConvertTo-PathKey $e)]) { $add += $e; $have[(ConvertTo-PathKey $e)] = $true }
+        }
+    }
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        $scripts = (& cmd /c 'py -3.13 -c "import sysconfig; print(sysconfig.get_path(''scripts''))" 2>nul' | Out-String).Trim()
+        $ErrorActionPreference = $prev
+        if ($scripts -and (Test-Path $scripts) -and -not $have[(ConvertTo-PathKey $scripts)]) { $add += $scripts }
+    }
+    if ($add.Count) { $env:Path = ($env:Path.TrimEnd(';') + ';' + ($add -join ';')) }
+}
+
+# Python 3.13 installer options: never touch PATH (the user's default Python stays first), and install the
+# py launcher only when there is none yet (scripts always call `py -3.13`).
+function Get-FluxPythonInstallOverride([bool]$LauncherPresent) {
+    $launcher = if ($LauncherPresent) { 'Include_launcher=0' } else { 'Include_launcher=1 InstallLauncherAllUsers=0' }
+    "/quiet InstallAllUsers=0 PrependPath=0 $launcher"
 }
 
 function Test-Command([string]$name) {
@@ -74,9 +97,13 @@ function Test-FluxQt {
 function Test-FluxOpenSsl { if (Test-Path (Join-Path $Flux.VcpkgInstalled 'include\openssl\ssl.h')) { $null } else { "openssl not installed for $($Flux.Triplet)" } }
 function Test-FluxZlib { if (Test-Path (Join-Path $Flux.VcpkgInstalled 'include\zlib.h')) { $null } else { "zlib not installed for $($Flux.Triplet)" } }
 
+function Get-FluxBoostMarker { Join-Path $Flux.BoostDir '.flux-extracted' }
+
 function Test-FluxBoost {
     $hdr = Join-Path $Flux.BoostDir 'boost\version.hpp'
     if (-not (Test-Path $hdr)) { return "boost headers not found in $($Flux.BoostDir)" }
+    # written only after a complete extraction (see setup-env.ps1), so a half-unpacked tree never passes
+    if (-not (Test-Path (Get-FluxBoostMarker))) { return 'boost extraction incomplete (marker missing)' }
     if (Select-String -Path $hdr -Pattern '#define BOOST_VERSION 109000' -Quiet) { $null } else { 'boost version is not 1.90.0' }
 }
 
@@ -99,7 +126,7 @@ $FluxChecks = [ordered]@{
 
 # Enter the MSVC x64 developer environment (idempotent).
 function Enter-FluxDevShell {
-    if ($env:VSCMD_ARG_TGT_ARCH -eq 'x64') { return }
+    if ($env:VSCMD_ARG_TGT_ARCH -eq 'x64' -and (Get-Command cl.exe -ErrorAction SilentlyContinue)) { return }
     $vs = Get-VsInstallPath
     if (-not $vs) { throw 'Visual Studio 2022 C++ build tools not found; run scripts/setup-env.ps1 first.' }
     Import-Module (Join-Path $vs 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
