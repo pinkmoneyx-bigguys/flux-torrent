@@ -28,6 +28,8 @@
 
 #include "format.h"
 
+#include <QLocale>
+
 #include "base/global.h"
 #include "base/types.h"
 #include "base/utils/misc.h"
@@ -66,5 +68,5 @@ QString Format::ratio(const qreal r) const
     if ((r < 0) || (r > 9999))
         return u"∞"_s;
 
-    return QString::number(r, 'f', 2);
+    return QLocale::system().toString(r, 'f', 2);
 }

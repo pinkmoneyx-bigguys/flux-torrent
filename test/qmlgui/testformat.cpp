@@ -26,6 +26,7 @@
  * exception statement from your version.
  */
 
+#include <QLocale>
 #include <QObject>
 #include <QTest>
 
@@ -79,8 +80,9 @@ private slots:
 
     void ratioTwoDigits() const
     {
-        QCOMPARE(Format().ratio(3.125), u"3.13"_s);
-        QCOMPARE(Format().ratio(0), u"0.00"_s);
+        // Same locale as speed/size, so the UI shows consistent separators
+        QCOMPARE(Format().ratio(3.125), QLocale::system().toString(3.125, 'f', 2));
+        QCOMPARE(Format().ratio(0), QLocale::system().toString(0.0, 'f', 2));
     }
 
     void ratioInfinite() const
