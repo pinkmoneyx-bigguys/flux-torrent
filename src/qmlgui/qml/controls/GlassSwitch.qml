@@ -17,6 +17,19 @@ AbstractButton {
     hoverEnabled: true
     opacity: enabled ? 1 : 0.4
 
+    // Space activates without animation: keyboard actions never animate. The flag stays up until the
+    // key-up event has been fully handled (the toggle happens in it), then drops on the next turn.
+    property bool _kbd: false
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Space && !event.isAutoRepeat)
+            root._kbd = true
+    }
+    Keys.onReleased: event => {
+        if (event.key === Qt.Key_Space)
+            Qt.callLater(() => root._kbd = false)
+    }
+    onActiveFocusChanged: if (!activeFocus) _kbd = false
+
     Accessible.role: Accessible.CheckBox
     Accessible.name: text
     Accessible.checkable: true
@@ -38,7 +51,7 @@ AbstractButton {
             radius: height / 2
             color: root.checked ? Theme.accent : Qt.rgba(1, 1, 1, 0.14)
             Behavior on color {
-                enabled: !Theme.reducedMotion
+                enabled: !Theme.reducedMotion && !root._kbd
                 ColorAnimation { duration: Theme.durFast }
             }
         }
@@ -70,7 +83,7 @@ AbstractButton {
             x: root.checked ? root.width - 3 - width : 3
             color: "white"
             Behavior on x {
-                enabled: !Theme.reducedMotion
+                enabled: !Theme.reducedMotion && !root._kbd
                 NumberAnimation {
                     duration: Theme.durFast
                     easing.type: Theme.easing.type

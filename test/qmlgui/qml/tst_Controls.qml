@@ -11,6 +11,7 @@ TestCase {
     when: windowShown
 
     Component { id: spyComponent; SignalSpy {} }
+    Component { id: toastComponent; Toast {} }
 
     Item {
         id: surface
@@ -50,6 +51,10 @@ TestCase {
         toast.hide()
         toast.actions = []
         tryVerify(() => !toast.visible, 2000)
+        // let switch/check animations from mouse toggles settle
+        tryCompare(sw.knob, "x", 3, 1000)
+        tryCompare(cb.mark, "opacity", 0, 1000)
+        tryVerify(() => sw.track.color.a < 0.15, 1000)
     }
 
     // --- PillButton -------------------------------------------------------------------------------
@@ -237,19 +242,98 @@ TestCase {
         compare(barGlow.glow, true)
     }
 
+
+    // --- Keyboard activation is never animated ------------------------------------------------------
+    function test_pillKeyboardPressIsNotAnimated() {
+        pill.forceActiveFocus()
+        keyPress(Qt.Key_Space)
+        verify(pill.pressed)
+        wait(250)
+        compare(pill.scale, 1.0)
+        keyRelease(Qt.Key_Space)
+        compare(pill.scale, 1.0)
+    }
+
+    function test_iconButtonKeyboardPressIsNotAnimated() {
+        iconBtn.forceActiveFocus()
+        keyPress(Qt.Key_Space)
+        verify(iconBtn.pressed)
+        wait(250)
+        compare(iconBtn.scale, 1.0)
+        keyRelease(Qt.Key_Space)
+    }
+
+    function test_switchKeyboardToggleIsInstant() {
+        sw.forceActiveFocus()
+        keyClick(Qt.Key_Space)
+        verify(sw.checked)
+        compare(sw.knob.x, 44 - 3 - 20)
+        verify(Qt.colorEqual(sw.track.color, Theme.accent))
+        keyClick(Qt.Key_Space)
+        compare(sw.knob.x, 3)
+        compare(sw.track.color.a.toFixed(2), "0.14")
+    }
+
+    function test_switchMouseToggleStillAnimates() {
+        mouseClick(sw)
+        verify(sw.checked)
+        verify(sw.knob.x < 44 - 3 - 20, "knob is on its way: " + sw.knob.x)
+        tryCompare(sw.knob, "x", 44 - 3 - 20, 1000)
+    }
+
+    function test_checkboxKeyboardToggleIsInstant() {
+        cb.forceActiveFocus()
+        keyClick(Qt.Key_Space)
+        verify(cb.checked)
+        verify(Qt.colorEqual(cb.background.color, Theme.accent))
+        compare(cb.mark.opacity, 1)
+        keyClick(Qt.Key_Space)
+        compare(cb.mark.opacity, 0)
+    }
+
+    function test_checkboxMouseToggleStillAnimates() {
+        mouseClick(cb)
+        verify(cb.checked)
+        verify(cb.mark.opacity < 1, "check is fading in: " + cb.mark.opacity)
+        tryCompare(cb.mark, "opacity", 1, 1000)
+    }
+
     // --- Toast ------------------------------------------------------------------------------------
     function test_toastButtonsDoNotWrap() {
         toast.actions = [{text: "Открыть папку"}, {text: "Остановить раздачу"}]
         toast.show()
         wait(400)
         compare(toast.buttons.length, 2)
-        for (const b of toast.buttons)
-            verify(b.implicitHeight <= 36)
+        for (const b of toast.buttons) {
+            verify(b.label.text.length > 0)
+            verify(!b.label.truncated, "'" + b.label.text + "' is elided")
+            verify(b.label.contentWidth <= b.label.width, "'" + b.label.text + "' does not fit")
+            compare(b.label.lineCount, 1)
+        }
         const a = toast.buttons[0].mapToItem(toast, 0, 0)
         const c = toast.buttons[1].mapToItem(toast, 0, 0)
         compare(a.y, c.y, "two columns, one row")
         verify(c.x > a.x)
         compare(toast.buttons[0].width, toast.buttons[1].width)
+    }
+
+    function test_toastLabelCheckDetectsTruncation() {
+        // control experiment for the test above: in a narrow toast the same label really is elided
+        const narrow = createTemporaryObject(toastComponent, root, {
+            width: 200, x: 300, y: 300,
+            actions: [{text: "Открыть папку"}, {text: "Остановить раздачу"}]
+        })
+        narrow.show()
+        tryVerify(() => narrow.opacity === 1, 2000)
+        verify(narrow.buttons[1].label.truncated)
+    }
+
+    function test_toastActionFontSize() {
+        toast.actions = [{text: "Open"}]
+        compare(toast.buttons[0].fontSize, 13)
+        compare(toast.buttons[0].label.font.pixelSize, 13)
+        compare(pill.fontSize, 14)
+        compare(pill.label.font.pixelSize, 14)
     }
 
     function test_toastWidth() {

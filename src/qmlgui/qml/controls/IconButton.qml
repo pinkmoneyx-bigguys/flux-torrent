@@ -18,7 +18,7 @@ AbstractButton {
     hoverEnabled: true
     opacity: enabled ? 1 : 0.4
 
-    scale: pressed && !Theme.reducedMotion ? 0.97 : 1.0
+    scale: pressed && !Theme.reducedMotion && !_kbd ? 0.97 : 1.0
     Behavior on scale {
         enabled: !Theme.reducedMotion
         NumberAnimation {
@@ -27,6 +27,19 @@ AbstractButton {
             easing.bezierCurve: Theme.easing.bezierCurve
         }
     }
+
+    // Space activates without animation: keyboard actions never animate. The flag stays up until the
+    // key-up event has been fully handled (the toggle happens in it), then drops on the next turn.
+    property bool _kbd: false
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Space && !event.isAutoRepeat)
+            root._kbd = true
+    }
+    Keys.onReleased: event => {
+        if (event.key === Qt.Key_Space)
+            Qt.callLater(() => root._kbd = false)
+    }
+    onActiveFocusChanged: if (!activeFocus) _kbd = false
 
     Accessible.role: Accessible.Button
     Accessible.name: text

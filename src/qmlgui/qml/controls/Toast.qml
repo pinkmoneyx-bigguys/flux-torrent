@@ -173,6 +173,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 0
                     implicitHeight: 34
+                    fontSize: 13
                     leftPadding: Theme.sp(3)
                     rightPadding: Theme.sp(3)
                     text: modelData.text ?? ""

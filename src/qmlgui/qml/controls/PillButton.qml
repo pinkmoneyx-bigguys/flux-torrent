@@ -11,6 +11,8 @@ AbstractButton {
     property bool primary: false
     property string iconPath
     property string shortcutHint
+    property int fontSize: 14
+    readonly property alias label: labelText
 
     readonly property color _ink: primary ? "#08070D" : Theme.text
 
@@ -22,7 +24,7 @@ AbstractButton {
     hoverEnabled: true
     opacity: enabled ? 1 : 0.4
 
-    scale: pressed && !Theme.reducedMotion ? 0.97 : 1.0
+    scale: pressed && !Theme.reducedMotion && !_kbd ? 0.97 : 1.0
     Behavior on scale {
         enabled: !Theme.reducedMotion
         NumberAnimation {
@@ -31,6 +33,19 @@ AbstractButton {
             easing.bezierCurve: Theme.easing.bezierCurve
         }
     }
+
+    // Space activates without animation: keyboard actions never animate. The flag stays up until the
+    // key-up event has been fully handled (the toggle happens in it), then drops on the next turn.
+    property bool _kbd: false
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Space && !event.isAutoRepeat)
+            root._kbd = true
+    }
+    Keys.onReleased: event => {
+        if (event.key === Qt.Key_Space)
+            Qt.callLater(() => root._kbd = false)
+    }
+    onActiveFocusChanged: if (!activeFocus) _kbd = false
 
     Accessible.role: Accessible.Button
     Accessible.name: text
@@ -97,11 +112,12 @@ AbstractButton {
                 strokeWidth: 1.8
             }
             Text {
+                id: labelText
                 text: root.text
                 visible: root.text !== ""
                 color: root._ink
                 font.family: Theme.fontText
-                font.pixelSize: 14
+                font.pixelSize: root.fontSize
                 font.weight: root.primary ? Font.DemiBold : Font.Medium
                 wrapMode: Text.NoWrap
                 elide: Text.ElideRight
