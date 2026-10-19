@@ -115,8 +115,9 @@ GlassPanel {
                 visible: item.current
                 color: Qt.rgba(0, 0, 0, 0.7)
                 radius: 14
-                spread: 6
-                offsetY: 8
+                spread: 24
+                offsetY: 10
+                shrink: 12
             }
             Rectangle {
                 anchors.fill: parent

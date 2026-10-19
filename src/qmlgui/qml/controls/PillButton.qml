@@ -60,8 +60,9 @@ AbstractButton {
             visible: root.primary && root.enabled
             color: Theme.accentAlpha(0.55)
             radius: fill.radius
-            spread: 12
-            offsetY: 6
+            spread: 28
+            offsetY: 10
+            shrink: 10
         }
         Rectangle {
             id: fill

@@ -128,11 +128,9 @@ TestCase {
         const root = main.contentItem
         const sidebar = findChild(root, "sidebar")
         const titleBar = findChild(root, "titleBar")
-        const status = findChild(root, "statusPill")
         const pages = findChild(root, "pages")
         const sb = sidebar.mapToItem(root, 0, 0)
         const tb = titleBar.mapToItem(root, 0, 0)
-        const st = status.mapToItem(root, 0, 0)
         const pg = pages.mapToItem(root, 0, 0)
 
         compare(tb.x, 12, "title bar left margin")
@@ -149,10 +147,8 @@ TestCase {
         compare(pg.x + pages.width, root.width - 12, "page right margin")
         compare(pg.y, sb.y, "page and sidebar share the top edge")
 
-        compare(status.height, 34, "status pill height")
-        compare(st.x, 12, "status pill left margin")
-        compare(st.y + status.height, root.height - 12, "status pill bottom margin")
-        compare(st.y, sb.y + sidebar.height + 12, "12 px between the sidebar and the status pill")
+        compare(sb.y + sidebar.height, root.height - 12, "sidebar bottom margin: no status bar")
+        verify(!findChild(root, "statusPill"), "the status bar is gone")
     }
 
     function test_labelsFitAtMinWidth() {

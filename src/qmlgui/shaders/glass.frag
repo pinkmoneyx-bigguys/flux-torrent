@@ -23,6 +23,10 @@ void main()
     // 1. the blurred backdrop under this pixel (the backdrop is opaque)
     vec3 bg = texture(source, region.xy + qt_TexCoord0 * region.zw).rgb;
 
+    // 1b. backdrop-filter saturate(180%): the colours behind the glass glow through instead of greying out
+    float luma = dot(bg, vec3(0.2126, 0.7152, 0.0722));
+    bg = clamp(mix(vec3(luma), bg, 1.8), 0.0, 1.0);
+
     // 2. tint
     vec3 color = mix(bg, tint.rgb, tint.a);
 

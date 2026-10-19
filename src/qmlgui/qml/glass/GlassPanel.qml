@@ -64,6 +64,18 @@ Item {
         }
     }
 
+    // Soft depth shadow under the pane: 0 24px 60px -28px rgba(0,0,0,.7)
+    property bool shadow: true
+    GlowHalo {
+        anchors.fill: parent
+        visible: panel.shadow
+        color: Qt.rgba(0, 0, 0, 0.7)
+        radius: panel.radius
+        spread: 60
+        offsetY: 24
+        shrink: 28
+    }
+
     // Only instantiated with a backdrop: a ShaderEffect without a texture provider warns on every sync
     Loader {
         anchors.fill: parent

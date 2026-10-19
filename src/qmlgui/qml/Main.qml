@@ -5,7 +5,7 @@ import QWindowKit
 import Flux
 
 // The Flux window: frameless (QWindowKit keeps native snap, shadow and rounded corners), with the glass
-// title bar, sidebar, page stack and status pill laid out 12 px from the edges and from each other.
+// title bar, sidebar and page stack laid out 12 px from the edges and from each other.
 // No Mica: the opaque in-app backdrop would cover it, and without it Windows 10 and 11 look the same.
 ApplicationWindow {
     id: window
@@ -104,7 +104,7 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: titleBarArea.bottom
-        anchors.bottom: statusPill.top
+        anchors.bottom: parent.bottom
         anchors.margins: Theme.gap
         spacing: Theme.gap
 
@@ -130,14 +130,5 @@ ApplicationWindow {
             MediaPage {}
             SettingsPage {}
         }
-    }
-
-    StatusPill {
-        id: statusPill
-        objectName: "statusPill"
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: Theme.gap
     }
 }

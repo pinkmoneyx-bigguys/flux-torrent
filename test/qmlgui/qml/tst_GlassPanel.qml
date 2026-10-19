@@ -131,20 +131,19 @@ TestCase {
     }
 
     function test_backdropIsStatic() {
-        // Recoloring the mint blob changes the window at once, but the panel keeps showing the blurred
-        // texture until the debounced rebuild regrabs it: nothing is blurred per frame.
+        // Recoloring the mint blob changes nothing on screen until the debounced rebuild regrabs the
+        // blurred texture — both the visible backdrop and the glass sample it: nothing is blurred per frame.
         const old = String(Theme.accent) // a copy: Theme.accent itself is a live value-type reference
         const n = bg.rebuildCount
-        const screenBefore = grabImage(bg)
+        const screenBefore = px(grabImage(bg), bg, 10, 10)
         const glassBefore = px(grabImage(panel), panel, 10, 10)
         Theme.accent = "#FF4FD8"
-        const screenNow = grabImage(bg)
-        const glassNow = px(grabImage(panel), panel, 10, 10)
         compare(bg.rebuildCount, n, "no rebuild yet")
-        verify(!Qt.colorEqual(px(screenNow, bg, 10, 10), px(screenBefore, bg, 10, 10)), "the backdrop changed")
-        verify(Qt.colorEqual(glassNow, glassBefore), "the glass did not")
+        verify(Qt.colorEqual(px(grabImage(bg), bg, 10, 10), screenBefore), "the backdrop waits for the rebuild")
+        verify(Qt.colorEqual(px(grabImage(panel), panel, 10, 10), glassBefore), "the glass too")
         tryCompare(bg, "rebuildCount", n + 1)
         waitForRendering(panel)
+        verify(!Qt.colorEqual(px(grabImage(bg), bg, 10, 10), screenBefore), "the backdrop follows after the rebuild")
         verify(!Qt.colorEqual(px(grabImage(panel), panel, 10, 10), glassBefore), "the glass follows after the rebuild")
         Theme.accent = old
         tryCompare(bg, "rebuildCount", n + 2)

@@ -83,12 +83,13 @@ Item {
         blurMax: 64
     }
 
+    // Also the visible window background: the colour shows everywhere around the panels, and each
+    // GlassPanel darkens and tints its own region of the same texture — glass over a lit backdrop.
     ShaderEffectSource {
         id: blurredTexture
         anchors.fill: parent
         sourceItem: blur
         live: false
-        visible: false
     }
 
     Timer {

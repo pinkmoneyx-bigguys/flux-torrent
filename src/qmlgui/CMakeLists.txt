@@ -26,7 +26,6 @@ set_source_files_properties(qml/glass/GlassBackground.qml PROPERTIES QT_RESOURCE
 set_source_files_properties(qml/glass/GlassPanel.qml PROPERTIES QT_RESOURCE_ALIAS glass/GlassPanel.qml)
 set_source_files_properties(qml/shell/TitleBar.qml PROPERTIES QT_RESOURCE_ALIAS shell/TitleBar.qml)
 set_source_files_properties(qml/shell/Sidebar.qml PROPERTIES QT_RESOURCE_ALIAS shell/Sidebar.qml)
-set_source_files_properties(qml/shell/StatusPill.qml PROPERTIES QT_RESOURCE_ALIAS shell/StatusPill.qml)
 set_source_files_properties(qml/shell/EmptyPage.qml PROPERTIES QT_RESOURCE_ALIAS shell/EmptyPage.qml)
 set_source_files_properties(qml/firstrun/FirstRunWindow.qml PROPERTIES QT_RESOURCE_ALIAS firstrun/FirstRunWindow.qml)
 set_source_files_properties(qml/pages/TransfersPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/TransfersPage.qml)
@@ -61,7 +60,6 @@ qt_add_qml_module(qbt_qmlgui
         qml/glass/GlassPanel.qml
         qml/shell/TitleBar.qml
         qml/shell/Sidebar.qml
-        qml/shell/StatusPill.qml
         qml/shell/EmptyPage.qml
         qml/firstrun/FirstRunWindow.qml
         qml/pages/TransfersPage.qml

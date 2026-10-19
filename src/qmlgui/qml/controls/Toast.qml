@@ -72,9 +72,9 @@ Item {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.6)
         radius: Theme.radiusPanel
-        spread: 28
-        offsetY: 12
-        intensity: 0.4
+        spread: 64
+        offsetY: 24
+        shrink: 16
     }
 
     GlassPanel {
