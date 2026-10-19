@@ -14,6 +14,8 @@ qt_add_qml_module(qbt_qmlgui
     SOURCES
         fluxshell.h
         fluxshell.cpp
+        backend/format.h
+        backend/format.cpp
 )
 
 target_link_libraries(qbt_qmlgui
@@ -24,3 +26,6 @@ target_link_libraries(qbt_qmlgui
     PRIVATE
         qbt_base
 )
+
+# qmltyperegistrations includes QML_ELEMENT headers by file name only
+target_include_directories(qbt_qmlgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/backend")

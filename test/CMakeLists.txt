@@ -34,3 +34,7 @@ foreach(testFile ${testFiles})
 
     add_dependencies(check "${testFilename}")
 endforeach()
+
+if (QML_GUI)
+    add_subdirectory(qmlgui)
+endif()
