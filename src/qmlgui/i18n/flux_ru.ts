@@ -2545,14 +2545,6 @@
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Search torrents, files and commands</source>
-        <translation>Поиск раздач, файлов и команд</translation>
-    </message>
-    <message>
-        <source>Search and commands</source>
-        <translation>Поиск и команды</translation>
-    </message>
-    <message>
         <source>Expand the sidebar</source>
         <translation>Развернуть меню</translation>
     </message>
@@ -2967,6 +2959,10 @@
         <translation>Осталось</translation>
     </message>
     <message>
+        <source>Seeds/peers</source>
+        <translation>Сиды/пиры</translation>
+    </message>
+    <message>
         <source>Ratio</source>
         <translation>Рейтинг</translation>
     </message>
@@ -2989,10 +2985,6 @@
     <message>
         <source>Speed</source>
         <translation>Скорость</translation>
-    </message>
-    <message>
-        <source>Seeds / peers</source>
-        <translation>Сиды / пиры</translation>
     </message>
     <message>
         <source>Seeds: %1 of %2 · peers: %3 of %4</source>

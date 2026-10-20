@@ -135,37 +135,51 @@ Item {
         height: visible ? implicitHeight : 0
         spacing: Theme.sp(5)
 
-        Repeater {
-            model: [
-                { label: qsTr("Download"), color: Theme.download, value: graph.lastDown },
-                { label: qsTr("Upload"), color: Theme.upload, value: graph.lastUp }
-            ]
-            Row {
-                required property var modelData
-                spacing: 8
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: modelData.color
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: modelData.label
-                    color: Theme.textDim
-                    font.family: Theme.fontText
-                    font.pixelSize: Theme.textXs
-                }
-                RollingText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Format.speed(modelData.value)
-                    value: modelData.value
-                    color: Theme.text
-                    font.family: Theme.fontMono
-                    font.pixelSize: 12
-                }
-            }
+        // two fixed items (a model holding the rates would rebuild them, and their figures, every sample)
+        LegendItem {
+            objectName: "legendDown"
+            label: qsTr("Download")
+            tint: Theme.download
+            rate: graph.lastDown
+        }
+        LegendItem {
+            objectName: "legendUp"
+            label: qsTr("Upload")
+            tint: Theme.upload
+            rate: graph.lastUp
+        }
+    }
+
+    component LegendItem: Row {
+        id: li
+        property string label
+        property color tint
+        property real rate
+        readonly property alias figure: figure
+        spacing: 8
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 8
+            height: 8
+            radius: 4
+            color: li.tint
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: li.label
+            color: Theme.textDim
+            font.family: Theme.fontText
+            font.pixelSize: Theme.textXs
+        }
+        RollingText {
+            id: figure
+            anchors.verticalCenter: parent.verticalCenter
+            text: Format.speed(li.rate)
+            value: li.rate
+            identity: graph.torrentId
+            color: Theme.text
+            font.family: Theme.fontMono
+            font.pixelSize: 12
         }
     }
 

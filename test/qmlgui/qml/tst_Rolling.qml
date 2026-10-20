@@ -105,6 +105,41 @@ TestCase {
         compare(slots().length, 3, "and drops it again")
     }
 
+    // A new leading place just stands there; it does not roll in
+    function test_newPlaceDoesNotRoll() {
+        rolling.text = "9"
+        wait(450)
+        rolling.text = "10"
+        const s = slots()
+        verify(s[0].t < 1, "9 → 0 rolls")
+        compare(s[1].t, 1, "the new 1 does not")
+        compare(s[1].shown, "1")
+    }
+
+    // Another figure (a reused list row): shown at once, nothing rolls
+    function test_identityChangeSnaps() {
+        rolling.identity = "a"
+        rolling.text = "24"
+        wait(450)
+        rolling.identity = "b"
+        rolling.text = "57"
+        for (const s of slots())
+            compare(s.t, 1, "no roll for a different figure")
+        compare(slots().map(s => s.shown).join(""), "75")
+        wait(50)
+        rolling.text = "58"
+        verify(slots()[0].t < 1, "its own changes roll again")
+    }
+
+    // The graph's legend keeps its figures across samples (it used to rebuild them every second)
+    function test_legendFiguresPersist() {
+        graph.height = 300
+        const figure = findChild(graph, "legendDown").figure
+        TorrentListModel.sampleHistory()
+        TorrentListModel.sampleHistory()
+        compare(findChild(graph, "legendDown").figure, figure, "the same figure item")
+    }
+
     // The graph shows what fits: legend, time line and scale labels drop out as it shrinks
     function test_graphFitsSmallSpaces() {
         graph.height = 300

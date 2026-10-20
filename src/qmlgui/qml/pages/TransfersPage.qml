@@ -73,7 +73,7 @@ Surface {
     // Each column has a width the user can drag (kept in the profile); Name takes the rest. When Name
     // would get narrower than nameMin, the optional columns drop out, last in `optionalColumns` first.
     readonly property real tableWidth: table.width
-    readonly property var defaultWidths: ({ size: 88, progress: 190, speed: 116, eta: 84, swarm: 92, ratio: 72 })
+    readonly property var defaultWidths: ({ size: 88, progress: 190, speed: 116, eta: 84, swarm: 100, ratio: 72 })
     readonly property var minWidths: ({ size: 56, progress: 110, speed: 88, eta: 48, swarm: 64, ratio: 48 })
     readonly property var optionalColumns: ["swarm", "eta", "ratio"]
     readonly property real nameMin: 200
@@ -196,6 +196,8 @@ Surface {
             Layout.fillWidth: true
             title: page.title
             subtitle: TransfersState.status === "all" ? "" : TransfersState.label(TransfersState.status)
+            // the column header right below closes the block
+            bordered: false
 
             leading: UiInput {
                 id: searchInput
@@ -229,19 +231,19 @@ Surface {
                     Layout.rightMargin: Theme.sp(1)
                 }
                 UiButton {
-                    variant: "outline"
+                    variant: "ghost"
                     iconPath: Icons.play
                     text: qsTr("Start")
                     onClicked: TorrentListModel.start(page.targetIds())
                 }
                 UiButton {
-                    variant: "outline"
+                    variant: "ghost"
                     iconPath: Icons.pause
                     text: qsTr("Stop")
                     onClicked: TorrentListModel.stop(page.targetIds())
                 }
                 UiButton {
-                    variant: "outline"
+                    variant: "ghost"
                     size: "icon"
                     iconPath: Icons.trash
                     Accessible.name: qsTr("Remove")
@@ -569,9 +571,6 @@ Surface {
                 font.letterSpacing: 0.6
                 font.capitalization: Font.AllUppercase
                 horizontalAlignment: hc.alignRight ? Text.AlignRight : Text.AlignLeft
-                wrapMode: Text.WordWrap
-                maximumLineCount: 2
-                lineHeight: 0.95
                 elide: Text.ElideRight
             }
             Icon {
@@ -634,8 +633,9 @@ Surface {
     }
 
     component TableHeader: Rectangle {
-        height: 44
-        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : "#111111"
+        height: 34
+        // the page's own surface: the title bar and the column names read as one header block
+        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : Theme.background
 
         Rectangle {
             anchors.bottom: parent.bottom
@@ -670,7 +670,7 @@ Surface {
             }
             HeaderCell {
                 objectName: "header_swarm"
-                text: qsTr("Seeds / peers"); sortKey: "seeds"; column: "swarm"; alignRight: true
+                text: qsTr("Seeds/peers"); sortKey: "seeds"; column: "swarm"; alignRight: true
                 fixedWidth: page.cw("swarm") - 12; visible: page.colVisible("swarm")
             }
             HeaderCell {
@@ -705,6 +705,8 @@ Surface {
     // A small figure line inside a two-line cell; its digits roll when the figure changes
     component FigureLine: RollingText {
         Layout.fillWidth: true
+        property string torrent
+        identity: torrent
         font.family: Theme.fontMono
         font.pixelSize: 12
         horizontalAlignment: Text.AlignRight
@@ -977,11 +979,13 @@ Surface {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: 2
                 FigureLine {
+                    torrent: rowItem.torrentId
                     value: rowItem.dlSpeed
                     text: "↓ " + (rowItem.dlSpeed > 0 ? Format.speed(rowItem.dlSpeed) : "—")
                     color: rowItem.dlSpeed > 0 ? Theme.download : Theme.textFaint
                 }
                 FigureLine {
+                    torrent: rowItem.torrentId
                     value: rowItem.upSpeed
                     text: "↑ " + (rowItem.upSpeed > 0 ? Format.speed(rowItem.upSpeed) : "—")
                     color: rowItem.upSpeed > 0 ? Theme.upload : Theme.textFaint

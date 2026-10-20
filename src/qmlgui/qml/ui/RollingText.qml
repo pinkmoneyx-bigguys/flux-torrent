@@ -16,6 +16,19 @@ Item {
     // Text.AlignLeft or Text.AlignRight
     property int horizontalAlignment: Text.AlignLeft
 
+    // What the figure is about (a torrent id in a reused list row): when it changes, the next text is
+    // a different figure, not a change of this one, so it is shown as is instead of rolling
+    property var identity
+    property bool _snapping: false
+    onIdentityChanged: {
+        _snapping = true
+        for (let i = 0; i < row.children.length; ++i) {
+            if (row.children[i].snap)
+                row.children[i].snap()
+        }
+        Qt.callLater(() => _snapping = false)
+    }
+
     // 1: new characters come up from below (growing value), -1: down from above
     property int direction: 1
     property real _lastValue: NaN
@@ -84,9 +97,21 @@ Item {
 
                 Component.onCompleted: shown = ch
 
+                function snap() {
+                    roll.stop()
+                    shown = ch
+                    leaving = ""
+                    t = 1
+                }
+
                 onChChanged: {
                     if (ch === shown)
                         return
+                    // a place that had nothing (just added) or a different figure: no roll
+                    if (shown === "" || root._snapping) {
+                        snap()
+                        return
+                    }
                     leaving = shown
                     shown = ch
                     dir = root.direction

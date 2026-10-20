@@ -11,6 +11,8 @@ Item {
     property string subtitle
     default property alias actions: actionRow.data
     property alias leading: leadingRow.data
+    // the line under the bar (off when a table header right below draws its own)
+    property bool bordered: true
 
     implicitHeight: 48
 
@@ -59,6 +61,7 @@ Item {
     }
 
     Rectangle {
+        visible: root.bordered
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
