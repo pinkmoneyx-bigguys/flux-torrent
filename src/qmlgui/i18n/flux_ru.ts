@@ -1582,10 +1582,6 @@
         </translation>
     </message>
     <message>
-        <source>Filter results…</source>
-        <translation>Фильтр результатов…</translation>
-    </message>
-    <message>
         <source>Python is required</source>
         <translation>Нужен Python</translation>
     </message>
@@ -1654,6 +1650,26 @@
         <translation>С сидами</translation>
     </message>
     <message>
+        <source>With posters</source>
+        <translation>С постерами</translation>
+    </message>
+    <message>
+        <source>Cards in a row</source>
+        <translation>Карточек в ряд</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <translation>Авто</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n in a row</source>
+        <translation>
+            <numerusform>%n в ряд</numerusform>
+            <numerusform>%n в ряд</numerusform>
+            <numerusform>%n в ряд</numerusform>
+        </translation>
+    </message>
+    <message>
         <source>List</source>
         <translation>Список</translation>
     </message>
@@ -1674,10 +1690,6 @@
         <translation>Все источники выключены. Включите какие-нибудь в «Источниках».</translation>
     </message>
     <message>
-        <source>No results match the filter</source>
-        <translation>Под фильтр ничего не подходит</translation>
-    </message>
-    <message>
         <source>The search failed</source>
         <translation>Поиск не удался</translation>
     </message>
@@ -1685,21 +1697,25 @@
         <source>Nothing found</source>
         <translation>Ничего не найдено</translation>
     </message>
-    <message numerus="yes">
-        <source>Clear the filter to see all %n result(s).</source>
-        <translation>
-            <numerusform>Сбросьте фильтр, чтобы увидеть %n результат.</numerusform>
-            <numerusform>Сбросьте фильтр, чтобы увидеть все %n результата.</numerusform>
-            <numerusform>Сбросьте фильтр, чтобы увидеть все %n результатов.</numerusform>
-        </translation>
-    </message>
     <message>
         <source>Try other words, another category or more plugins.</source>
         <translation>Попробуйте другие слова, другую категорию или больше плагинов.</translation>
     </message>
     <message>
-        <source>Clear filter</source>
-        <translation>Сбросить фильтр</translation>
+        <source>No results with these options</source>
+        <translation>С такими настройками ничего нет</translation>
+    </message>
+    <message numerus="yes">
+        <source>Turn the switches off to see all %n result(s).</source>
+        <translation>
+            <numerusform>Выключите переключатели, чтобы увидеть весь %n результат.</numerusform>
+            <numerusform>Выключите переключатели, чтобы увидеть все %n результата.</numerusform>
+            <numerusform>Выключите переключатели, чтобы увидеть все %n результатов.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Show all</source>
+        <translation>Показать всё</translation>
     </message>
     <message>
         <source>Asking the trackers…</source>

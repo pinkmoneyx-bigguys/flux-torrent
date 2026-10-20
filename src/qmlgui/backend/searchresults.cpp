@@ -30,7 +30,6 @@
 
 #include <QCollator>
 
-#include "posters.h"
 #include "base/global.h"
 #include "base/search/searchhandler.h"
 
@@ -166,6 +165,20 @@ SearchResultsFilter::SearchResultsFilter(QObject *parent)
     connect(this, &QAbstractItemModel::modelReset, m_groupTimer, qOverload<>(&QTimer::start));
     connect(this, &QAbstractItemModel::layoutChanged, m_groupTimer, qOverload<>(&QTimer::start));
     connect(this, &QAbstractItemModel::dataChanged, m_groupTimer, qOverload<>(&QTimer::start));
+    // the source's rows too: hidden rows still need their posters looked up
+    connect(this, &QAbstractProxyModel::sourceModelChanged, this, [this]
+    {
+        if (!sourceModel())
+            return;
+        connect(sourceModel(), &QAbstractItemModel::rowsInserted, m_groupTimer, qOverload<>(&QTimer::start));
+        connect(sourceModel(), &QAbstractItemModel::modelReset, m_groupTimer, qOverload<>(&QTimer::start));
+    });
+    // a poster found: with postersOnly its film's releases show up
+    connect(Posters::instance(), &Posters::revisionChanged, this, [this]
+    {
+        if (m_postersOnly)
+            invalidateFilter();
+    });
 
     setDynamicSortFilter(true);
     connect(this, &QAbstractItemModel::rowsInserted, this, &SearchResultsFilter::countChanged);
@@ -260,6 +273,9 @@ bool SearchResultsFilter::filterAcceptsRow(const int sourceRow, const QModelInde
     if (m_seededOnly && (row->seeds <= 0))
         return false;
 
+    if (m_postersOnly && Posters::instance()->poster(FilmInfo::parse(row->name).key).isEmpty())
+        return false;
+
     for (const QString &word : m_words)
     {
         if (!row->name.contains(word, Qt::CaseInsensitive))
@@ -299,6 +315,139 @@ void SearchResultsFilter::applySort()
     sort(0, m_descending ? Qt::DescendingOrder : Qt::AscendingOrder);
 }
 
+bool SearchResultsFilter::postersOnly() const
+{
+    return m_postersOnly;
+}
+
+void SearchResultsFilter::setPostersOnly(const bool on)
+{
+    if (on == m_postersOnly)
+        return;
+    m_postersOnly = on;
+    invalidateFilter();
+    emit filterChanged();
+}
+
+void SearchResultsFilter::resolveFilms()
+{
+    const auto *results = qobject_cast<const SearchResultsModel *>(sourceModel());
+    m_resolved.clear();
+    if (!results)
+        return;
+
+    // every release, shown or not: the films don't change with the switches
+    QList<FilmInfo> films;
+    films.reserve(results->rowCount());
+    for (int i = 0; i < results->rowCount(); ++i)
+    {
+        if (const SearchRow *r = results->rowAt(i))
+            films.append(FilmInfo::parse(r->name));
+    }
+
+    // A release that names no year joins the film of the same title that does (the year most of its
+    // releases give), instead of making a card of its own
+    QHash<QString, QHash<int, int>> yearsOfTitle;  // title part of the key → year → releases
+    for (const FilmInfo &film : std::as_const(films))
+    {
+        if (film.year > 0)
+            ++yearsOfTitle[film.key.section(u'|', 0, 0)][film.year];
+    }
+    QHash<QString, FilmInfo> resolved;  // key as parsed → the film
+    for (const FilmInfo &film : std::as_const(films))
+    {
+        if (resolved.contains(film.key))
+            continue;
+        FilmInfo f = film;
+        if (f.year <= 0)
+        {
+            const QString titlePart = f.key.section(u'|', 0, 0);
+            const QHash<int, int> years = yearsOfTitle.value(titlePart);
+            int bestCount = 0;
+            for (auto it = years.cbegin(); it != years.cend(); ++it)
+            {
+                if (it.value() > bestCount)
+                {
+                    f.year = it.key();
+                    bestCount = it.value();
+                }
+            }
+            if (f.year > 0)
+                f.key = titlePart + u'|' + QString::number(f.year);
+        }
+        resolved.insert(film.key, f);
+    }
+
+    // A release named only in Russian ("Космическая Элла") joins the film of that Russian title that also
+    // gives an original one ("Космическая Элла / Interstellar Ella [2022]"): of its year or, with none,
+    // the one with the most releases
+    struct Known
+    {
+        FilmInfo film;
+        int releases = 0;
+    };
+    QHash<QString, QList<Known>> withOriginal;  // comparable local title → films
+    for (const FilmInfo &parsed : std::as_const(films))
+    {
+        const FilmInfo &film = resolved[parsed.key];
+        if (film.original.isEmpty() || (FilmInfo::comparable(film.original) == FilmInfo::comparable(film.title)))
+            continue;
+        QList<Known> &known = withOriginal[FilmInfo::comparable(film.title)];
+        const auto it = std::find_if(known.begin(), known.end(), [&film](const Known &k) { return k.film.key == film.key; });
+        if (it == known.end())
+            known.append({film, 1});
+        else
+            ++it->releases;
+    }
+    for (FilmInfo &film : resolved)
+    {
+        if (!film.original.isEmpty())
+            continue;
+        const Known *best = nullptr;
+        const QList<Known> known = withOriginal.value(FilmInfo::comparable(film.title));
+        for (const Known &k : known)
+        {
+            if ((film.year > 0) && (k.film.year != film.year))
+                continue;
+            if (!best || (k.releases > best->releases))
+                best = &k;
+        }
+        if (best)
+        {
+            film.key = best->film.key;
+            film.original = best->film.original;
+            film.year = best->film.year;
+        }
+    }
+
+    // posters: one look-up a film, and a release finds its film's poster by its own key too
+    Posters *posters = Posters::instance();
+    for (auto it = resolved.cbegin(); it != resolved.cend(); ++it)
+    {
+        const FilmInfo &film = it.value();
+        if (film.key != it.key())
+            posters->alias(it.key(), film.key);
+        m_resolved.insert(it.key(), film);
+    }
+    for (const FilmInfo &film : std::as_const(m_resolved))
+    {
+        if (!posters->hasAlias(film.key))
+            posters->request(film.key, film.title, film.original, film.year, film.series);
+    }
+}
+
+FilmInfo SearchResultsFilter::filmOf(const QString &name) const
+{
+    FilmInfo film = FilmInfo::parse(name);
+    if (const auto it = m_resolved.constFind(film.key); it != m_resolved.cend())
+    {
+        film.key = it->key;
+        film.original = it->original;
+        film.year = it->year;
+    }
+    return film;
+}
+
 QVariantList SearchResultsFilter::groups() const
 {
     return m_groups;
@@ -306,13 +455,13 @@ QVariantList SearchResultsFilter::groups() const
 
 void SearchResultsFilter::regroup()
 {
+    resolveFilms();
+
     const auto *results = qobject_cast<const SearchResultsModel *>(sourceModel());
     QList<QVariantMap> groups;
     QHash<QString, qsizetype> indexOf;
     static const QStringList qualityOrder {u"2160p"_s, u"1080p"_s, u"720p"_s, u"576p"_s, u"480p"_s};
 
-    // Parse every shown release first: a release that names no year joins the film of the same title
-    // that does (the year most of its releases give), instead of making a card of its own
     struct Parsed
     {
         int source;
@@ -320,39 +469,12 @@ void SearchResultsFilter::regroup()
         FilmInfo film;
     };
     QList<Parsed> parsed;
-    QHash<QString, QHash<int, int>> yearsOfTitle;  // title part of the key → year → releases
     for (int i = 0; results && (i < rowCount()); ++i)
     {
         const int source = mapToSource(index(i, 0)).row();
         const SearchRow *r = results->rowAt(source);
-        if (!r)
-            continue;
-        Parsed p {source, r, FilmInfo::parse(r->name)};
-        if (p.film.year > 0)
-            ++yearsOfTitle[p.film.key.section(u'|', 0, 0)][p.film.year];
-        parsed.append(p);
-    }
-    for (Parsed &p : parsed)
-    {
-        if (p.film.year > 0)
-            continue;
-        const QString titlePart = p.film.key.section(u'|', 0, 0);
-        const QHash<int, int> years = yearsOfTitle.value(titlePart);
-        int bestYear = 0;
-        int bestCount = 0;
-        for (auto it = years.cbegin(); it != years.cend(); ++it)
-        {
-            if (it.value() > bestCount)
-            {
-                bestYear = it.key();
-                bestCount = it.value();
-            }
-        }
-        if (bestYear > 0)
-        {
-            p.film.year = bestYear;
-            p.film.key = titlePart + u'|' + QString::number(bestYear);
-        }
+        if (r)
+            parsed.append({source, r, filmOf(r->name)});
     }
 
     for (const Parsed &p : std::as_const(parsed))

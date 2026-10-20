@@ -30,6 +30,7 @@
 
 #include <QAbstractListModel>
 #include <QDateTime>
+#include <QHash>
 #include <QList>
 #include <QSet>
 #include <QSortFilterProxyModel>
@@ -37,6 +38,8 @@
 #include <QString>
 #include <QStringList>
 #include <QtQmlIntegration/qqmlintegration.h>
+
+#include "posters.h"
 
 struct SearchResult;
 
@@ -109,6 +112,8 @@ class SearchResultsFilter : public QSortFilterProxyModel
 
     Q_PROPERTY(QString search READ search WRITE setSearch NOTIFY filterChanged FINAL)
     Q_PROPERTY(bool seededOnly READ seededOnly WRITE setSeededOnly NOTIFY filterChanged FINAL)
+    // only releases of films a poster was found for (Posters looks every film up, shown or not)
+    Q_PROPERTY(bool postersOnly READ postersOnly WRITE setPostersOnly NOTIFY filterChanged FINAL)
     // A role name ("name", "size", "seeds", "leechers", "engine", "published"); "" keeps the arrival order
     Q_PROPERTY(QString sortKey READ sortKey WRITE setSortKey NOTIFY sortChanged FINAL)
     Q_PROPERTY(bool descending READ descending WRITE setDescending NOTIFY sortChanged FINAL)
@@ -124,6 +129,8 @@ public:
     QString search() const;
     void setSearch(const QString &search);
     bool seededOnly() const;
+    bool postersOnly() const;
+    void setPostersOnly(bool on);
     void setSeededOnly(bool on);
     QString sortKey() const;
     void setSortKey(const QString &key);
@@ -153,6 +160,12 @@ private:
     QString m_search;
     QStringList m_words;
     bool m_seededOnly = false;
+    bool m_postersOnly = false;
+    // works out every release's film (shown or not; see regroup) and asks Posters about them
+    void resolveFilms();
+    // the film of a release: parsed from its name, then joined as resolveFilms decided
+    FilmInfo filmOf(const QString &name) const;
+    QHash<QString, FilmInfo> m_resolved;  // key as parsed → the film
     QString m_sortKey;
     bool m_descending = false;
     QVariantList m_groups;

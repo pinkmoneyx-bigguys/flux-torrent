@@ -28,20 +28,37 @@
 
 #include "posters.h"
 
+#include <algorithm>
+#include <chrono>
+
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QJSEngine>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QUrl>
 
+#include "base/bittorrent/session.h"
 #include "base/global.h"
 #include "base/net/downloadmanager.h"
+#include "base/path.h"
+#include "base/profile.h"
 #include "medialibrary.h"
 
 namespace
 {
-    const int PARALLEL = 4;
+    const int PER_SITE = 3;      // requests at a time to one site
+    const int RETRIES = 2;       // a dropped request is tried again this many times
+    const std::chrono::milliseconds TIMEOUT {8000};
+    const int MISS_DAYS = 3;     // a film no source had is looked up again after this
+    const int CACHE_VERSION = 1;
     const QString USER_AGENT = u"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Flux"_s;
+    const QString SHIKIMORI = u"https://shikimori.io"_s;
 
     bool hasLatin(const QString &text)
     {
@@ -132,15 +149,59 @@ FilmInfo FilmInfo::parse(const QString &name)
     return film;
 }
 
+QString FilmInfo::comparable(const QString &title)
+{
+    static const QRegularExpression punctuation {u"[^\\w]+"_s, QRegularExpression::UseUnicodePropertiesOption};
+    QString t = title.toCaseFolded();
+    t.replace(u'ё', u'е');
+    t.replace(punctuation, u" "_s);
+    return t.simplified();
+}
+
 QVariantMap FilmInfo::toMap() const
 {
     return {{u"key"_s, key}, {u"title"_s, title}, {u"original"_s, original}, {u"year"_s, year},
         {u"quality"_s, quality}, {u"series"_s, series}};
 }
 
-Posters::Posters(QObject *parent)
+Posters::Posters(const QString &cachePath, QObject *parent)
     : QObject(parent)
+    , m_cachePath {cachePath}
 {
+    m_writeTimer.setSingleShot(true);
+    m_writeTimer.setInterval(3000);
+    connect(&m_writeTimer, &QTimer::timeout, this, &Posters::write);
+    load();
+}
+
+Posters::~Posters()
+{
+    if (m_writeTimer.isActive())
+        write();
+}
+
+Posters *Posters::instance()
+{
+    // tests run without a session or profile: memory only
+    static Posters *posters = new Posters(BitTorrent::Session::instance()
+        ? (specialFolderLocation(SpecialFolder::Cache) / Path(u"posters.json"_s)).data()
+        : QString(), QCoreApplication::instance());
+    return posters;
+}
+
+Posters *Posters::create(QQmlEngine *, QJSEngine *)
+{
+    Posters *posters = instance();
+    QJSEngine::setObjectOwnership(posters, QJSEngine::CppOwnership);
+    return posters;
+}
+
+void Posters::setPoster(const QString &key, const QString &url)
+{
+    m_asked.insert(key);
+    m_posters.insert(key, url);
+    ++m_revision;
+    emit revisionChanged();
 }
 
 int Posters::revision() const
@@ -155,12 +216,30 @@ QVariantMap Posters::film(const QString &name) const
 
 QString Posters::poster(const QString &key) const
 {
-    return m_posters.value(key);
+    return m_posters.value(m_aliases.value(key, key));
 }
 
-QString Posters::pickPoster(const QByteArray &json, const int year, const bool series)
+void Posters::alias(const QString &key, const QString &target)
+{
+    if ((key == target) || (m_aliases.value(key) == target))
+        return;
+    m_aliases.insert(key, target);
+    if (m_posters.contains(target))
+    {
+        ++m_revision;
+        emit revisionChanged();
+    }
+}
+
+bool Posters::hasAlias(const QString &key) const
+{
+    return m_aliases.contains(key);
+}
+
+QString Posters::pickImdb(const QByteArray &json, const QString &title, const int year, const bool series)
 {
     const QJsonArray items = QJsonDocument::fromJson(json).object().value(u"d"_s).toArray();
+    const QString wanted = FilmInfo::comparable(title);
     QString best;
     int bestScore = -1;
     for (const QJsonValue &value : items)
@@ -171,14 +250,20 @@ QString Posters::pickPoster(const QByteArray &json, const int year, const bool s
         if (image.isEmpty() || !(kind.startsWith(u"movie") || kind.startsWith(u"tv") || (kind == u"video")))
             continue;
 
-        int score = 1;
         const int y = item.value(u"y"_s).toInt();
+        if ((year > 0) && (y > 0) && (std::abs(y - year) > 1))
+            continue;  // another film of the same name
+
+        // the name should be this one; a suggestion that only looks alike (IMDb also finds by a Russian
+        // title spelled in Latin) passes only when its year is exactly the one asked for
+        const QString name = FilmInfo::comparable(item.value(u"l"_s).toString());
+        int score = 1;
+        if (!wanted.isEmpty() && (name == wanted))
+            score += 6;
+        else if ((year <= 0) || (y != year))
+            continue;
         if ((year > 0) && (y > 0))
-        {
-            if (std::abs(y - year) > 1)
-                continue;  // another film of the same name
-            score += (y == year) ? 4 : 2;
-        }
+            score += (y == year) ? 4 : 1;
         if (series == kind.startsWith(u"tvSeries") || (series && kind.startsWith(u"tvMini")))
             score += 2;
         if (score > bestScore)
@@ -194,15 +279,152 @@ QString Posters::pickPoster(const QByteArray &json, const int year, const bool s
     return best;
 }
 
+QString Posters::pickWikipedia(const QByteArray &json, const QString &title, const int year, const bool series)
+{
+    // in the order of the search
+    QList<QJsonObject> pages;
+    for (const QJsonValue &value : QJsonDocument::fromJson(json).object().value(u"query"_s).toObject().value(u"pages"_s).toArray())
+        pages.append(value.toObject());
+    std::sort(pages.begin(), pages.end(), [](const QJsonObject &a, const QJsonObject &b)
+    {
+        return a.value(u"index"_s).toInt() < b.value(u"index"_s).toInt();
+    });
+
+    static const QRegularExpression note {u"\\s*\\([^)]*\\)\\s*$"_s};
+    static const QRegularExpression screen {u"фильм|сериал|мульт|аниме|film|series|animated|anime|documentary|документальн"_s,
+        QRegularExpression::CaseInsensitiveOption};
+    const QString wanted = FilmInfo::comparable(title);
+    for (const QJsonObject &page : std::as_const(pages))
+    {
+        const QJsonObject thumb = page.value(u"thumbnail"_s).toObject();
+        const QString image = thumb.value(u"source"_s).toString();
+        // a poster stands upright; a still, a logo or a photo of the author mostly don't
+        if (image.isEmpty() || (thumb.value(u"height"_s).toInt() < (thumb.value(u"width"_s).toInt() * 1.2)))
+            continue;
+
+        QString pageTitle = page.value(u"title"_s).toString();
+        const QString about = pageTitle + u' ' + page.value(u"description"_s).toString();
+        pageTitle.remove(note);  // "Интерстеллар (фильм)"
+        if (FilmInfo::comparable(pageTitle) != wanted)
+            continue;
+        if (!about.contains(screen))
+            continue;  // a book or a song of that name
+        if (year > 0)
+        {
+            const bool sameYear = about.contains(QString::number(year)) || about.contains(QString::number(year - 1))
+                || about.contains(QString::number(year + 1));
+            // a series' page may only give the years it ran
+            if (!sameYear && !series)
+                continue;
+        }
+        return image;
+    }
+    return {};
+}
+
+QString Posters::pickShikimori(const QByteArray &json, const QString &title, const int year)
+{
+    const QJsonArray items = QJsonDocument::fromJson(json).array();
+    const QString wanted = FilmInfo::comparable(title);
+    for (const QJsonValue &value : items)
+    {
+        const QJsonObject item = value.toObject();
+        if ((FilmInfo::comparable(item.value(u"name"_s).toString()) != wanted) && (FilmInfo::comparable(item.value(u"russian"_s).toString()) != wanted))
+            continue;
+        const int y = item.value(u"aired_on"_s).toString().left(4).toInt();
+        if ((year > 0) && (y > 0) && (std::abs(y - year) > 1))
+            continue;
+        const QString image = item.value(u"image"_s).toObject().value(u"original"_s).toString();
+        if (image.isEmpty() || image.contains(u"missing"))
+            continue;
+        return image.startsWith(u"http") ? image : (SHIKIMORI + image);
+    }
+    return {};
+}
+
 void Posters::request(const QString &key, const QString &title, const QString &original, const int year, const bool series)
 {
-    if (key.isEmpty() || m_asked.contains(key))
-        return;
-    const QString query = (original.isEmpty() ? title : original).simplified();
-    if (query.size() < 2)
+    if (key.isEmpty() || m_asked.contains(key) || m_aliases.contains(key))
         return;
     m_asked.insert(key);
-    m_queue.append({key, query, year, series});
+    if (m_posters.contains(key))
+        return;  // found in an earlier session
+    if (const QDateTime missed = m_missed.value(key); missed.isValid() && (missed.daysTo(QDateTime::currentDateTimeUtc()) < MISS_DAYS))
+        return;  // none anywhere a little while ago
+
+    Job job;
+    job.key = key;
+    job.title = title.simplified();
+    job.original = original.simplified();
+    job.year = year;
+    job.series = series;
+    job.source = -1;
+    enqueueNext(job);
+}
+
+QString Posters::queryOf(const Job &job)
+{
+    // the local title, when it isn't the original one
+    const QString local = (job.title != job.original) ? job.title : QString();
+    switch (job.source)
+    {
+    case ImdbOriginal:
+        return job.original;
+    case ImdbLocal:
+        // IMDb finds a film by its Russian title too, but loosely: only with a year to check against
+        return (job.year > 0) ? local : QString();
+    case WikipediaRu:
+        return local;
+    case WikipediaEn:
+        return job.original;
+    case Shikimori:
+        return local.isEmpty() ? job.original : local;
+    default:
+        return {};
+    }
+}
+
+QString Posters::urlOf(const Job &job)
+{
+    const QString query = queryOf(job);
+    const auto encoded = [](const QString &text) { return QString::fromLatin1(QUrl::toPercentEncoding(text)); };
+    switch (job.source)
+    {
+    case ImdbOriginal:
+    case ImdbLocal:
+        return u"https://v3.sg.media-imdb.com/suggestion/x/%1.json"_s.arg(encoded(query.toLower()));
+    case WikipediaRu:
+    case WikipediaEn:
+        {
+            const QString search = u"intitle:\"%1\" %2"_s.arg(query, (job.year > 0) ? QString::number(job.year) : QString()).trimmed();
+            return u"https://%1.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&generator=search"
+                "&gsrlimit=6&gsrsearch=%2&prop=pageimages|description&piprop=thumbnail&pithumbsize=300&pilicense=any"_s
+                .arg((job.source == WikipediaRu) ? u"ru"_s : u"en"_s, encoded(search));
+        }
+    case Shikimori:
+        return SHIKIMORI + u"/api/animes?limit=8&search=%1"_s.arg(encoded(query));
+    default:
+        return {};
+    }
+}
+
+void Posters::enqueueNext(Job job)
+{
+    // the next source that can look this film up
+    do
+        ++job.source;
+    while ((job.source < SourceCount) && (queryOf(job).size() < 2));
+
+    if (job.source >= SourceCount)
+    {
+        // none had it: don't ask again for a few days
+        m_missed.insert(job.key, QDateTime::currentDateTimeUtc());
+        if (!m_writeTimer.isActive())
+            m_writeTimer.start();
+        return;
+    }
+    job.attempt = 0;
+    m_queues[job.source].append(job);
     pump();
 }
 
@@ -211,27 +433,120 @@ void Posters::pump()
     auto *manager = Net::DownloadManager::instance();
     if (!manager)
         return;
-    while ((m_running < PARALLEL) && !m_queue.isEmpty())
+    for (int source = 0; source < SourceCount; ++source)
     {
-        const Job job = m_queue.takeFirst();
-        ++m_running;
-        const QString url = u"https://v3.sg.media-imdb.com/suggestion/x/%1.json"_s
-            .arg(QString::fromLatin1(QUrl::toPercentEncoding(job.query.toLower())));
-        const Net::DownloadRequest request = Net::DownloadRequest(url).userAgent(USER_AGENT).limit(1024 * 1024);
-        manager->download(request, true, this, [this, job](const Net::DownloadResult &result)
+        while ((m_running[source] < PER_SITE) && !m_queues[source].isEmpty())
         {
-            --m_running;
-            if (result.status == Net::DownloadStatus::Success)
+            const Job job = m_queues[source].takeFirst();
+            ++m_running[source];
+            // HTTP/1.1 and a short wait: IMDb's servers leave HTTP/2 streams hanging when asked a lot at once
+            const Net::DownloadRequest request = Net::DownloadRequest(urlOf(job)).userAgent(USER_AGENT).limit(1024 * 1024)
+                .http2Allowed(false).transferTimeout(TIMEOUT);
+            manager->download(request, true, this, [this, job](const Net::DownloadResult &result)
             {
-                const QString url = pickPoster(result.data, job.year, job.series);
-                if (!url.isEmpty())
-                {
-                    m_posters.insert(job.key, url);
-                    ++m_revision;
-                    emit revisionChanged();
-                }
-            }
-            pump();
-        });
+                --m_running[job.source];
+                finished(job, (result.status == Net::DownloadStatus::Success), result.data);
+                pump();
+            });
+        }
     }
+}
+
+void Posters::finished(const Job &job, const bool ok, const QByteArray &data)
+{
+    if (!ok)
+    {
+        // sites drop a request now and then (IMDb closes HTTP/2 streams under load): try again a bit later
+        if (job.attempt < RETRIES)
+        {
+            Job again = job;
+            ++again.attempt;
+            QTimer::singleShot(std::chrono::milliseconds(1200 * again.attempt), this, [this, again]
+            {
+                m_queues[again.source].append(again);
+                pump();
+            });
+            return;
+        }
+        enqueueNext(job);
+        return;
+    }
+
+    const QString query = queryOf(job);
+    QString url;
+    switch (job.source)
+    {
+    case ImdbOriginal:
+    case ImdbLocal:
+        url = pickImdb(data, (job.source == ImdbOriginal) ? query : QString(), job.year, job.series);
+        break;
+    case WikipediaRu:
+    case WikipediaEn:
+        url = pickWikipedia(data, query, job.year, job.series);
+        break;
+    case Shikimori:
+        url = pickShikimori(data, query, job.year);
+        break;
+    default:
+        break;
+    }
+    if (url.isEmpty())
+        enqueueNext(job);
+    else
+        found(job.key, url);
+}
+
+void Posters::found(const QString &key, const QString &url)
+{
+    m_posters.insert(key, url);
+    m_missed.remove(key);
+    ++m_revision;
+    emit revisionChanged();
+    if (!m_writeTimer.isActive())
+        m_writeTimer.start();
+}
+
+void Posters::load()
+{
+    if (m_cachePath.isEmpty())
+        return;
+    QFile file {m_cachePath};
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+    const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+    if (root.value(u"version"_s).toInt() != CACHE_VERSION)
+        return;  // made by an older lookup: ask again
+
+    const QJsonObject found = root.value(u"found"_s).toObject();
+    for (auto it = found.begin(); it != found.end(); ++it)
+        m_posters.insert(it.key(), it.value().toString());
+    const QJsonObject missed = root.value(u"missed"_s).toObject();
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    for (auto it = missed.begin(); it != missed.end(); ++it)
+    {
+        const QDateTime when = QDateTime::fromString(it.value().toString(), Qt::ISODate);
+        if (when.isValid() && (when.daysTo(now) < MISS_DAYS))
+            m_missed.insert(it.key(), when);
+    }
+}
+
+void Posters::write()
+{
+    if (m_cachePath.isEmpty())
+        return;
+
+    QJsonObject found;
+    for (auto it = m_posters.cbegin(); it != m_posters.cend(); ++it)
+        found.insert(it.key(), it.value());
+    QJsonObject missed;
+    for (auto it = m_missed.cbegin(); it != m_missed.cend(); ++it)
+        missed.insert(it.key(), it.value().toString(Qt::ISODate));
+    const QJsonObject root {{u"version"_s, CACHE_VERSION}, {u"found"_s, found}, {u"missed"_s, missed}};
+
+    QDir().mkpath(QFileInfo(m_cachePath).absolutePath());
+    QSaveFile file {m_cachePath};
+    if (!file.open(QIODevice::WriteOnly))
+        return;
+    file.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
+    file.commit();
 }

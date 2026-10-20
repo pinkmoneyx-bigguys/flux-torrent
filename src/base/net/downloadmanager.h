@@ -91,12 +91,22 @@ namespace Net
         Path destFileName() const;
         DownloadRequest &destFileName(const Path &value);
 
+        // gives up when no data comes for this long (0: Qt's default)
+        std::chrono::milliseconds transferTimeout() const;
+        DownloadRequest &transferTimeout(std::chrono::milliseconds value);
+
+        // false: HTTP/1.1 only (some servers drop HTTP/2 streams when asked many things at once)
+        bool http2Allowed() const;
+        DownloadRequest &http2Allowed(bool value);
+
     private:
         QString m_url;
         QString m_userAgent;
         qint64 m_limit = 0;
         bool m_saveToFile = false;
         Path m_destFileName;
+        std::chrono::milliseconds m_transferTimeout {0};
+        bool m_http2Allowed = true;
     };
 
     struct DownloadResult

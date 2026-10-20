@@ -104,9 +104,60 @@ private slots:
             "{\"l\":\"Interstellar\",\"qid\":\"movie\",\"y\":2014},"
             "{\"i\":{\"imageUrl\":\"https://m.media-amazon.com/images/M/person._V1_.jpg\"},\"l\":\"Someone\",\"qid\":\"\",\"y\":0}"
             "]}";
-        QCOMPARE(Posters::pickPoster(json, 2014, false), u"https://m.media-amazon.com/images/M/right._V1_SX300.jpg"_s);
-        QVERIFY(Posters::pickPoster(json, 1990, false).isEmpty());  // nothing of that year
-        QVERIFY(Posters::pickPoster("not json", 2014, false).isEmpty());
+        QCOMPARE(Posters::pickImdb(json, u"Interstellar"_s, 2014, false), u"https://m.media-amazon.com/images/M/right._V1_SX300.jpg"_s);
+        QCOMPARE(Posters::pickImdb(json, u"Interstellar"_s, 0, false), u"https://m.media-amazon.com/images/M/right._V1_SX300.jpg"_s);
+        QVERIFY(Posters::pickImdb(json, u"Interstellar"_s, 1990, false).isEmpty());  // nothing of that year
+        QVERIFY(Posters::pickImdb("not json", u"Interstellar"_s, 2014, false).isEmpty());
+    }
+
+    void imdbNeedsTheSameNameOrTheExactYear()
+    {
+        const QByteArray json =
+            "{\"d\":["
+            "{\"i\":{\"imageUrl\":\"https://m.media-amazon.com/images/M/wars._V1_.jpg\"},\"l\":\"Star Wars: The Clone Wars\",\"qid\":\"tvSeries\",\"y\":2008},"
+            "{\"i\":{\"imageUrl\":\"https://m.media-amazon.com/images/M/ftl._V1_.jpg\"},\"l\":\"Faster Than Light: The Dream of Interstellar Flight\",\"qid\":\"movie\",\"y\":2017}"
+            "]}";
+        // punctuation and case don't matter
+        QCOMPARE(Posters::pickImdb(json, u"Faster Than Light. the dream of interstellar flight"_s, 0, false),
+            u"https://m.media-amazon.com/images/M/ftl._V1_SX300.jpg"_s);
+        // another name: not without a year to check
+        QVERIFY(Posters::pickImdb(json, u"Межзвёздные войны"_s, 0, false).isEmpty());
+        QVERIFY(Posters::pickImdb(json, u"Межзвёздные войны"_s, 2016, false).isEmpty());
+        // a Russian title IMDb found by: its year must be the one
+        QCOMPARE(Posters::pickImdb(json, {}, 2017, false), u"https://m.media-amazon.com/images/M/ftl._V1_SX300.jpg"_s);
+    }
+
+    void wikipediaPosters()
+    {
+        const QByteArray json = QByteArray(
+            "{\"query\":{\"pages\":["
+            "{\"title\":\"Нолан, Кристофер\",\"index\":2,\"description\":\"режиссёр\","
+            "\"thumbnail\":{\"source\":\"https://thumb.wikimedia.org/nolan.jpg\",\"width\":300,\"height\":450}},"
+            "{\"title\":\"Интерстеллар (саундтрек)\",\"index\":3,\"description\":\"альбом 2014 года\","
+            "\"thumbnail\":{\"source\":\"https://thumb.wikimedia.org/album.jpg\",\"width\":300,\"height\":450}},"
+            "{\"title\":\"Интерстеллар\",\"index\":1,\"description\":\"фильм Кристофера Нолана 2014 года\","
+            "\"thumbnail\":{\"source\":\"https://thumb.wikimedia.org/poster.jpg\",\"width\":300,\"height\":418}}"
+            "]}}");
+        QCOMPARE(Posters::pickWikipedia(json, u"Интерстеллар"_s, 2014, false), u"https://thumb.wikimedia.org/poster.jpg"_s);
+        QVERIFY(Posters::pickWikipedia(json, u"Интерстеллар"_s, 1990, false).isEmpty());   // another year
+        QVERIFY(Posters::pickWikipedia(json, u"Межзвёздные войны"_s, 2014, false).isEmpty());  // another name
+
+        // a still (wider than tall) is no poster
+        const QByteArray still =
+            "{\"query\":{\"pages\":[{\"title\":\"Interstellar (film)\",\"index\":1,\"description\":\"2014 film by Christopher Nolan\","
+            "\"thumbnail\":{\"source\":\"https://thumb.wikimedia.org/still.jpg\",\"width\":300,\"height\":160}}]}}";
+        QVERIFY(Posters::pickWikipedia(still, u"Interstellar"_s, 2014, false).isEmpty());
+    }
+
+    void shikimoriPosters()
+    {
+        const QByteArray json = QByteArray(
+            "[{\"name\":\"Naruto\",\"russian\":\"Наруто\",\"aired_on\":\"2002-10-03\",\"image\":{\"original\":\"/system/animes/original/20.jpg?1\"}},"
+            "{\"name\":\"Boruto\",\"russian\":\"Боруто\",\"aired_on\":\"2017-04-05\",\"image\":{\"original\":\"/assets/globals/missing_original.jpg\"}}]");
+        QCOMPARE(Posters::pickShikimori(json, u"Наруто"_s, 2002), u"https://shikimori.io/system/animes/original/20.jpg?1"_s);
+        QCOMPARE(Posters::pickShikimori(json, u"naruto"_s, 0), u"https://shikimori.io/system/animes/original/20.jpg?1"_s);
+        QVERIFY(Posters::pickShikimori(json, u"Наруто"_s, 2015).isEmpty());
+        QVERIFY(Posters::pickShikimori(json, u"Боруто"_s, 2017).isEmpty());  // no picture
     }
 };
 

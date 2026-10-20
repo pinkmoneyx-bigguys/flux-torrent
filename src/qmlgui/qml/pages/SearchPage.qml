@@ -30,6 +30,12 @@ Surface {
         view = v
         UiSettings.setLayoutValue("searchView", v)
     }
+    // cards in a row: 0 picks by the width; remembered
+    property int gridColumns: UiSettings.layoutValue("searchColumns", 0)
+    function setGridColumns(n) {
+        gridColumns = n
+        UiSettings.setLayoutValue("searchColumns", n)
+    }
 
     // "Watch without downloading" on a result (a magnet link)
     signal watchRequested(string source)
@@ -59,8 +65,6 @@ Surface {
     function search() {
         if (queryInput.text.trim() === "")
             return
-        resultsFilter.search = ""
-        resultFilterInput.text = ""
         SearchEngine.start(queryInput.text, category, plugin)
     }
 
@@ -99,11 +103,12 @@ Surface {
 
     SearchResultsFilter {
         id: resultsFilter
+        objectName: "searchResultsFilter"
         sourceModel: SearchEngine.results
         sortKey: "seeds"
         descending: true
-        search: resultFilterInput.text
         seededOnly: seededSwitch.checked
+        postersOnly: postersSwitch.checked
     }
 
     Connections {
@@ -240,30 +245,31 @@ Surface {
                     font.pixelSize: Theme.textSm
                     elide: Text.ElideRight
                 }
-                RowLayout {
+                LabeledSwitch {
+                    id: seededSwitch
+                    objectName: "searchSeededOnly"
                     visible: page.hasResults
-                    spacing: Theme.sp(2)
-                    UiSwitch {
-                        id: seededSwitch
-                        Accessible.name: seededLabel.text
-                    }
-                    Text {
-                        id: seededLabel
-                        text: qsTr("With seeds")
-                        color: Theme.text
-                        font.family: Theme.fontText
-                        font.pixelSize: Theme.textSm
-                        TapHandler { onTapped: seededSwitch.toggle() }
-                    }
+                    text: qsTr("With seeds")
                 }
-                UiInput {
-                    id: resultFilterInput
-                    objectName: "searchResultFilter"
+                LabeledSwitch {
+                    id: postersSwitch
+                    objectName: "searchPostersOnly"
                     visible: page.hasResults
-                    Layout.preferredWidth: 200
+                    Layout.leftMargin: Theme.sp(2)
+                    text: qsTr("With posters")
+                }
+                // how many cards in a row
+                UiSelect {
+                    objectName: "searchColumns"
+                    visible: page.view === "cards"
                     implicitHeight: 30
-                    iconPath: Icons.filter
-                    placeholderText: qsTr("Filter results…")
+                    implicitWidth: 120
+                    Layout.leftMargin: Theme.sp(2)
+                    iconPath: Icons.grid
+                    text: qsTr("Cards in a row")
+                    currentKey: String(page.gridColumns)
+                    model: [{ key: "0", label: qsTr("Auto") }].concat([3, 4, 5, 6, 7, 8].map(n => ({ key: String(n), label: qsTr("%n in a row", "", n) })))
+                    onActivated: key => page.setGridColumns(Number(key))
                 }
                 // list / cards
                 Row {
@@ -313,7 +319,7 @@ Surface {
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
                 ScrollBar.vertical: ScrollBar {}
-                readonly property int columns: Math.max(2, Math.floor(width / 190))
+                readonly property int columns: page.gridColumns > 0 ? page.gridColumns : Math.max(2, Math.floor(width / 190))
                 cellWidth: Math.floor(width / columns)
                 cellHeight: cellWidth * 1.5 + 78
                 delegate: FilmCard {
@@ -374,19 +380,19 @@ Surface {
                 objectName: "searchNothing"
                 visible: page.ready && SearchEngine.status !== "idle" && !page.running && resultsFilter.count === 0
                 iconPath: SearchEngine.status === "failed" ? Icons.x : Icons.filter
-                title: SearchEngine.results.count > 0 ? qsTr("No results match the filter")
+                title: SearchEngine.results.count > 0 ? qsTr("No results with these options")
                      : SearchEngine.status === "failed" ? qsTr("The search failed") : qsTr("Nothing found")
-                text: SearchEngine.results.count > 0 ? qsTr("Clear the filter to see all %n result(s).", "", SearchEngine.results.count)
+                text: SearchEngine.results.count > 0 ? qsTr("Turn the switches off to see all %n result(s).", "", SearchEngine.results.count)
                     : SearchEngine.status === "failed" ? SearchEngine.error
                     : qsTr("Try other words, another category or more plugins.")
 
                 UiButton {
                     visible: SearchEngine.results.count > 0
                     variant: "outline"
-                    text: qsTr("Clear filter")
+                    text: qsTr("Show all")
                     onClicked: {
-                        resultFilterInput.text = ""
                         seededSwitch.checked = false
+                        postersSwitch.checked = false
                     }
                 }
             }
@@ -422,6 +428,25 @@ Surface {
     }
 
     // --- Pieces ---------------------------------------------------------------------------------
+    // A switch with its label (a click on the label toggles it too)
+    component LabeledSwitch: RowLayout {
+        id: ls
+        property string text
+        property alias checked: sw.checked
+        spacing: Theme.sp(2)
+        UiSwitch {
+            id: sw
+            Accessible.name: ls.text
+        }
+        Text {
+            text: ls.text
+            color: Theme.text
+            font.family: Theme.fontText
+            font.pixelSize: Theme.textSm
+            TapHandler { onTapped: sw.toggle() }
+        }
+    }
+
     component ViewButton: AbstractButton {
         id: vb
         property string view

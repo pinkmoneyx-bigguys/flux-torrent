@@ -333,7 +333,11 @@ void Net::DownloadManager::processRequest(DownloadHandlerImpl *downloadHandler)
     // Qt doesn't support Magnet protocol so we need to handle redirections manually
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
 
-    request.setTransferTimeout();
+    if (downloadRequest.transferTimeout() > std::chrono::milliseconds::zero())
+        request.setTransferTimeout(downloadRequest.transferTimeout());
+    else
+        request.setTransferTimeout();
+    request.setAttribute(QNetworkRequest::Http2AllowedAttribute, downloadRequest.http2Allowed());
 
     QNetworkReply *reply = m_networkManager->get(request);
     connect(reply, &QNetworkReply::finished, this, [this, serviceID = ServiceID::fromURL(downloadHandler->url())]
@@ -389,6 +393,28 @@ bool Net::DownloadRequest::saveToFile() const
 Net::DownloadRequest &Net::DownloadRequest::saveToFile(const bool value)
 {
     m_saveToFile = value;
+    return *this;
+}
+
+std::chrono::milliseconds Net::DownloadRequest::transferTimeout() const
+{
+    return m_transferTimeout;
+}
+
+Net::DownloadRequest &Net::DownloadRequest::transferTimeout(const std::chrono::milliseconds value)
+{
+    m_transferTimeout = value;
+    return *this;
+}
+
+bool Net::DownloadRequest::http2Allowed() const
+{
+    return m_http2Allowed;
+}
+
+Net::DownloadRequest &Net::DownloadRequest::http2Allowed(const bool value)
+{
+    m_http2Allowed = value;
     return *this;
 }
 

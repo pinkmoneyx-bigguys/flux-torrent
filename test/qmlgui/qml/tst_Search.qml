@@ -34,7 +34,10 @@ TestCase {
     }
 
     function cleanup() {
-        findChild(page, "searchResultFilter").text = ""
+        findChild(page, "searchSeededOnly").checked = false
+        findChild(page, "searchPostersOnly").checked = false
+        page.setView("list")
+        page.setGridColumns(0)
         const dialog = findChild(page, "pluginsDialog")
         if (dialog.visible) {
             dialog.close()
@@ -78,18 +81,38 @@ TestCase {
         verify(findChild(page, "searchStatus").text.indexOf("ubuntu") >= 0, "the status names the query")
     }
 
-    function test_filterAndSeededOnly() {
+    // No text filter field: "With seeds" and "With posters" narrow the results
+    function test_seededAndPostersOnly() {
         SearchEngine.loadDemo({ plugins: plugins, pattern: "ubuntu", results: results })
         const list = findChild(page, "searchList")
-        findChild(page, "searchResultFilter").text = "server"
-        tryCompare(list, "count", 1)
-        findChild(page, "searchResultFilter").text = "nothing like it"
-        tryCompare(list.model, "count", 0)
-        verify(visibleState("searchNothing"), "says the filter hides everything")
-        findChild(page, "searchResultFilter").text = ""
-        list.model.seededOnly = true
+        verify(!findChild(page, "searchResultFilter"), "no filter field")
+        findChild(page, "searchSeededOnly").checked = true
         tryCompare(list, "count", 2)
-        list.model.seededOnly = false
+        findChild(page, "searchSeededOnly").checked = false
+        tryCompare(list, "count", 3)
+
+        // with posters: only films a poster was found for; one arriving brings its releases in
+        findChild(page, "searchPostersOnly").checked = true
+        tryCompare(list.model, "count", 0)
+        verify(visibleState("searchNothing"), "says the switches hide everything")
+        Posters.setPoster(Posters.film("ubuntu server").key, "https://example.invalid/p.jpg")
+        tryCompare(list, "count", 1)
+    }
+
+    // Cards in a row: automatic by the width, or as chosen
+    function test_gridColumns() {
+        SearchEngine.loadDemo({ plugins: plugins, pattern: "ubuntu", results: results })
+        page.setView("cards")
+        const grid = findChild(page, "searchGrid")
+        tryVerify(() => grid.visible)
+        verify(findChild(page, "searchColumns").visible, "the choice shows with the cards")
+        page.setGridColumns(5)
+        compare(grid.columns, 5)
+        compare(grid.cellWidth, Math.floor(grid.width / 5))
+        page.setGridColumns(0)
+        verify(grid.columns >= 2)
+        page.setView("list")
+        verify(!findChild(page, "searchColumns").visible, "and hides with the list")
     }
 
     function test_sortCycle() {
@@ -151,5 +174,25 @@ TestCase {
         tryCompare(dialog, "visible", false)
         page.setView("list")
         verify(findChild(page, "searchList").visible)
+    }
+
+    // A release named only in Russian joins the film that gives the original title too, and shares its poster
+    function test_russianOnlyReleaseJoinsItsFilm() {
+        SearchEngine.loadDemo({ python: true, plugins: plugins, pattern: "ella", results: [
+            { name: "Космическая Элла / Interstellar Ella [2022, WEB-DL 1080p]", size: 3000, seeds: 5, leechers: 1, engine: "eztv", fileUrl: "magnet:?xt=urn:btih:a" },
+            { name: "Космическая Элла WEB-DL 720p", size: 1500, seeds: 3, leechers: 0, engine: "lime", fileUrl: "magnet:?xt=urn:btih:b" },
+            { name: "Межзвёздные войны / Interstellar Wars (2016) DVDRip", size: 700, seeds: 2, leechers: 0, engine: "eztv", fileUrl: "magnet:?xt=urn:btih:c" }
+        ] })
+        page.setView("cards")
+        const grid = findChild(page, "searchGrid")
+        tryVerify(() => grid.visible && grid.count === 2, 2000, "two films: " + grid.count)
+        const ella = grid.model.find(f => f.original === "Interstellar Ella")
+        compare(ella.count, 2)
+
+        // with posters: the poster of the film shows its Russian-only release too
+        findChild(page, "searchPostersOnly").checked = true
+        Posters.setPoster(Posters.film("Космическая Элла / Interstellar Ella [2022]").key, "https://example.invalid/ella.jpg")
+        page.setView("list")
+        tryCompare(findChild(page, "searchList"), "count", 2)
     }
 }
