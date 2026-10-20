@@ -27,6 +27,12 @@ TestCase {
 
     readonly property color tintRgb: "#181622"
 
+    function init() {
+        // the glass is a shader: the offscreen platform has no GPU backend to run it
+        if (Qt.platform.pluginName === "offscreen")
+            skip("GlassPanel renders through a shader; run on a real display")
+    }
+
     function initTestCase() {
         Theme.glassSource = bg
         tryVerify(() => bg.rebuildCount > 0, 2000, "the blurred backdrop is built once after start")

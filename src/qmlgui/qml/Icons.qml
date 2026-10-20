@@ -60,5 +60,12 @@ QtObject {
     readonly property string sort: "M8 9l4-4 4 4M8 15l4 4 4-4"
     readonly property string network: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"
     readonly property string bittorrent: "M7 7l10 10-5 5V2l5 5L7 17"
+    // Transfers screen (lucide-style shapes on the same grid)
+    readonly property string link: "M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"
+    readonly property string chevronUp: "M6 15l6-6 6 6"
+    readonly property string x: "M18 6 6 18M6 6l12 12"
+    readonly property string minus: "M5 12h14"
+    readonly property string inbox: "M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"
+    readonly property string file: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5"
     readonly property string uiPanel: "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 9v11"
 }

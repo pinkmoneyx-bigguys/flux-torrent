@@ -49,6 +49,40 @@ Surface {
             text: qsTr("Transfers")
             iconPath: Icons.download
             meta: SessionFacade.torrentCount > 0 ? Number(SessionFacade.torrentCount).toLocaleString(Qt.locale(), "f", 0) : ""
+            hasSub: true
+        }
+
+        // Status filters of the Transfers page (shadcn SidebarMenuSub: indented, a border line on the left)
+        Item {
+            Layout.fillWidth: true
+            Layout.leftMargin: 14
+            implicitHeight: subColumn.implicitHeight + 4
+
+            Rectangle {
+                width: 1
+                height: parent.height
+                color: Theme.border
+            }
+            ColumnLayout {
+                id: subColumn
+                x: 10
+                y: 2
+                width: parent.width - 10
+                spacing: 2
+
+                Repeater {
+                    model: TransfersState.filters
+
+                    StatusItem {
+                        required property var modelData
+                        objectName: "nav_status_" + modelData.key
+                        status: modelData.key
+                        text: modelData.label
+                        // "Errors" only shows up when there is something to see
+                        visible: modelData.key !== "errored" || count > 0 || current
+                    }
+                }
+            }
         }
         NavItem {
             objectName: "nav_search"
@@ -81,6 +115,61 @@ Surface {
         }
     }
 
+    // A 28 px status filter row under Transfers: picks the filter and shows the Transfers page
+    component StatusItem: AbstractButton {
+        id: sub
+
+        property string status
+        readonly property int count: TorrentListModel.counts[status] ?? 0
+        readonly property bool current: root.currentIndex === 0 && TransfersState.status === status
+
+        Layout.fillWidth: true
+        implicitHeight: 28
+        leftPadding: Theme.sp(2)
+        rightPadding: Theme.sp(2)
+        focusPolicy: Qt.StrongFocus
+        hoverEnabled: true
+
+        onClicked: {
+            TransfersState.status = status
+            root.navigate(0)
+        }
+
+        Accessible.role: Accessible.RadioButton
+        Accessible.name: text
+        Accessible.checked: current
+        Accessible.onPressAction: sub.clicked()
+
+        background: Rectangle {
+            radius: Theme.glass ? 10 : Theme.radiusCtl - 2
+            color: sub.current ? Theme.selected : sub.hovered ? Theme.hover : "transparent"
+            border.width: sub.visualFocus ? 2 : 0
+            border.color: Theme.glass ? Theme.accent : Theme.ring
+        }
+        contentItem: RowLayout {
+            spacing: Theme.sp(2)
+            Text {
+                Layout.fillWidth: true
+                text: sub.text
+                color: sub.current ? Theme.text : Theme.alpha(Theme.text, 0.7)
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textSm
+                font.weight: sub.current ? Font.Medium : Font.Normal
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+            }
+            Text {
+                visible: sub.count > 0
+                text: Number(sub.count).toLocaleString(Qt.locale(), "f", 0)
+                color: sub.status === "errored" ? Theme.error : Theme.textDim
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textXs
+                font.weight: Font.Medium
+                font.features: { "tnum": 1 }
+            }
+        }
+    }
+
     // One row: 38 px glass, 32 px default (shadcn SidebarMenuButton h-8). The highlight of the current
     // row changes instantly (also from Ctrl+N); only the pointer hover fades.
     component NavItem: AbstractButton {
@@ -89,6 +178,8 @@ Surface {
         property int page
         property string iconPath
         property string meta
+        // Has status filters under it: when current, the active filter carries the highlight instead
+        property bool hasSub: false
         readonly property bool current: root.currentIndex === page
         readonly property color _ink: Theme.glass ? (current ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.84))
                                                   : (current ? Theme.text : Theme.alpha(Theme.text, 0.82))
@@ -134,7 +225,7 @@ Surface {
             // glass: drop shadow of the raised current row: 0 10px 24px -12px rgba(0,0,0,.7)
             GlowHalo {
                 anchors.fill: parent
-                visible: Theme.glass && item.current
+                visible: Theme.glass && item.current && !item.hasSub
                 color: Qt.rgba(0, 0, 0, 0.7)
                 radius: item._radius
                 spread: 24
@@ -155,12 +246,12 @@ Surface {
                 id: selected
                 anchors.fill: parent
                 radius: item._radius
-                visible: item.current
+                visible: item.current && !item.hasSub
                 color: Theme.selected
             }
             // glass: inset top highlight, starting where the rounded corners end
             Rectangle {
-                visible: Theme.glass && item.current
+                visible: Theme.glass && item.current && !item.hasSub
                 x: selected.radius - Math.sqrt(Math.max(0, 2 * selected.radius - 1))
                 width: parent.width - 2 * x
                 height: 1

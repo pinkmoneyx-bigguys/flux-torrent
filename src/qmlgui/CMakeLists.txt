@@ -35,9 +35,23 @@ set_source_files_properties(qml/pages/SearchPage.qml PROPERTIES QT_RESOURCE_ALIA
 set_source_files_properties(qml/pages/RssPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/RssPage.qml)
 set_source_files_properties(qml/pages/MediaPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/MediaPage.qml)
 set_source_files_properties(qml/pages/SettingsPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/SettingsPage.qml)
+set_source_files_properties(qml/ui/UiButton.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiButton.qml)
+set_source_files_properties(qml/ui/UiBadge.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiBadge.qml)
+set_source_files_properties(qml/ui/UiCheckBox.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiCheckBox.qml)
+set_source_files_properties(qml/ui/UiTabs.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiTabs.qml)
+set_source_files_properties(qml/ui/UiInput.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiInput.qml)
+set_source_files_properties(qml/ui/UiProgress.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiProgress.qml)
+set_source_files_properties(qml/ui/UiMenu.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiMenu.qml)
+set_source_files_properties(qml/ui/UiMenuItem.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiMenuItem.qml)
+set_source_files_properties(qml/ui/UiMenuSeparator.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiMenuSeparator.qml)
+set_source_files_properties(qml/ui/UiDialog.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiDialog.qml)
+set_source_files_properties(qml/pages/transfers/TorrentStatus.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/TorrentStatus.qml)
+set_source_files_properties(qml/pages/transfers/TransfersState.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/TransfersState.qml)
+set_source_files_properties(qml/pages/transfers/TorrentDetailsPane.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/TorrentDetailsPane.qml)
 
 # Singletons must be flagged before qt_add_qml_module sees the files
-set_source_files_properties(qml/Theme.qml qml/Icons.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(qml/Theme.qml qml/Icons.qml qml/pages/transfers/TorrentStatus.qml
+    qml/pages/transfers/TransfersState.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_library(qbt_qmlgui STATIC)
 
@@ -71,6 +85,19 @@ qt_add_qml_module(qbt_qmlgui
         qml/pages/RssPage.qml
         qml/pages/MediaPage.qml
         qml/pages/SettingsPage.qml
+        qml/ui/UiButton.qml
+        qml/ui/UiBadge.qml
+        qml/ui/UiCheckBox.qml
+        qml/ui/UiTabs.qml
+        qml/ui/UiInput.qml
+        qml/ui/UiProgress.qml
+        qml/ui/UiMenu.qml
+        qml/ui/UiMenuItem.qml
+        qml/ui/UiMenuSeparator.qml
+        qml/ui/UiDialog.qml
+        qml/pages/transfers/TorrentStatus.qml
+        qml/pages/transfers/TransfersState.qml
+        qml/pages/transfers/TorrentDetailsPane.qml
     RESOURCES
         fonts/Onest-Variable.ttf
         fonts/Unbounded-Variable.ttf
@@ -90,6 +117,12 @@ qt_add_qml_module(qbt_qmlgui
         backend/systemprefs.cpp
         backend/uisettings.h
         backend/uisettings.cpp
+        backend/torrentlistmodel.h
+        backend/torrentlistmodel.cpp
+        backend/torrentfiltermodel.h
+        backend/torrentfiltermodel.cpp
+        backend/torrentdetails.h
+        backend/torrentdetails.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h
