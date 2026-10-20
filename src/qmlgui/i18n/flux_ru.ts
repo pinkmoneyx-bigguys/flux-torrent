@@ -146,8 +146,208 @@
 <context>
     <name>AppSettings</name>
     <message>
+        <source>Disk</source>
+        <translation>Диск</translation>
+    </message>
+    <message>
+        <source>Asynchronous I/O threads</source>
+        <translation>Потоки асинхронного ввода-вывода</translation>
+    </message>
+    <message>
+        <source>Hashing threads</source>
+        <translation>Потоки хеширования</translation>
+    </message>
+    <message>
+        <source>File pool size</source>
+        <translation>Размер пула файлов</translation>
+    </message>
+    <message>
+        <source>Memory for checking torrents</source>
+        <translation>Память для проверки торрентов</translation>
+    </message>
+    <message>
+        <source>Disk queue size</source>
+        <translation>Размер очереди диска</translation>
+    </message>
+    <message>
+        <source>Disk I/O type</source>
+        <translation>Тип дискового ввода-вывода</translation>
+    </message>
+    <message>
+        <source>Disk read mode</source>
+        <translation>Режим чтения с диска</translation>
+    </message>
+    <message>
+        <source>Disk write mode</source>
+        <translation>Режим записи на диск</translation>
+    </message>
+    <message>
+        <source>Coalesce reads and writes</source>
+        <translation>Объединять чтение и запись</translation>
+    </message>
+    <message>
+        <source>Piece extent affinity</source>
+        <translation>Группировать соседние части</translation>
+    </message>
+    <message>
+        <source>Send upload piece suggestions</source>
+        <translation>Предлагать части при отдаче</translation>
+    </message>
+    <message>
+        <source>Save resume data every</source>
+        <translation>Сохранять данные возобновления каждые</translation>
+    </message>
+    <message>
+        <source>Torrents checked at once</source>
+        <translation>Одновременно проверяемых торрентов</translation>
+    </message>
+    <message>
+        <source>Network</source>
+        <translation>Сеть</translation>
+    </message>
+    <message>
+        <source>Send buffer watermark</source>
+        <translation>Порог буфера отправки</translation>
+    </message>
+    <message>
+        <source>Send buffer low watermark</source>
+        <translation>Нижний порог буфера отправки</translation>
+    </message>
+    <message>
+        <source>Send buffer watermark factor</source>
+        <translation>Коэффициент порога буфера отправки</translation>
+    </message>
+    <message>
+        <source>Outgoing connections per second</source>
+        <translation>Исходящих соединений в секунду</translation>
+    </message>
+    <message>
+        <source>Socket send buffer (0: system default)</source>
+        <translation>Буфер отправки сокета (0 — системный)</translation>
+    </message>
+    <message>
+        <source>Socket receive buffer (0: system default)</source>
+        <translation>Буфер приёма сокета (0 — системный)</translation>
+    </message>
+    <message>
+        <source>Socket backlog size</source>
+        <translation>Очередь ожидания сокета</translation>
+    </message>
+    <message>
+        <source>Outgoing ports from (0: any)</source>
+        <translation>Исходящие порты от (0 — любые)</translation>
+    </message>
+    <message>
+        <source>Outgoing ports to (0: any)</source>
+        <translation>Исходящие порты до (0 — любые)</translation>
+    </message>
+    <message>
+        <source>UPnP lease duration (0: permanent)</source>
+        <translation>Срок аренды UPnP (0 — бессрочно)</translation>
+    </message>
+    <message>
+        <source>Type of service (DSCP) for peer connections</source>
+        <translation>Тип обслуживания (DSCP) для пиров</translation>
+    </message>
+    <message>
+        <source>TCP and µTP mixed mode</source>
+        <translation>Смешанный режим TCP и µTP</translation>
+    </message>
+    <message>
+        <source>Internationalized domain names</source>
+        <translation>Международные доменные имена (IDN)</translation>
+    </message>
+    <message>
+        <source>Several connections from one IP</source>
+        <translation>Несколько соединений с одного IP</translation>
+    </message>
+    <message>
+        <source>Validate HTTPS tracker certificates</source>
+        <translation>Проверять сертификаты HTTPS-трекеров</translation>
+    </message>
+    <message>
+        <source>Server-side request forgery mitigation</source>
+        <translation>Защита от подделки запросов (SSRF)</translation>
+    </message>
+    <message>
+        <source>Block peers on privileged ports</source>
+        <translation>Блокировать пиров на привилегированных портах</translation>
+    </message>
+    <message>
+        <source>Host name cache lifetime</source>
+        <translation>Время жизни кэша имён хостов</translation>
+    </message>
+    <message>
+        <source>Peers</source>
+        <translation>Пиры</translation>
+    </message>
+    <message>
+        <source>Upload slots behavior</source>
+        <translation>Поведение слотов отдачи</translation>
+    </message>
+    <message>
+        <source>Upload choking algorithm</source>
+        <translation>Алгоритм ограничения отдачи</translation>
+    </message>
+    <message>
+        <source>Peer turnover</source>
+        <translation>Смена пиров</translation>
+    </message>
+    <message>
+        <source>Peer turnover threshold</source>
+        <translation>Порог смены пиров</translation>
+    </message>
+    <message>
+        <source>Peer turnover interval</source>
+        <translation>Интервал смены пиров</translation>
+    </message>
+    <message>
+        <source>Outstanding requests per peer</source>
+        <translation>Ожидающих запросов на пира</translation>
+    </message>
+    <message>
+        <source>Trackers</source>
+        <translation>Трекеры</translation>
+    </message>
+    <message>
+        <source>Announce to all trackers in a tier</source>
+        <translation>Анонсировать всем трекерам уровня</translation>
+    </message>
+    <message>
+        <source>Announce to all tiers</source>
+        <translation>Анонсировать всем уровням</translation>
+    </message>
+    <message>
+        <source>IP address reported to trackers</source>
+        <translation>IP-адрес для трекеров</translation>
+    </message>
+    <message>
+        <source>Port reported to trackers (0: listening port)</source>
+        <translation>Порт для трекеров (0 — порт прослушивания)</translation>
+    </message>
+    <message>
+        <source>Concurrent HTTP announces</source>
+        <translation>Одновременных HTTP-анонсов</translation>
+    </message>
+    <message>
+        <source>Stop tracker timeout</source>
+        <translation>Тайм-аут остановки трекера</translation>
+    </message>
+    <message>
+        <source>Reannounce when the IP or port changes</source>
+        <translation>Переанонсировать при смене IP или порта</translation>
+    </message>
+    <message>
+        <source>DHT bootstrap nodes</source>
+        <translation>Начальные узлы DHT</translation>
+    </message>
+    <message>
         <source>Unknown setting.</source>
         <translation>Неизвестная настройка.</translation>
+    </message>
+    <message>
+        <source>Unknown option.</source>
+        <translation>Неизвестный вариант.</translation>
     </message>
     <message>
         <source>Choose a folder.</source>
@@ -407,6 +607,10 @@
     <message>
         <source>Unknown option.</source>
         <translation>Неизвестный вариант.</translation>
+    </message>
+    <message>
+        <source>Enter a time as HH:MM.</source>
+        <translation>Введите время в формате ЧЧ:ММ.</translation>
     </message>
 </context>
 <context>
@@ -1093,6 +1297,106 @@
         <translation>BitTorrent</translation>
     </message>
     <message>
+        <source>Advanced</source>
+        <translation>Дополнительно</translation>
+    </message>
+    <message>
+        <source>on</source>
+        <translation>вкл.</translation>
+    </message>
+    <message>
+        <source>off</source>
+        <translation>выкл.</translation>
+    </message>
+    <message>
+        <source>empty</source>
+        <translation>пусто</translation>
+    </message>
+    <message>
+        <source>KiB</source>
+        <translation>КиБ</translation>
+    </message>
+    <message>
+        <source>MiB</source>
+        <translation>МиБ</translation>
+    </message>
+    <message>
+        <source>s</source>
+        <translation>с</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>По умолчанию</translation>
+    </message>
+    <message>
+        <source>Memory-mapped files</source>
+        <translation>Отображение в память</translation>
+    </message>
+    <message>
+        <source>POSIX-compliant</source>
+        <translation>POSIX</translation>
+    </message>
+    <message>
+        <source>Simple pread/pwrite</source>
+        <translation>Простой pread/pwrite</translation>
+    </message>
+    <message>
+        <source>Bypass the OS cache</source>
+        <translation>Без кэша ОС</translation>
+    </message>
+    <message>
+        <source>Use the OS cache</source>
+        <translation>Через кэш ОС</translation>
+    </message>
+    <message>
+        <source>Write-through</source>
+        <translation>Сквозная запись</translation>
+    </message>
+    <message>
+        <source>Prefer TCP</source>
+        <translation>Предпочитать TCP</translation>
+    </message>
+    <message>
+        <source>Peer proportional</source>
+        <translation>Пропорционально пирам</translation>
+    </message>
+    <message>
+        <source>Fixed slots</source>
+        <translation>Фиксированные слоты</translation>
+    </message>
+    <message>
+        <source>By upload rate</source>
+        <translation>По скорости отдачи</translation>
+    </message>
+    <message>
+        <source>Round-robin</source>
+        <translation>По кругу</translation>
+    </message>
+    <message>
+        <source>Fastest upload</source>
+        <translation>Быстрейшая отдача</translation>
+    </message>
+    <message>
+        <source>Anti-leech</source>
+        <translation>Против личеров</translation>
+    </message>
+    <message>
+        <source>Reset all advanced settings?</source>
+        <translation>Сбросить все дополнительные настройки?</translation>
+    </message>
+    <message>
+        <source>Every setting in Advanced goes back to its default. Other sections stay as they are.</source>
+        <translation>Все настройки раздела «Дополнительно» вернутся к значениям по умолчанию. Остальные разделы не изменятся.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Reset all</source>
+        <translation>Сбросить всё</translation>
+    </message>
+    <message>
         <source>Appearance</source>
         <translation>Внешний вид</translation>
     </message>
@@ -1213,8 +1517,68 @@
         <translation>Включать по расписанию</translation>
     </message>
     <message>
-        <source>Uses the schedule from your qBittorrent settings.</source>
-        <translation>По расписанию из настроек qBittorrent.</translation>
+        <source>Alternative limits turn on by themselves in the hours below.</source>
+        <translation>Альтернативные ограничения включаются сами в указанные часы.</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>С</translation>
+    </message>
+    <message>
+        <source>24-hour time, HH:MM.</source>
+        <translation>В 24-часовом формате, ЧЧ:ММ.</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>До</translation>
+    </message>
+    <message>
+        <source>An end before the start runs past midnight.</source>
+        <translation>Если конец раньше начала, интервал идёт через полночь.</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Дни</translation>
+    </message>
+    <message>
+        <source>Every day</source>
+        <translation>Каждый день</translation>
+    </message>
+    <message>
+        <source>Weekdays</source>
+        <translation>Будни</translation>
+    </message>
+    <message>
+        <source>Weekends</source>
+        <translation>Выходные</translation>
+    </message>
+    <message>
+        <source>Monday</source>
+        <translation>Понедельник</translation>
+    </message>
+    <message>
+        <source>Tuesday</source>
+        <translation>Вторник</translation>
+    </message>
+    <message>
+        <source>Wednesday</source>
+        <translation>Среда</translation>
+    </message>
+    <message>
+        <source>Thursday</source>
+        <translation>Четверг</translation>
+    </message>
+    <message>
+        <source>Friday</source>
+        <translation>Пятница</translation>
+    </message>
+    <message>
+        <source>Saturday</source>
+        <translation>Суббота</translation>
+    </message>
+    <message>
+        <source>Sunday</source>
+        <translation>Воскресенье</translation>
     </message>
     <message>
         <source>How limits apply</source>
@@ -1463,6 +1827,30 @@
     <message>
         <source>One URL per line.</source>
         <translation>По одному адресу в строке.</translation>
+    </message>
+    <message>
+        <source>Fine-tuning of qBittorrent and libtorrent. The defaults suit almost everyone.</source>
+        <translation>Тонкая настройка qBittorrent и libtorrent. Значения по умолчанию подходят почти всем.</translation>
+    </message>
+    <message>
+        <source>Find a setting…</source>
+        <translation>Найти настройку…</translation>
+    </message>
+    <message>
+        <source>Applies after a restart. </source>
+        <translation>Применится после перезапуска. </translation>
+    </message>
+    <message>
+        <source>Default: %1</source>
+        <translation>По умолчанию: %1</translation>
+    </message>
+    <message>
+        <source>Reset %1</source>
+        <translation>Сбросить: %1</translation>
+    </message>
+    <message>
+        <source>No setting matches.</source>
+        <translation>Подходящих настроек нет.</translation>
     </message>
 </context>
 <context>

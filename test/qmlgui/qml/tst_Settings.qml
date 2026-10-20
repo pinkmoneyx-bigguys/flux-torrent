@@ -88,4 +88,54 @@ TestCase {
         tryCompare(setting("encryption"), "currentKey", "require")
         AppSettings.setValue("encryption", "prefer")
     }
+
+    function test_scheduleRows() {
+        page.section = "speed"
+        AppSettings.setValue("schedulerEnabled", false)
+        waitForRendering(page)
+        verify(!setting("schedulerFrom").visible)
+        AppSettings.setValue("schedulerEnabled", true)
+        tryVerify(() => setting("schedulerFrom").visible, 1000, "the hours show with the schedule switch")
+        verify(setting("schedulerDays").visible)
+        verify(AppSettings.setValue("schedulerFrom", "25:00") !== "", "times are checked")
+        compare(AppSettings.setValue("schedulerFrom", "07:30"), "")
+        compare(AppSettings.setValue("schedulerDays", "weekend"), "")
+        verify(AppSettings.setValue("schedulerDays", "someday") !== "")
+        AppSettings.setValue("schedulerEnabled", false)
+    }
+
+    function test_advancedTable() {
+        page.section = "advanced"
+        waitForRendering(page)
+        const rows = AppSettings.advancedSettings()
+        verify(rows.length >= 40, "the advanced table lists the libtorrent knobs: " + rows.length)
+        verify(setting("asyncIOThreads").visible)
+        verify(setting("diskIOType").visible)
+        findChild(page, "advancedSearch").text = "turnover"
+        tryVerify(() => { const r = setting("asyncIOThreads"); return !r || !r.visible }, 1000, "search hides other rows")
+        verify(setting("peerTurnover").visible)
+        findChild(page, "advancedSearch").text = ""
+    }
+
+    function test_advancedValidationAndReset() {
+        compare(AppSettings.setValue("peerTurnover", 150) !== "", true, "percent stops at 100")
+        compare(AppSettings.setValue("hashingThreads", 4), "")
+        compare(AppSettings.value("hashingThreads"), 4)
+        compare(AppSettings.resetValue("hashingThreads"), "")
+        compare(AppSettings.value("hashingThreads"), 1, "back to the default")
+        verify(AppSettings.setValue("diskIOType", "floppy") !== "")
+    }
+
+    function test_resetAll() {
+        page.section = "advanced"
+        AppSettings.setValue("connectionSpeed", 99)
+        AppSettings.setValue("announceToAllTrackers", true)
+        mouseClick(findChild(page, "advancedResetAll"))
+        const dialog = findChild(page, "advancedResetDialog")
+        tryCompare(dialog, "opened", true)
+        mouseClick(findChild(dialog.contentItem, "advancedResetConfirm"))
+        tryCompare(dialog, "visible", false)
+        compare(AppSettings.value("connectionSpeed"), 30)
+        compare(AppSettings.value("announceToAllTrackers"), false)
+    }
 }

@@ -18,7 +18,8 @@ Surface {
         { key: "downloads", label: qsTr("Downloads"), icon: Icons.download },
         { key: "speed", label: qsTr("Speed"), icon: Icons.speed },
         { key: "connection", label: qsTr("Connection"), icon: Icons.network },
-        { key: "bittorrent", label: qsTr("BitTorrent"), icon: Icons.bittorrent }
+        { key: "bittorrent", label: qsTr("BitTorrent"), icon: Icons.bittorrent },
+        { key: "advanced", label: qsTr("Advanced"), icon: Icons.settings }
     ]
 
     function sectionLabel(key) {
@@ -36,8 +37,85 @@ Surface {
         return AppSettings.revision >= 0 && AppSettings.value("proxyType") !== "none"
     }
 
+    // --- Advanced ---
+    readonly property var advancedRows: AppSettings.advancedSettings()
+    readonly property var advancedGroups: {
+        const groups = []
+        for (const r of advancedRows) {
+            if (groups.indexOf(r.group) < 0)
+                groups.push(r.group)
+        }
+        return groups
+    }
+    property string advancedFilter: ""
+    function matchesFilter(row) {
+        const words = advancedFilter.toLowerCase().split(" ").filter(w => w !== "")
+        const hay = (row.label + " " + row.key + " " + row.group).toLowerCase()
+        return words.every(w => hay.indexOf(w) >= 0)
+    }
+    function isDefault(row) {
+        return AppSettings.revision >= 0 && String(AppSettings.value(row.key)) === String(row["default"])
+    }
+    function defaultText(row) {
+        const d = row["default"]
+        if (row.type === "bool")
+            return d ? qsTr("on") : qsTr("off")
+        if (row.type === "enum")
+            return optionLabel(d)
+        if (row.type === "string")
+            return d === "" ? qsTr("empty") : d
+        return row.unit !== "" ? d + " " + unitLabel(row.unit) : String(d)
+    }
+    function unitLabel(unit) {
+        switch (unit) {
+        case "KiB": return qsTr("KiB")
+        case "MiB": return qsTr("MiB")
+        case "min": return qsTr("min")
+        case "s": return qsTr("s")
+        default: return unit
+        }
+    }
+    function optionLabel(key) {
+        switch (key) {
+        case "default": return qsTr("Default")
+        case "mmap": return qsTr("Memory-mapped files")
+        case "posix": return qsTr("POSIX-compliant")
+        case "simple": return qsTr("Simple pread/pwrite")
+        case "noOsCache": return qsTr("Bypass the OS cache")
+        case "osCache": return qsTr("Use the OS cache")
+        case "writeThrough": return qsTr("Write-through")
+        case "preferTcp": return qsTr("Prefer TCP")
+        case "proportional": return qsTr("Peer proportional")
+        case "fixedSlots": return qsTr("Fixed slots")
+        case "rateBased": return qsTr("By upload rate")
+        case "roundRobin": return qsTr("Round-robin")
+        case "fastestUpload": return qsTr("Fastest upload")
+        case "antiLeech": return qsTr("Anti-leech")
+        default: return key
+        }
+    }
+
     kind: Theme.glass ? "panel" : "chrome"
     radius: Theme.radiusPanel
+
+    UiDialog {
+        id: resetAllDialog
+        objectName: "advancedResetDialog"
+        title: qsTr("Reset all advanced settings?")
+        description: qsTr("Every setting in Advanced goes back to its default. Other sections stay as they are.")
+        footerItems: [
+            UiButton { variant: "outline"; text: qsTr("Cancel"); onClicked: resetAllDialog.close() },
+            UiButton {
+                objectName: "advancedResetConfirm"
+                variant: "destructive"
+                text: qsTr("Reset all")
+                onClicked: {
+                    AppSettings.resetAdvanced()
+                    resetAllDialog.close()
+                }
+            }
+        ]
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -235,7 +313,43 @@ Surface {
                             SettingRow {
                                 key: "schedulerEnabled"
                                 label: qsTr("Switch on a schedule")
-                                description: qsTr("Uses the schedule from your qBittorrent settings.")
+                                description: qsTr("Alternative limits turn on by themselves in the hours below.")
+                            }
+                            SettingRow {
+                                visible: root.on("schedulerEnabled")
+                                key: "schedulerFrom"
+                                type: "text"
+                                controlWidth: 110
+                                placeholder: "08:00"
+                                label: qsTr("From")
+                                description: qsTr("24-hour time, HH:MM.")
+                            }
+                            SettingRow {
+                                visible: root.on("schedulerEnabled")
+                                key: "schedulerTo"
+                                type: "text"
+                                controlWidth: 110
+                                placeholder: "20:00"
+                                label: qsTr("To")
+                                description: qsTr("An end before the start runs past midnight.")
+                            }
+                            SettingRow {
+                                visible: root.on("schedulerEnabled")
+                                key: "schedulerDays"
+                                type: "select"
+                                label: qsTr("On")
+                                options: [
+                                    { key: "everyDay", label: qsTr("Every day") },
+                                    { key: "weekday", label: qsTr("Weekdays") },
+                                    { key: "weekend", label: qsTr("Weekends") },
+                                    { key: "monday", label: qsTr("Monday") },
+                                    { key: "tuesday", label: qsTr("Tuesday") },
+                                    { key: "wednesday", label: qsTr("Wednesday") },
+                                    { key: "thursday", label: qsTr("Thursday") },
+                                    { key: "friday", label: qsTr("Friday") },
+                                    { key: "saturday", label: qsTr("Saturday") },
+                                    { key: "sunday", label: qsTr("Sunday") }
+                                ]
                             }
                         }
                         SettingsGroup {
@@ -404,6 +518,96 @@ Surface {
                                 description: qsTr("One URL per line.")
                                 placeholder: "udp://tracker.example.org:1337/announce"
                             }
+                        }
+                    }
+
+                    // ===== Advanced =====
+                    ColumnLayout {
+                        visible: root.section === "advanced"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.sp(3)
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                Text {
+                                    text: qsTr("Advanced")
+                                    color: Theme.text
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textBase
+                                    font.weight: Font.DemiBold
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Fine-tuning of qBittorrent and libtorrent. The defaults suit almost everyone.")
+                                    color: Theme.textDim
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textSm
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+                            UiInput {
+                                objectName: "advancedSearch"
+                                Layout.preferredWidth: 220
+                                iconPath: Icons.search
+                                placeholderText: qsTr("Find a setting…")
+                                onTextChanged: root.advancedFilter = text
+                            }
+                            UiButton {
+                                objectName: "advancedResetAll"
+                                variant: "outline"
+                                iconPath: Icons.refresh
+                                text: qsTr("Reset all")
+                                onClicked: resetAllDialog.open()
+                            }
+                        }
+
+                        Repeater {
+                            model: root.advancedGroups
+
+                            SettingsGroup {
+                                id: advGroup
+                                required property var modelData
+                                readonly property var groupRows: root.advancedRows.filter(r => r.group === modelData && root.matchesFilter(r))
+                                visible: groupRows.length > 0
+                                title: modelData
+
+                                Repeater {
+                                    model: advGroup.groupRows
+                                    SettingRow {
+                                        required property var modelData
+                                        key: modelData.key
+                                        label: modelData.label
+                                        type: modelData.type === "int" ? "number" : modelData.type === "bool" ? "switch"
+                                            : modelData.type === "enum" ? "select" : "text"
+                                        suffix: root.unitLabel(modelData.unit)
+                                        controlWidth: modelData.type === "string" ? 300 : modelData.type === "enum" ? 200 : 140
+                                        options: modelData.options.map(o => ({ key: o.key, label: root.optionLabel(o.key) }))
+                                        description: (modelData.restart ? qsTr("Applies after a restart. ") : "")
+                                                     + (root.isDefault(modelData) ? "" : qsTr("Default: %1").arg(root.defaultText(modelData)))
+                                        UiButton {
+                                            visible: !root.isDefault(modelData)
+                                            size: "iconSm"
+                                            variant: "ghost"
+                                            iconPath: Icons.refresh
+                                            Accessible.name: qsTr("Reset %1").arg(modelData.label)
+                                            onClicked: AppSettings.resetValue(modelData.key)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Text {
+                            visible: root.advancedRows.every(r => !root.matchesFilter(r))
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("No setting matches.")
+                            color: Theme.textDim
+                            font.family: Theme.fontText
+                            font.pixelSize: Theme.textSm
                         }
                     }
                 }

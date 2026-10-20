@@ -68,6 +68,13 @@ public:
     // A free port for "Random"
     Q_INVOKABLE int randomPort() const;
 
+    // The "Advanced" table: [{key, group, label, type ("int", "bool", "string", "enum"), options [{key, label}],
+    // min, max, unit, default, restart}] in display order
+    Q_INVOKABLE QVariantList advancedSettings() const;
+    // Back to the default; returns "" or the error
+    Q_INVOKABLE QString resetValue(const QString &key);
+    Q_INVOKABLE void resetAdvanced();
+
 signals:
     void changed(const QString &key);
 
@@ -79,6 +86,7 @@ private:
     };
 
     void registerLive();
+    void registerAdvancedLive();
     void registerMemory();
 
     QHash<QString, Entry> m_entries;

@@ -28,7 +28,9 @@
 
 #include "appsettings.h"
 
+#include <QCoreApplication>
 #include <QRandomGenerator>
+#include <QTime>
 
 #include "base/bittorrent/session.h"
 #include "base/bittorrent/sharelimits.h"
@@ -38,6 +40,7 @@
 #include "base/net/portforwarder.h"
 #include "base/net/proxyconfigurationmanager.h"
 #include "base/path.h"
+#include "base/preferences.h"
 
 using BitTorrent::Session;
 
@@ -154,6 +157,166 @@ namespace
     {
         return enumValues(key).contains(v.toString()) ? QString() : QObject::tr("Unknown option.");
     }
+
+    // --- Advanced -------------------------------------------------------------------------------
+    struct AdvancedSpec
+    {
+        QString key;
+        const char *group;
+        const char *label;
+        QString type;                 // "int", "bool", "string", "enum"
+        QVariant def;
+        int min = 0;
+        int max = 0;
+        const char *unit = "";
+        QList<std::pair<QString, int>> options; // enum: key -> core value
+        bool restart = false;
+    };
+
+
+    const QList<AdvancedSpec> &advancedSpecs()
+    {
+        static const QList<AdvancedSpec> specs {
+            // Disk
+            {u"asyncIOThreads"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Asynchronous I/O threads"), u"int"_s, 10, 1, 1024},
+            {u"hashingThreads"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Hashing threads"), u"int"_s, 1, 1, 1024},
+            {u"filePoolSize"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "File pool size"), u"int"_s, 100, 1, 100000},
+            {u"checkingMemUsage"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Memory for checking torrents"), u"int"_s, 32, 1, 1024, "MiB"},
+            {u"diskQueueSize"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Disk queue size"), u"int"_s, 1024, 1, 1048576, "KiB"},
+            {u"diskIOType"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Disk I/O type"), u"enum"_s, u"default"_s, 0, 0, "",
+                {{u"default"_s, int(BitTorrent::DiskIOType::Default)}, {u"mmap"_s, int(BitTorrent::DiskIOType::MMap)},
+                 {u"posix"_s, int(BitTorrent::DiskIOType::Posix)}, {u"simple"_s, int(BitTorrent::DiskIOType::SimplePreadPwrite)}}, true},
+            {u"diskIOReadMode"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Disk read mode"), u"enum"_s, u"osCache"_s, 0, 0, "",
+                {{u"noOsCache"_s, int(BitTorrent::DiskIOReadMode::DisableOSCache)}, {u"osCache"_s, int(BitTorrent::DiskIOReadMode::EnableOSCache)}}},
+            {u"diskIOWriteMode"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Disk write mode"), u"enum"_s, u"osCache"_s, 0, 0, "",
+                {{u"noOsCache"_s, int(BitTorrent::DiskIOWriteMode::DisableOSCache)}, {u"osCache"_s, int(BitTorrent::DiskIOWriteMode::EnableOSCache)},
+                 {u"writeThrough"_s, int(BitTorrent::DiskIOWriteMode::WriteThrough)}}},
+            {u"coalesceReadWrite"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Coalesce reads and writes"), u"bool"_s, true},
+            {u"pieceExtentAffinity"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Piece extent affinity"), u"bool"_s, false},
+            {u"suggestMode"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Send upload piece suggestions"), u"bool"_s, false},
+            {u"saveResumeDataInterval"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Save resume data every"), u"int"_s, 60, 0, 1440, "min"},
+            {u"maxActiveChecking"_s, QT_TRANSLATE_NOOP("AppSettings", "Disk"), QT_TRANSLATE_NOOP("AppSettings", "Torrents checked at once"), u"int"_s, 1, -1, 1000},
+            // Network
+            {u"sendBufferWatermark"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Send buffer watermark"), u"int"_s, 500, 1, 1048576, "KiB"},
+            {u"sendBufferLowWatermark"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Send buffer low watermark"), u"int"_s, 10, 1, 1048576, "KiB"},
+            {u"sendBufferWatermarkFactor"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Send buffer watermark factor"), u"int"_s, 50, 1, 1000, "%"},
+            {u"connectionSpeed"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Outgoing connections per second"), u"int"_s, 30, 0, 1000},
+            {u"socketSendBufferSize"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Socket send buffer (0: system default)"), u"int"_s, 0, 0, 1048576, "KiB"},
+            {u"socketReceiveBufferSize"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Socket receive buffer (0: system default)"), u"int"_s, 0, 0, 1048576, "KiB"},
+            {u"socketBacklogSize"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Socket backlog size"), u"int"_s, 30, 1, 100000},
+            {u"outgoingPortsMin"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Outgoing ports from (0: any)"), u"int"_s, 0, 0, 65535},
+            {u"outgoingPortsMax"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Outgoing ports to (0: any)"), u"int"_s, 0, 0, 65535},
+            {u"upnpLeaseDuration"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "UPnP lease duration (0: permanent)"), u"int"_s, 0, 0, 1000000, "s"},
+            {u"peerDSCP"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Type of service (DSCP) for peer connections"), u"int"_s, 1, 0, 63},
+            {u"utpMixedMode"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "TCP and µTP mixed mode"), u"enum"_s, u"preferTcp"_s, 0, 0, "",
+                {{u"preferTcp"_s, int(BitTorrent::MixedModeAlgorithm::TCP)}, {u"proportional"_s, int(BitTorrent::MixedModeAlgorithm::Proportional)}}},
+            {u"idnSupport"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Internationalized domain names"), u"bool"_s, false},
+            {u"multiConnectionsPerIp"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Several connections from one IP"), u"bool"_s, false},
+            {u"validateHttpsTrackers"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Validate HTTPS tracker certificates"), u"bool"_s, true},
+            {u"ssrfMitigation"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Server-side request forgery mitigation"), u"bool"_s, true},
+            {u"blockPrivilegedPorts"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Block peers on privileged ports"), u"bool"_s, false},
+            {u"hostnameCacheTTL"_s, QT_TRANSLATE_NOOP("AppSettings", "Network"), QT_TRANSLATE_NOOP("AppSettings", "Host name cache lifetime"), u"int"_s, 1200, 0, 1000000, "s"},
+            // Peers
+            {u"chokingAlgorithm"_s, QT_TRANSLATE_NOOP("AppSettings", "Peers"), QT_TRANSLATE_NOOP("AppSettings", "Upload slots behavior"), u"enum"_s, u"fixedSlots"_s, 0, 0, "",
+                {{u"fixedSlots"_s, int(BitTorrent::ChokingAlgorithm::FixedSlots)}, {u"rateBased"_s, int(BitTorrent::ChokingAlgorithm::RateBased)}}},
+            {u"seedChokingAlgorithm"_s, QT_TRANSLATE_NOOP("AppSettings", "Peers"), QT_TRANSLATE_NOOP("AppSettings", "Upload choking algorithm"), u"enum"_s, u"fastestUpload"_s, 0, 0, "",
+                {{u"roundRobin"_s, int(BitTorrent::SeedChokingAlgorithm::RoundRobin)}, {u"fastestUpload"_s, int(BitTorrent::SeedChokingAlgorithm::FastestUpload)},
+                 {u"antiLeech"_s, int(BitTorrent::SeedChokingAlgorithm::AntiLeech)}}},
+            {u"peerTurnover"_s, QT_TRANSLATE_NOOP("AppSettings", "Peers"), QT_TRANSLATE_NOOP("AppSettings", "Peer turnover"), u"int"_s, 4, 0, 100, "%"},
+            {u"peerTurnoverCutoff"_s, QT_TRANSLATE_NOOP("AppSettings", "Peers"), QT_TRANSLATE_NOOP("AppSettings", "Peer turnover threshold"), u"int"_s, 90, 0, 100, "%"},
+            {u"peerTurnoverInterval"_s, QT_TRANSLATE_NOOP("AppSettings", "Peers"), QT_TRANSLATE_NOOP("AppSettings", "Peer turnover interval"), u"int"_s, 300, 0, 3600, "s"},
+            {u"requestQueueSize"_s, QT_TRANSLATE_NOOP("AppSettings", "Peers"), QT_TRANSLATE_NOOP("AppSettings", "Outstanding requests per peer"), u"int"_s, 500, 1, 100000},
+            // Trackers
+            {u"announceToAllTrackers"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "Announce to all trackers in a tier"), u"bool"_s, false},
+            {u"announceToAllTiers"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "Announce to all tiers"), u"bool"_s, true},
+            {u"announceIP"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "IP address reported to trackers"), u"string"_s, QString()},
+            {u"announcePort"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "Port reported to trackers (0: listening port)"), u"int"_s, 0, 0, 65535},
+            {u"maxConcurrentHTTPAnnounces"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "Concurrent HTTP announces"), u"int"_s, 50, 1, 1000},
+            {u"stopTrackerTimeout"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "Stop tracker timeout"), u"int"_s, 2, 0, 600, "s"},
+            {u"reannounceOnAddressChange"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "Reannounce when the IP or port changes"), u"bool"_s, false},
+            {u"dhtBootstrapNodes"_s, QT_TRANSLATE_NOOP("AppSettings", "Trackers"), QT_TRANSLATE_NOOP("AppSettings", "DHT bootstrap nodes"), u"string"_s,
+                u"dht.libtorrent.org:25401, dht.transmissionbt.com:6881, router.bittorrent.com:6881"_s},
+        };
+        return specs;
+    }
+
+    const AdvancedSpec *advancedSpec(const QString &key)
+    {
+        for (const AdvancedSpec &spec : advancedSpecs())
+        {
+            if (spec.key == key)
+                return &spec;
+        }
+        return nullptr;
+    }
+
+    QString checkAdvanced(const AdvancedSpec &spec, const QVariant &v)
+    {
+        if (spec.type == u"int")
+            return checkRange(v, spec.min, spec.max);
+        if (spec.type == u"enum")
+        {
+            for (const auto &option : spec.options)
+            {
+                if (option.first == v.toString())
+                    return {};
+            }
+            return QObject::tr("Unknown option.");
+        }
+        return {};
+    }
+
+    int advancedEnumValue(const AdvancedSpec &spec, const QString &name)
+    {
+        for (const auto &option : spec.options)
+        {
+            if (option.first == name)
+                return option.second;
+        }
+        return 0;
+    }
+
+    QString advancedEnumName(const AdvancedSpec &spec, const int value)
+    {
+        for (const auto &option : spec.options)
+        {
+            if (option.second == value)
+                return option.first;
+        }
+        return spec.def.toString();
+    }
+
+    // Scheduler: days as strings, times as "HH:mm"
+    const QList<std::pair<QString, Scheduler::Days>> &schedulerDayNames()
+    {
+        static const QList<std::pair<QString, Scheduler::Days>> names {
+            {u"everyDay"_s, Scheduler::Days::EveryDay}, {u"weekday"_s, Scheduler::Days::Weekday}, {u"weekend"_s, Scheduler::Days::Weekend},
+            {u"monday"_s, Scheduler::Days::Monday}, {u"tuesday"_s, Scheduler::Days::Tuesday}, {u"wednesday"_s, Scheduler::Days::Wednesday},
+            {u"thursday"_s, Scheduler::Days::Thursday}, {u"friday"_s, Scheduler::Days::Friday}, {u"saturday"_s, Scheduler::Days::Saturday},
+            {u"sunday"_s, Scheduler::Days::Sunday}
+        };
+        return names;
+    }
+
+    QString checkTime(const QVariant &v)
+    {
+        return QTime::fromString(v.toString(), u"HH:mm"_s).isValid() ? QString() : QObject::tr("Enter a time as HH:MM.");
+    }
+
+    const QVariantMap &allDefaults()
+    {
+        static const QVariantMap map = []
+        {
+            QVariantMap m = defaults();
+            m.insert(u"schedulerFrom"_s, u"08:00"_s);
+            m.insert(u"schedulerTo"_s, u"20:00"_s);
+            m.insert(u"schedulerDays"_s, u"everyDay"_s);
+            for (const AdvancedSpec &spec : advancedSpecs())
+                m.insert(spec.key, spec.def);
+            return m;
+        }();
+        return map;
+    }
 }
 
 AppSettings::AppSettings(QObject *parent)
@@ -177,7 +340,7 @@ int AppSettings::revision() const
 
 QStringList AppSettings::keys() const
 {
-    return defaults().keys();
+    return allDefaults().keys();
 }
 
 QVariant AppSettings::value(const QString &key) const
@@ -210,15 +373,32 @@ int AppSettings::randomPort() const
 
 void AppSettings::registerMemory()
 {
-    m_memory = defaults();
-    for (const QString &key : defaults().keys())
+    m_memory = allDefaults();
+    for (const QString &key : allDefaults().keys())
     {
         m_entries.insert(key, {
             [this, key] { return m_memory.value(key); },
             [this, key](const QVariant &v) -> QString
             {
-                const QVariant def = defaults().value(key);
-                if (!enumValues(key).isEmpty())
+                const QVariant def = allDefaults().value(key);
+                if (const AdvancedSpec *spec = advancedSpec(key))
+                {
+                    if (const QString e = checkAdvanced(*spec, v); !e.isEmpty())
+                        return e;
+                }
+                else if ((key == u"schedulerFrom") || (key == u"schedulerTo"))
+                {
+                    if (const QString e = checkTime(v); !e.isEmpty())
+                        return e;
+                }
+                else if (key == u"schedulerDays")
+                {
+                    const bool known = std::any_of(schedulerDayNames().cbegin(), schedulerDayNames().cend(),
+                        [&v](const auto &day) { return day.first == v.toString(); });
+                    if (!known)
+                        return tr("Unknown option.");
+                }
+                else if (!enumValues(key).isEmpty())
                 {
                     if (const QString e = checkEnum(key, v); !e.isEmpty())
                         return e;
@@ -419,4 +599,178 @@ void AppSettings::registerLive()
     boolEntry(u"addTrackersEnabled"_s, [s] { return s->isAddTrackersEnabled(); }, [s](bool b) { s->setAddTrackersEnabled(b); });
     m_entries.insert(u"additionalTrackers"_s, {[s] { return QVariant(s->additionalTrackers()); },
         [s](const QVariant &v) { s->setAdditionalTrackers(v.toString()); return QString(); }});
+
+    registerAdvancedLive();
+}
+
+QVariantList AppSettings::advancedSettings() const
+{
+    QVariantList list;
+    for (const AdvancedSpec &spec : advancedSpecs())
+    {
+        QVariantList options;
+        for (const auto &option : spec.options)
+            options.append(QVariantMap {{u"key"_s, option.first}, {u"label"_s, option.first}});
+        list.append(QVariantMap {
+            {u"key"_s, spec.key},
+            {u"group"_s, QCoreApplication::translate("AppSettings", spec.group)},
+            {u"label"_s, QCoreApplication::translate("AppSettings", spec.label)},
+            {u"type"_s, spec.type},
+            {u"options"_s, options},
+            {u"min"_s, spec.min},
+            {u"max"_s, spec.max},
+            {u"unit"_s, QString::fromLatin1(spec.unit)},
+            {u"default"_s, spec.def},
+            {u"restart"_s, spec.restart}
+        });
+    }
+    return list;
+}
+
+QString AppSettings::resetValue(const QString &key)
+{
+    if (!allDefaults().contains(key))
+        return tr("Unknown setting.");
+    return setValue(key, allDefaults().value(key));
+}
+
+void AppSettings::resetAdvanced()
+{
+    for (const AdvancedSpec &spec : advancedSpecs())
+        setValue(spec.key, spec.def);
+}
+
+void AppSettings::registerAdvancedLive()
+{
+    Session *s = Session::instance();
+
+    // getter/setter in the core's units; `scale` converts KiB shown to bytes stored
+    const auto intEntry = [this](const QString &key, std::function<qint64 ()> get, std::function<void (qint64)> set, const int scale = 1)
+    {
+        const AdvancedSpec *spec = advancedSpec(key);
+        m_entries.insert(key, {
+            [get, scale] { return QVariant(static_cast<int>(get() / scale)); },
+            [spec, set, scale](const QVariant &v) -> QString
+            {
+                if (const QString e = checkAdvanced(*spec, v); !e.isEmpty())
+                    return e;
+                set(static_cast<qint64>(v.toInt()) * scale);
+                return {};
+            }});
+    };
+    const auto boolEntry = [this](const QString &key, std::function<bool ()> get, std::function<void (bool)> set)
+    {
+        m_entries.insert(key, {[get] { return QVariant(get()); }, [set](const QVariant &v) { set(v.toBool()); return QString(); }});
+    };
+    const auto enumEntry = [this](const QString &key, std::function<int ()> get, std::function<void (int)> set)
+    {
+        const AdvancedSpec *spec = advancedSpec(key);
+        m_entries.insert(key, {
+            [spec, get] { return QVariant(advancedEnumName(*spec, get())); },
+            [spec, set](const QVariant &v) -> QString
+            {
+                if (const QString e = checkAdvanced(*spec, v); !e.isEmpty())
+                    return e;
+                set(advancedEnumValue(*spec, v.toString()));
+                return {};
+            }});
+    };
+    const auto stringEntry = [this](const QString &key, std::function<QString ()> get, std::function<void (const QString &)> set)
+    {
+        m_entries.insert(key, {[get] { return QVariant(get()); }, [set](const QVariant &v) { set(v.toString().trimmed()); return QString(); }});
+    };
+
+    using namespace BitTorrent;
+    intEntry(u"asyncIOThreads"_s, [s] { return s->asyncIOThreads(); }, [s](qint64 v) { s->setAsyncIOThreads(int(v)); });
+    intEntry(u"hashingThreads"_s, [s] { return s->hashingThreads(); }, [s](qint64 v) { s->setHashingThreads(int(v)); });
+    intEntry(u"filePoolSize"_s, [s] { return s->filePoolSize(); }, [s](qint64 v) { s->setFilePoolSize(int(v)); });
+    intEntry(u"checkingMemUsage"_s, [s] { return s->checkingMemUsage(); }, [s](qint64 v) { s->setCheckingMemUsage(int(v)); });
+    intEntry(u"diskQueueSize"_s, [s] { return s->diskQueueSize(); }, [s](qint64 v) { s->setDiskQueueSize(v); }, 1024);
+    enumEntry(u"diskIOType"_s, [s] { return int(s->diskIOType()); }, [s](int v) { s->setDiskIOType(static_cast<DiskIOType>(v)); });
+    enumEntry(u"diskIOReadMode"_s, [s] { return int(s->diskIOReadMode()); }, [s](int v) { s->setDiskIOReadMode(static_cast<DiskIOReadMode>(v)); });
+    enumEntry(u"diskIOWriteMode"_s, [s] { return int(s->diskIOWriteMode()); }, [s](int v) { s->setDiskIOWriteMode(static_cast<DiskIOWriteMode>(v)); });
+    boolEntry(u"coalesceReadWrite"_s, [s] { return s->isCoalesceReadWriteEnabled(); }, [s](bool b) { s->setCoalesceReadWriteEnabled(b); });
+    boolEntry(u"pieceExtentAffinity"_s, [s] { return s->usePieceExtentAffinity(); }, [s](bool b) { s->setPieceExtentAffinity(b); });
+    boolEntry(u"suggestMode"_s, [s] { return s->isSuggestModeEnabled(); }, [s](bool b) { s->setSuggestMode(b); });
+    intEntry(u"saveResumeDataInterval"_s, [s] { return s->saveResumeDataInterval(); }, [s](qint64 v) { s->setSaveResumeDataInterval(int(v)); });
+    intEntry(u"maxActiveChecking"_s, [s] { return s->maxActiveCheckingTorrents(); }, [s](qint64 v) { s->setMaxActiveCheckingTorrents(int(v)); });
+
+    intEntry(u"sendBufferWatermark"_s, [s] { return s->sendBufferWatermark(); }, [s](qint64 v) { s->setSendBufferWatermark(int(v)); });
+    intEntry(u"sendBufferLowWatermark"_s, [s] { return s->sendBufferLowWatermark(); }, [s](qint64 v) { s->setSendBufferLowWatermark(int(v)); });
+    intEntry(u"sendBufferWatermarkFactor"_s, [s] { return s->sendBufferWatermarkFactor(); }, [s](qint64 v) { s->setSendBufferWatermarkFactor(int(v)); });
+    intEntry(u"connectionSpeed"_s, [s] { return s->connectionSpeed(); }, [s](qint64 v) { s->setConnectionSpeed(int(v)); });
+    intEntry(u"socketSendBufferSize"_s, [s] { return s->socketSendBufferSize(); }, [s](qint64 v) { s->setSocketSendBufferSize(int(v)); }, 1024);
+    intEntry(u"socketReceiveBufferSize"_s, [s] { return s->socketReceiveBufferSize(); }, [s](qint64 v) { s->setSocketReceiveBufferSize(int(v)); }, 1024);
+    intEntry(u"socketBacklogSize"_s, [s] { return s->socketBacklogSize(); }, [s](qint64 v) { s->setSocketBacklogSize(int(v)); });
+    intEntry(u"outgoingPortsMin"_s, [s] { return s->outgoingPortsMin(); }, [s](qint64 v) { s->setOutgoingPortsMin(int(v)); });
+    intEntry(u"outgoingPortsMax"_s, [s] { return s->outgoingPortsMax(); }, [s](qint64 v) { s->setOutgoingPortsMax(int(v)); });
+    intEntry(u"upnpLeaseDuration"_s, [s] { return s->UPnPLeaseDuration(); }, [s](qint64 v) { s->setUPnPLeaseDuration(int(v)); });
+    intEntry(u"peerDSCP"_s, [s] { return s->peerDSCP(); }, [s](qint64 v) { s->setPeerDSCP(int(v)); });
+    enumEntry(u"utpMixedMode"_s, [s] { return int(s->utpMixedMode()); }, [s](int v) { s->setUtpMixedMode(static_cast<MixedModeAlgorithm>(v)); });
+    boolEntry(u"idnSupport"_s, [s] { return s->isIDNSupportEnabled(); }, [s](bool b) { s->setIDNSupportEnabled(b); });
+    boolEntry(u"multiConnectionsPerIp"_s, [s] { return s->multiConnectionsPerIpEnabled(); }, [s](bool b) { s->setMultiConnectionsPerIpEnabled(b); });
+    boolEntry(u"validateHttpsTrackers"_s, [s] { return s->validateHTTPSTrackerCertificate(); }, [s](bool b) { s->setValidateHTTPSTrackerCertificate(b); });
+    boolEntry(u"ssrfMitigation"_s, [s] { return s->isSSRFMitigationEnabled(); }, [s](bool b) { s->setSSRFMitigationEnabled(b); });
+    boolEntry(u"blockPrivilegedPorts"_s, [s] { return s->blockPeersOnPrivilegedPorts(); }, [s](bool b) { s->setBlockPeersOnPrivilegedPorts(b); });
+    intEntry(u"hostnameCacheTTL"_s, [s] { return s->hostnameCacheTTL(); }, [s](qint64 v) { s->setHostnameCacheTTL(int(v)); });
+
+    enumEntry(u"chokingAlgorithm"_s, [s] { return int(s->chokingAlgorithm()); }, [s](int v) { s->setChokingAlgorithm(static_cast<ChokingAlgorithm>(v)); });
+    enumEntry(u"seedChokingAlgorithm"_s, [s] { return int(s->seedChokingAlgorithm()); }, [s](int v) { s->setSeedChokingAlgorithm(static_cast<SeedChokingAlgorithm>(v)); });
+    intEntry(u"peerTurnover"_s, [s] { return s->peerTurnover(); }, [s](qint64 v) { s->setPeerTurnover(int(v)); });
+    intEntry(u"peerTurnoverCutoff"_s, [s] { return s->peerTurnoverCutoff(); }, [s](qint64 v) { s->setPeerTurnoverCutoff(int(v)); });
+    intEntry(u"peerTurnoverInterval"_s, [s] { return s->peerTurnoverInterval(); }, [s](qint64 v) { s->setPeerTurnoverInterval(int(v)); });
+    intEntry(u"requestQueueSize"_s, [s] { return s->requestQueueSize(); }, [s](qint64 v) { s->setRequestQueueSize(int(v)); });
+
+    boolEntry(u"announceToAllTrackers"_s, [s] { return s->announceToAllTrackers(); }, [s](bool b) { s->setAnnounceToAllTrackers(b); });
+    boolEntry(u"announceToAllTiers"_s, [s] { return s->announceToAllTiers(); }, [s](bool b) { s->setAnnounceToAllTiers(b); });
+    stringEntry(u"announceIP"_s, [s] { return s->announceIP(); }, [s](const QString &v) { s->setAnnounceIP(v); });
+    intEntry(u"announcePort"_s, [s] { return s->announcePort(); }, [s](qint64 v) { s->setAnnouncePort(int(v)); });
+    intEntry(u"maxConcurrentHTTPAnnounces"_s, [s] { return s->maxConcurrentHTTPAnnounces(); }, [s](qint64 v) { s->setMaxConcurrentHTTPAnnounces(int(v)); });
+    intEntry(u"stopTrackerTimeout"_s, [s] { return s->stopTrackerTimeout(); }, [s](qint64 v) { s->setStopTrackerTimeout(int(v)); });
+    boolEntry(u"reannounceOnAddressChange"_s, [s] { return s->isReannounceWhenAddressChangedEnabled(); },
+        [s](bool b) { s->setReannounceWhenAddressChangedEnabled(b); });
+    stringEntry(u"dhtBootstrapNodes"_s, [s] { return s->getDHTBootstrapNodes(); }, [s](const QString &v) { s->setDHTBootstrapNodes(v); });
+
+    // Alternative speed schedule (kept in Preferences; the session's scheduler reads it)
+    m_entries.insert(u"schedulerFrom"_s, {
+        [] { return QVariant(Preferences::instance()->getSchedulerStartTime().toString(u"HH:mm"_s)); },
+        [](const QVariant &v) -> QString
+        {
+            if (const QString e = checkTime(v); !e.isEmpty())
+                return e;
+            Preferences::instance()->setSchedulerStartTime(QTime::fromString(v.toString(), u"HH:mm"_s));
+            return {};
+        }});
+    m_entries.insert(u"schedulerTo"_s, {
+        [] { return QVariant(Preferences::instance()->getSchedulerEndTime().toString(u"HH:mm"_s)); },
+        [](const QVariant &v) -> QString
+        {
+            if (const QString e = checkTime(v); !e.isEmpty())
+                return e;
+            Preferences::instance()->setSchedulerEndTime(QTime::fromString(v.toString(), u"HH:mm"_s));
+            return {};
+        }});
+    m_entries.insert(u"schedulerDays"_s, {
+        []
+        {
+            const Scheduler::Days days = Preferences::instance()->getSchedulerDays();
+            for (const auto &[name, value] : schedulerDayNames())
+            {
+                if (value == days)
+                    return QVariant(name);
+            }
+            return QVariant(u"everyDay"_s);
+        },
+        [](const QVariant &v) -> QString
+        {
+            for (const auto &[name, value] : schedulerDayNames())
+            {
+                if (name == v.toString())
+                {
+                    Preferences::instance()->setSchedulerDays(value);
+                    return {};
+                }
+            }
+            return QObject::tr("Unknown option.");
+        }});
 }
