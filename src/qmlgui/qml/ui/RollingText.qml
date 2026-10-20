@@ -1,10 +1,11 @@
 import QtQuick
 import Flux
 
-// Text whose characters roll like an odometer when they change: each place has its own slot, a new
-// character slides in while the old one slides out. Slots count from the right, so the unit stays put
-// and a new leading digit just fades in. `value` (optional) sets the direction: up when it grows,
-// down when it falls. Use a mono font for figures so the digits keep their places.
+// Text whose characters roll like an odometer when they change: each place has its own slot, and only
+// a place whose character changed rolls, the new character pushing the old one out (a carousel, no
+// fading). Slots count from the right, so the unit stays put when the figure gains a digit. `value`
+// (optional) sets the direction: up when it grows, down when it falls. Use a mono font for figures so
+// the digits keep their places.
 Item {
     id: root
 
@@ -35,6 +36,20 @@ Item {
         font: root.font
     }
 
+    // One entry per place. Places are added and removed at the left end only, so a figure growing a
+    // digit ("9,8" → "10,2") keeps every other slot and its state: just the changed characters roll.
+    ListModel {
+        id: places
+    }
+    function _syncPlaces() {
+        while (places.count < text.length)
+            places.append({ place: 0 })
+        while (places.count > text.length)
+            places.remove(places.count - 1)
+    }
+    onTextChanged: _syncPlaces()
+    Component.onCompleted: _syncPlaces()
+
     Row {
         id: row
         anchors.right: root.horizontalAlignment === Text.AlignRight ? parent.right : undefined
@@ -43,7 +58,7 @@ Item {
         layoutDirection: Qt.RightToLeft
 
         Repeater {
-            model: root.text.length
+            model: places
 
             // One place, counted from the right
             Item {
@@ -67,16 +82,7 @@ Item {
                     NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutCubic }
                 }
 
-                // a new place fades in
-                opacity: 0
-                Component.onCompleted: {
-                    shown = ch
-                    opacity = 1
-                }
-                Behavior on opacity {
-                    enabled: !Theme.reducedMotion
-                    NumberAnimation { duration: Theme.durMed }
-                }
+                Component.onCompleted: shown = ch
 
                 onChChanged: {
                     if (ch === shown)
@@ -96,23 +102,22 @@ Item {
                     property: "t"
                     from: 0
                     to: 1
-                    duration: 320
+                    duration: 380
                     easing.type: Easing.OutCubic
                 }
 
+                // a carousel: the old character rolls out of the slot as the new one rolls in behind it
                 Text {
                     id: outgoing
                     visible: slot.t < 1
-                    y: -slot.t * slot.dir * slot.height * 0.9
-                    opacity: 1 - slot.t
+                    y: -slot.t * slot.dir * slot.height
                     text: slot.leaving
                     color: root.color
                     font: root.font
                 }
                 Text {
                     id: incoming
-                    y: (1 - slot.t) * slot.dir * slot.height * 0.9
-                    opacity: Math.min(1, slot.t * 1.6)
+                    y: (1 - slot.t) * slot.dir * slot.height
                     text: slot.shown
                     color: root.color
                     font: root.font

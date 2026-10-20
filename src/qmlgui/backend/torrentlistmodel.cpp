@@ -28,6 +28,8 @@
 
 #include "torrentlistmodel.h"
 
+#include <algorithm>
+
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
@@ -634,12 +636,15 @@ void TorrentListModel::sampleHistory()
     {
         qreal down = r.dlSpeed;
         qreal up = r.upSpeed;
-        // demo rows hold still: give them a little life so the graph can be looked at
+        // demo rows hold still: a slow drift (a few per cent a second, within ±15 %) gives the graph life
         if (m_detached)
         {
-            const auto wobble = [](const qreal v) { return v * (0.75 + 0.5 * QRandomGenerator::global()->generateDouble()); };
-            down = wobble(down);
-            up = wobble(up);
+            qreal &drift = m_demoDrift[r.id];
+            if (drift == 0)
+                drift = 1;
+            drift = std::clamp(drift + (QRandomGenerator::global()->generateDouble() - 0.5) * 0.06, 0.85, 1.15);
+            down *= drift;
+            up *= (2 - drift);
         }
         m_history[r.id].append(down, up, HISTORY_SIZE);
         present.insert(r.id);

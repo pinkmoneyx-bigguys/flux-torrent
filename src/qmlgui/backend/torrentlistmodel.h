@@ -208,6 +208,8 @@ private:
         void append(qreal d, qreal u, int limit);
     };
     QHash<QString, SpeedSeries> m_history;
+    // demo rows: a slow random walk around their rates, so the graph has something to show
+    QHash<QString, qreal> m_demoDrift;
     SpeedSeries m_totalHistory;
     qint64 m_sampledAt = 0;
     QTimer *m_historyTimer = nullptr;

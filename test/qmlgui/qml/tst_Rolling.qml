@@ -78,6 +78,33 @@ TestCase {
         compare(slots()[0].dir, -1, "down when it falls")
     }
 
+    // 24 → 29: only the ones roll; the tens stay as they are
+    function test_onlyTheChangedDigitRolls() {
+        rolling.value = 24
+        rolling.text = "24"
+        wait(450)
+        rolling.value = 29
+        rolling.text = "29"
+        const s = slots()
+        verify(s[0].t < 1, "the 4 → 9 place rolls")
+        compare(s[1].t, 1, "the 2 does not move")
+        tryCompare(s[0], "t", 1, 1000)
+    }
+
+    // A figure that gains a digit keeps its places (and their state): only the new one is added
+    function test_placesSurviveGrowing() {
+        rolling.text = "9,8"
+        wait(450)
+        const before = slots()
+        rolling.text = "10,2"
+        const after = slots()
+        compare(after.length, 4)
+        verify(after[0] === before[0] && after[1] === before[1] && after[2] === before[2], "the same slots")
+        compare(after[1].t, 1, "the comma stays put")
+        rolling.text = "9,8"
+        compare(slots().length, 3, "and drops it again")
+    }
+
     // The graph shows what fits: legend, time line and scale labels drop out as it shrinks
     function test_graphFitsSmallSpaces() {
         graph.height = 300

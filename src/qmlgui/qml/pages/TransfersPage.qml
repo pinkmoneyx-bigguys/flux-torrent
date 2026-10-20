@@ -78,7 +78,7 @@ Surface {
     readonly property var optionalColumns: ["swarm", "eta", "ratio"]
     readonly property real nameMin: 200
     // checkbox, row menu and the row's side margins
-    readonly property real chromeWidth: 28 + 36 + 12 + 4
+    readonly property real chromeWidth: 28 + 36 + Theme.sp(6) + Theme.sp(3)
     property var widths: Object.assign({}, defaultWidths, UiSettings.columnWidths("transfers"))
 
     function cw(key) {
@@ -259,23 +259,16 @@ Surface {
 
         // --- Table ------------------------------------------------------------------------------
         Rectangle {
+            // the table runs edge to edge under the header; its rows line up with the title
             id: tableFrame
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.leftMargin: Theme.sp(6)
-            Layout.rightMargin: Theme.sp(6)
-            Layout.topMargin: Theme.sp(4)
-            Layout.bottomMargin: details.visible ? 0 : Theme.sp(6)
-            radius: Theme.radiusCtl + 2
             color: "transparent"
-            border.width: 1
-            border.color: Theme.border
             clip: true
 
             Item {
                 id: table
                 anchors.fill: parent
-                anchors.margins: 1
 
                 ListView {
                     id: list
@@ -521,8 +514,8 @@ Surface {
     component Cells: RowLayout {
         spacing: 0
         anchors.fill: parent
-        anchors.leftMargin: 12
-        anchors.rightMargin: 4
+        anchors.leftMargin: Theme.sp(6)
+        anchors.rightMargin: Theme.sp(3)
     }
 
     component HeaderCell: AbstractButton {
