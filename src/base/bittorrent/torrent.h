@@ -318,6 +318,15 @@ namespace BitTorrent
         virtual nonstd::expected<void, QString> exportToFile(const Path &path) const = 0;
 
         virtual QFuture<QList<PeerInfo>> fetchPeerInfo() const = 0;
+#ifdef QBT_QML_GUI
+        // Streaming (Flux): read-ahead deadlines and piece lookups
+        // Each pair is {piece index, deadline in ms}; pieces already downloaded are ignored by libtorrent
+        virtual void setPieceDeadlines(const QList<std::pair<int, int>> &pieceDeadlines) = 0;
+        virtual void clearPieceDeadlines() = 0;
+        virtual bool havePiece(int index) const = 0;
+        // The piece holding byte `offset` of file `fileIndex` and the offset inside it; {-1, 0} without metadata
+        virtual std::pair<int, qint64> mapFileOffset(int fileIndex, qint64 offset) const = 0;
+#endif
         virtual QFuture<QList<QUrl>> fetchURLSeeds() const = 0;
         virtual QFuture<QList<int>> fetchPieceAvailability() const = 0;
         virtual QFuture<QBitArray> fetchDownloadingPieces() const = 0;

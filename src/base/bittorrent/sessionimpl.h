@@ -233,6 +233,9 @@ namespace BitTorrent
         int uploadSpeedLimit() const override;
         void setUploadSpeedLimit(int limit) override;
         bool isAltGlobalSpeedLimitEnabled() const override;
+#ifdef QBT_QML_GUI
+        void setPieceAlertsEnabled(bool enabled) override;
+#endif
         void setAltGlobalSpeedLimitEnabled(bool enabled) override;
         bool isBandwidthSchedulerEnabled() const override;
         void setBandwidthSchedulerEnabled(bool enabled) override;
@@ -582,6 +585,10 @@ namespace BitTorrent
 
         void handleAlert(lt::alert *alert);
         void handleAddTorrentAlert(const lt::add_torrent_alert *alert);
+#ifdef QBT_QML_GUI
+        void handlePieceFinishedAlert(const lt::piece_finished_alert *alert);
+        int m_pieceAlertUsers = 0;
+#endif
         void handleStateUpdateAlert(const lt::state_update_alert *alert);
         void handleMetadataReceivedAlert(const lt::metadata_received_alert *alert);
         void handleFileErrorAlert(const lt::file_error_alert *alert);

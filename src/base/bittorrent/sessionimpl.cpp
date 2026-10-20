@@ -1875,7 +1875,11 @@ lt::settings_pack SessionImpl::loadLTSettings() const
         | lt::alert::port_mapping_notification
         | lt::alert::status_notification
         | lt::alert::storage_notification
-        | lt::alert::tracker_notification;
+        | lt::alert::tracker_notification
+#ifdef QBT_QML_GUI
+        | ((m_pieceAlertUsers > 0) ? lt::alert_category::piece_progress : lt::alert_category_t())
+#endif
+        ;
     settingsPack.set_int(lt::settings_pack::alert_mask, alertMask);
 
     settingsPack.set_int(lt::settings_pack::connection_speed, connectionSpeed());
@@ -5855,6 +5859,11 @@ void SessionImpl::handleAlert(lt::alert *alert)
         case lt::add_torrent_alert::alert_type:
             handleAddTorrentAlert(static_cast<const lt::add_torrent_alert *>(alert));
             break;
+#ifdef QBT_QML_GUI
+        case lt::piece_finished_alert::alert_type:
+            handlePieceFinishedAlert(static_cast<const lt::piece_finished_alert *>(alert));
+            break;
+#endif
         case lt::torrent_removed_alert::alert_type:
             handleTorrentRemovedAlert(static_cast<const lt::torrent_removed_alert *>(alert));
             break;
@@ -5938,6 +5947,26 @@ TorrentImpl *SessionImpl::createTorrent(const lt::torrent_handle &nativeHandle, 
 
     return torrent;
 }
+
+#ifdef QBT_QML_GUI
+void SessionImpl::setPieceAlertsEnabled(const bool enabled)
+{
+    const bool wasOn = (m_pieceAlertUsers > 0);
+    m_pieceAlertUsers = std::max(0, m_pieceAlertUsers + (enabled ? 1 : -1));
+    if (wasOn == (m_pieceAlertUsers > 0))
+        return;
+
+    lt::settings_pack settingsPack;
+    settingsPack.set_int(lt::settings_pack::alert_mask, loadLTSettings().get_int(lt::settings_pack::alert_mask));
+    m_nativeSession->apply_settings(std::move(settingsPack));
+}
+
+void SessionImpl::handlePieceFinishedAlert(const lt::piece_finished_alert *alert)
+{
+    if (TorrentImpl *torrent = getTorrent(alert->handle))
+        emit pieceFinished(torrent, static_cast<int>(alert->piece_index));
+}
+#endif
 
 TorrentImpl *SessionImpl::getTorrent(const lt::torrent_handle &nativeHandle) const
 {

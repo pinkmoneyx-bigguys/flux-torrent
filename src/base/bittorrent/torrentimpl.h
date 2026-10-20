@@ -257,6 +257,12 @@ namespace BitTorrent
         nonstd::expected<void, QString> exportToFile(const Path &path) const override;
 
         QFuture<QList<PeerInfo>> fetchPeerInfo() const override;
+#ifdef QBT_QML_GUI
+        void setPieceDeadlines(const QList<std::pair<int, int>> &pieceDeadlines) override;
+        void clearPieceDeadlines() override;
+        bool havePiece(int index) const override;
+        std::pair<int, qint64> mapFileOffset(int fileIndex, qint64 offset) const override;
+#endif
         QFuture<QList<QUrl>> fetchURLSeeds() const override;
         QFuture<QList<int>> fetchPieceAvailability() const override;
         QFuture<QBitArray> fetchDownloadingPieces() const override;

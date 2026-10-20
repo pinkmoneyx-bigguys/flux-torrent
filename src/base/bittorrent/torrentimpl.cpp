@@ -2765,6 +2765,36 @@ void TorrentImpl::flushCache() const
     m_nativeHandle.flush_cache();
 }
 
+#ifdef QBT_QML_GUI
+void TorrentImpl::setPieceDeadlines(const QList<std::pair<int, int>> &pieceDeadlines)
+{
+    for (const auto &[piece, deadline] : pieceDeadlines)
+        m_nativeHandle.set_piece_deadline(lt::piece_index_t {piece}, deadline);
+}
+
+void TorrentImpl::clearPieceDeadlines()
+{
+    m_nativeHandle.clear_piece_deadlines();
+}
+
+bool TorrentImpl::havePiece(const int index) const
+{
+    if (!hasMetadata() || (index < 0) || (index >= piecesCount()))
+        return false;
+    return m_nativeHandle.have_piece(lt::piece_index_t {index});
+}
+
+std::pair<int, qint64> TorrentImpl::mapFileOffset(const int fileIndex, const qint64 offset) const
+{
+    if (!hasMetadata() || (fileIndex < 0) || (fileIndex >= filesCount()))
+        return {-1, 0};
+
+    const lt::file_index_t nativeIndex = m_torrentInfo.nativeIndexes().at(fileIndex);
+    const lt::peer_request request = nativeTorrentInfo()->files().map_file(nativeIndex, offset, 0);
+    return {static_cast<int>(request.piece), request.start};
+}
+#endif
+
 QString TorrentImpl::createMagnetURI() const
 {
     QString ret = u"magnet:?"_s;

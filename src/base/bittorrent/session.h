@@ -260,6 +260,10 @@ namespace BitTorrent
         virtual void setUploadSpeedLimit(int limit) = 0;
         virtual bool isAltGlobalSpeedLimitEnabled() const = 0;
         virtual void setAltGlobalSpeedLimitEnabled(bool enabled) = 0;
+#ifdef QBT_QML_GUI
+        // Streaming (Flux): piece_finished alerts (pieceFinished) only flow while at least one user asked for them
+        virtual void setPieceAlertsEnabled(bool enabled) = 0;
+#endif
         virtual bool isBandwidthSchedulerEnabled() const = 0;
         virtual void setBandwidthSchedulerEnabled(bool enabled) = 0;
 
@@ -516,6 +520,9 @@ namespace BitTorrent
         void torrentSavingModeChanged(Torrent *torrent);
         void torrentsLoaded(const QList<Torrent *> &torrents);
         void torrentsUpdated(const QList<Torrent *> &torrents);
+#ifdef QBT_QML_GUI
+        void pieceFinished(Torrent *torrent, int piece);
+#endif
         void torrentTagAdded(Torrent *torrent, const Tag &tag);
         void torrentTagRemoved(Torrent *torrent, const Tag &tag);
         void trackerError(Torrent *torrent, const QString &tracker);
