@@ -709,14 +709,12 @@ Surface {
         elide: Text.ElideRight
     }
 
-    // A small figure line inside a two-line cell
-    component FigureLine: Text {
+    // A small figure line inside a two-line cell; its digits roll when the figure changes
+    component FigureLine: RollingText {
         Layout.fillWidth: true
         font.family: Theme.fontMono
         font.pixelSize: 12
-        font.features: { "tnum": 1 }
         horizontalAlignment: Text.AlignRight
-        elide: Text.ElideLeft
         Behavior on color {
             enabled: !Theme.reducedMotion
             ColorAnimation { duration: Theme.durMed }
@@ -986,10 +984,12 @@ Surface {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: 2
                 FigureLine {
+                    value: rowItem.dlSpeed
                     text: "↓ " + (rowItem.dlSpeed > 0 ? Format.speed(rowItem.dlSpeed) : "—")
                     color: rowItem.dlSpeed > 0 ? Theme.download : Theme.textFaint
                 }
                 FigureLine {
+                    value: rowItem.upSpeed
                     text: "↑ " + (rowItem.upSpeed > 0 ? Format.speed(rowItem.upSpeed) : "—")
                     color: rowItem.upSpeed > 0 ? Theme.upload : Theme.textFaint
                 }

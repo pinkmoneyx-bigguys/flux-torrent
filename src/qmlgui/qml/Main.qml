@@ -205,6 +205,7 @@ ApplicationWindow {
             onSidebarToggleRequested: window.toggleSidebar()
             onActionRequested: id => window.runCommand(id)
             sidebarCollapsed: window.sidebarCollapsed
+            railWidth: sidebar.railWidth
             objectName: "titleBar"
             anchors.fill: parent
             anchors.leftMargin: Theme.glass ? Theme.gap : 0

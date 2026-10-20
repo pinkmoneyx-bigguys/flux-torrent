@@ -15,6 +15,8 @@ Item {
     // Default look: the logo block is as wide as the sidebar under it
     property real logoWidth: 236
     property bool sidebarCollapsed: false
+    // the folded sidebar's width (default look), to centre the logo over it
+    property real railWidth: 48
 
     readonly property alias altSpeedButton: altButton
     readonly property alias logoButton: logoBtn
@@ -141,7 +143,9 @@ Item {
 
         RowLayout {
             id: logoRow
-            x: Theme.glass ? (root.sidebarCollapsed ? 7 : Theme.sp(2)) : (root.sidebarCollapsed ? (root.logoWidth - 24) / 2 : Theme.sp(4))
+            // a fixed spot in each state (never the animating block width, which would restart the slide
+            // every frame): centred over the folded rail, or at the usual inset
+            x: Theme.glass ? (root.sidebarCollapsed ? 7 : Theme.sp(2)) : (root.sidebarCollapsed ? (root.railWidth - 24) / 2 : Theme.sp(4))
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.glass ? 10 : Theme.sp(2)
             Behavior on x {

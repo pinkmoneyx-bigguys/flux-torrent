@@ -151,26 +151,26 @@ Surface {
                 NumberAnimation { duration: Theme.durFast }
             }
 
-            Text {
+            RollingText {
                 objectName: "sidebarDownRate"
                 text: "↓ " + Format.speed(root.downloadRate)
+                value: root.downloadRate
                 color: root.downloadRate > 0 ? Theme.download : Theme.textFaint
                 font.family: Theme.fontMono
                 font.pixelSize: Theme.textXs
-                font.features: { "tnum": 1 }
                 Accessible.name: qsTr("Download speed %1").arg(Format.speed(root.downloadRate))
                 Behavior on color {
                     enabled: !Theme.reducedMotion
                     ColorAnimation { duration: Theme.durMed }
                 }
             }
-            Text {
+            RollingText {
                 objectName: "sidebarUpRate"
                 text: "↑ " + Format.speed(root.uploadRate)
+                value: root.uploadRate
                 color: root.uploadRate > 0 ? Theme.upload : Theme.textFaint
                 font.family: Theme.fontMono
                 font.pixelSize: Theme.textXs
-                font.features: { "tnum": 1 }
                 Accessible.name: qsTr("Upload speed %1").arg(Format.speed(root.uploadRate))
                 Behavior on color {
                     enabled: !Theme.reducedMotion

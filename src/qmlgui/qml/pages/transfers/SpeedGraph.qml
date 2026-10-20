@@ -30,6 +30,12 @@ Item {
     }
 
     readonly property real step: plot.width / Math.max(1, span - 1)
+
+    // What fits: the legend and the time line need height; the scale labels need room between grid
+    // lines (all three, only the top one, or none) and a column on the right
+    readonly property bool showLegend: height >= 120
+    readonly property bool showTime: height >= 84
+    readonly property int scaleLabels: width < 220 ? 0 : plot.height >= 96 ? 3 : plot.height >= 34 ? 1 : 0
     // solid behind the hover card and the dots (the glass background is see-through)
     readonly property color cardColor: Theme.glass ? "#16161C" : Theme.background
 
@@ -125,6 +131,8 @@ Item {
         id: legend
         x: 0
         y: 0
+        visible: graph.showLegend
+        height: visible ? implicitHeight : 0
         spacing: Theme.sp(5)
 
         Repeater {
@@ -149,13 +157,13 @@ Item {
                     font.family: Theme.fontText
                     font.pixelSize: Theme.textXs
                 }
-                Text {
+                RollingText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: Format.speed(modelData.value)
+                    value: modelData.value
                     color: Theme.text
                     font.family: Theme.fontMono
                     font.pixelSize: 12
-                    font.features: { "tnum": 1 }
                 }
             }
         }
@@ -167,11 +175,11 @@ Item {
         objectName: "speedPlot"
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.rightMargin: 76
+        anchors.rightMargin: graph.scaleLabels > 0 ? 76 : 0
         anchors.top: legend.bottom
-        anchors.topMargin: Theme.sp(3)
+        anchors.topMargin: graph.showLegend ? Theme.sp(3) : 2
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 18
+        anchors.bottomMargin: graph.showTime ? 18 : 2
         clip: true
 
         // grid: the top of the scale and two lines under it
@@ -283,7 +291,7 @@ Item {
         }
         Rectangle {
             id: hoverCard
-            visible: plot.hoverIndex >= 0
+            visible: plot.hoverIndex >= 0 && plot.height >= height + 8
             readonly property real lineX: plot.hoverIndex >= 0 ? graph.xAt(plot.hoverIndex, graph.down.length) - graph.phase * graph.step : 0
             x: lineX + 12 + width > plot.width ? lineX - 12 - width : lineX + 12
             y: 8
@@ -321,9 +329,9 @@ Item {
         }
     }
 
-    // scale labels on the right, at the grid lines
+    // scale labels on the right, at the grid lines (as many as fit)
     Repeater {
-        model: 3
+        model: graph.scaleLabels
         Text {
             required property int index
             x: plot.x + plot.width + 10
@@ -337,6 +345,7 @@ Item {
     }
     // time under the plot
     Text {
+        visible: graph.showTime
         x: plot.x
         y: plot.y + plot.height + 4
         text: qsTr("%1 min ago").arg(Math.round(graph.span * graph.interval / 60000))
@@ -345,6 +354,7 @@ Item {
         font.pixelSize: 11
     }
     Text {
+        visible: graph.showTime
         x: plot.x + plot.width - width
         y: plot.y + plot.height + 4
         text: qsTr("now")
