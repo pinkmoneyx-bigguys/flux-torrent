@@ -26,11 +26,19 @@ Item {
 
     // reading `revision` in the expression itself makes the binding follow every change (a bare
     // `AppSettings.revision;` statement is dropped by the QML compiler and tracks nothing)
-    readonly property var value: AppSettings.revision >= 0 ? AppSettings.value(key) : undefined
+    // A row for a value that is not in AppSettings: show `externalValue`, report changes with externalCommit()
+    property bool external: false
+    property var externalValue
+    signal externalCommit(var value)
+
+    readonly property var value: external ? externalValue : (AppSettings.revision >= 0 ? AppSettings.value(key) : undefined)
     property string error: ""
 
     function commit(v) {
-        error = AppSettings.setValue(key, v)
+        if (external)
+            externalCommit(v)
+        else
+            error = AppSettings.setValue(key, v)
     }
 
     width: parent ? parent.width : 0

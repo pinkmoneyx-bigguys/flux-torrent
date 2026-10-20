@@ -18,6 +18,7 @@ ApplicationWindow {
     property var titleBarHitTestItems: []
     readonly property alias windowAgent: agent
     readonly property alias titleBarArea: titleBarArea
+    readonly property alias playerView: playerView
 
     width: 1440
     height: 920
@@ -299,9 +300,85 @@ ApplicationWindow {
         playerView.play(m.torrentId, m.fileIndex, m.title, detail, url, stream, resume)
     }
 
-    // The player closed: give the torrent back
+    // The player closed: give the torrent back, then "After watching" (Settings → Streaming)
     function afterPlayback(watchedToEnd) {
         if (playerView.streaming)
             StreamManager.close(playerView.torrentId, playerView.fileIndex)
+        if (!watchedToEnd)
+            return
+        const id = playerView.torrentId
+        switch (AppSettings.value("afterWatching")) {
+        case "delete":
+            scheduleDelete(id)
+            break
+        case "keep":
+            break
+        default:
+            afterWatchDialog.ask(id, playerView.title)
+        }
+    }
+
+    // Deleting waits 10 s behind an "Undo" toast; nothing is touched before that
+    property string pendingDeleteId: ""
+    function scheduleDelete(torrentId) {
+        if (pendingDeleteId !== "")
+            TorrentListModel.remove([pendingDeleteId], true) // an earlier one goes now
+        pendingDeleteId = torrentId
+        const name = TorrentListModel.get(torrentId).name ?? ""
+        windowToast.show(qsTr("“%1” will be deleted with its files").arg(name), false, qsTr("Undo"))
+    }
+    Connections {
+        target: windowToast
+        function onActionTriggered() {
+            window.pendingDeleteId = ""
+        }
+        function onDismissed() {
+            if (window.pendingDeleteId === "")
+                return
+            TorrentListModel.remove([window.pendingDeleteId], true)
+            window.pendingDeleteId = ""
+        }
+    }
+
+    UiDialog {
+        id: afterWatchDialog
+        objectName: "afterWatchDialog"
+        property string torrentId
+        function ask(id, name) {
+            torrentId = id
+            title = qsTr("Watched “%1”").arg(name)
+            dontAsk.checked = false
+            open()
+        }
+        description: qsTr("Delete the torrent and its downloaded files, or keep seeding it?")
+
+        function choose(choice) {
+            if (dontAsk.checked)
+                AppSettings.setValue("afterWatching", choice)
+            close()
+            if (choice === "delete")
+                window.scheduleDelete(torrentId)
+        }
+
+        RowLayout {
+            spacing: Theme.sp(2)
+            UiCheckBox {
+                id: dontAsk
+                objectName: "afterWatchDontAsk"
+                Accessible.name: dontAskLabel.text
+            }
+            Text {
+                id: dontAskLabel
+                text: qsTr("Don't ask again")
+                color: Theme.text
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textSm
+                TapHandler { onTapped: dontAsk.toggle() }
+            }
+        }
+        footerItems: [
+            UiButton { variant: "outline"; text: qsTr("Keep seeding"); onClicked: afterWatchDialog.choose("keep") },
+            UiButton { objectName: "afterWatchDelete"; variant: "destructive"; text: qsTr("Delete files"); onClicked: afterWatchDialog.choose("delete") }
+        ]
     }
 }

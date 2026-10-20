@@ -75,8 +75,9 @@ public:
     // Media bitrate in bytes per second, from the player (0: unknown)
     void setBitrate(qint64 bytesPerSecond);
 
-    // {position, bufferedAhead (bytes on disk in a row from the position), size, downloadRate, complete}
-    QVariantMap stats() const;
+    // {position, bufferedAhead (bytes on disk in a row from `fromByte`, or from the last read when it is < 0),
+    //  size, downloadRate, complete}. The player passes its playhead: the server reads far ahead of it.
+    QVariantMap stats(qint64 fromByte = -1) const;
 
     // StreamSource
     qint64 size() const override;

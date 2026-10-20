@@ -77,8 +77,8 @@ public:
     Q_INVOKABLE void closeAll();
     // The player's measured bitrate, for the smooth window
     Q_INVOKABLE void setBitrate(const QString &torrentId, int fileIndex, qint64 bytesPerSecond);
-    // StreamSession::stats() of an open stream, or {}
-    Q_INVOKABLE QVariantMap stats(const QString &torrentId, int fileIndex) const;
+    // StreamSession::stats() of an open stream, or {}; `fromByte` is the playhead in the file
+    Q_INVOKABLE QVariantMap stats(const QString &torrentId, int fileIndex, qint64 fromByte = -1) const;
     // Whether open() turned on a file marked "do not download" (the UI tells the user)
     Q_INVOKABLE bool enabledSkippedFile(const QString &torrentId, int fileIndex) const;
 

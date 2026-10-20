@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Flux
 
 // shadcn Select: an outline trigger showing the current option and a chevron; the options open in a
-// menu with a check on the current one. `model`: [{key, label}].
+// menu with a check on the current one. `model`: [{key, label, disabled}] (disabled: shown, not choosable).
 AbstractButton {
     id: root
 
@@ -94,6 +94,7 @@ AbstractButton {
             UiMenuItem {
                 required property var modelData
                 text: modelData.label
+                enabled: !(modelData.disabled ?? false)
                 iconPath: modelData.key === root.currentKey ? Icons.check : ""
                 leftPadding: modelData.key === root.currentKey ? 8 : 32
                 onTriggered: {

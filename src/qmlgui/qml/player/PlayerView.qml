@@ -147,7 +147,9 @@ FocusScope {
         repeat: true
         triggeredOnStart: true
         running: view.visible && view.streaming
-        onTriggered: view.stats = StreamManager.stats(view.torrentId, view.fileIndex)
+        // the playhead in bytes, roughly (constant bitrate): the server itself reads far ahead of it
+        onTriggered: view.stats = StreamManager.stats(view.torrentId, view.fileIndex,
+                                                      view.player && view.player.bitrate > 0 ? Math.floor(view.player.position * view.player.bitrate) : -1)
     }
     // seconds of video on disk ahead of the playhead (stream)
     readonly property real bufferedSeconds: streaming && player && player.bitrate > 0 && stats.bufferedAhead !== undefined

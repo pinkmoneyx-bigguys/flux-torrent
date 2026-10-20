@@ -287,8 +287,9 @@ void StreamSession::replan(const qint64 position)
     torrent->setPieceDeadlines(plan);
 }
 
-QVariantMap StreamSession::stats() const
+QVariantMap StreamSession::stats(const qint64 fromByte) const
 {
+    const qint64 from = (fromByte >= 0) ? std::min(fromByte, m_layout.fileSize) : m_lastRead;
     Torrent *torrent = m_torrent;
     const qint64 window = StreamPlanner::windowBytes(m_mode, m_bitrate);
     // the buffer gauge looks at most 128 MiB ahead: each piece is a call into libtorrent
@@ -297,7 +298,7 @@ QVariantMap StreamSession::stats() const
     return {
         {u"position"_s, m_lastRead},
         {u"size"_s, m_layout.fileSize},
-        {u"bufferedAhead"_s, available(m_lastRead, std::min(window, GAUGE_LIMIT))},
+        {u"bufferedAhead"_s, available(from, std::min(window, GAUGE_LIMIT))},
         {u"window"_s, window},
         {u"downloadRate"_s, torrent ? torrent->downloadPayloadRate() : 0},
         {u"complete"_s, (m_fileIndex < progress.size()) && (progress.at(m_fileIndex) >= 1)},

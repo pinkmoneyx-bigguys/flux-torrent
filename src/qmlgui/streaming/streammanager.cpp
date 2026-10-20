@@ -231,10 +231,10 @@ void StreamManager::setBitrate(const QString &torrentId, const int fileIndex, co
         stream->setBitrate(bytesPerSecond);
 }
 
-QVariantMap StreamManager::stats(const QString &torrentId, const int fileIndex) const
+QVariantMap StreamManager::stats(const QString &torrentId, const int fileIndex, const qint64 fromByte) const
 {
     const StreamSession *stream = session(keyOf(torrentId, fileIndex));
-    return stream ? stream->stats() : QVariantMap {};
+    return stream ? stream->stats(fromByte) : QVariantMap {};
 }
 
 bool StreamManager::enabledSkippedFile(const QString &torrentId, const int fileIndex) const

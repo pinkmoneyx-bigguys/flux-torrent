@@ -202,6 +202,19 @@ private slots:
         reply->deleteLater();
     }
 
+    void noticesDataWithoutSignal()
+    {
+        m_source->setAvailableLimit(0);
+        QElapsedTimer timer;
+        timer.start();
+        QNetworkReply *reply = get(m_server->url(u"abc/0"_s), "bytes=0-999");
+        QTimer::singleShot(200, this, [this] { m_source->setAvailableLimit(-1, false); });
+        QVERIFY(waitFinished(reply, 5000));
+        QVERIFY2(timer.elapsed() < 3000, "found by the once-a-second check");
+        QVERIFY(reply->readAll() == m_data.left(1000));
+        reply->deleteLater();
+    }
+
     void timeoutClosesConnection()
     {
         m_server->setWaitTimeout(300);

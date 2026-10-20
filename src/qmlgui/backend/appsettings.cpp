@@ -41,6 +41,7 @@
 #include "base/net/proxyconfigurationmanager.h"
 #include "base/path.h"
 #include "base/preferences.h"
+#include "base/settingsstorage.h"
 
 using BitTorrent::Session;
 
@@ -101,7 +102,10 @@ namespace
             {u"seedTimeMinutes"_s, 1440},
             {u"shareAction"_s, u"stop"_s},
             {u"addTrackersEnabled"_s, false},
-            {u"additionalTrackers"_s, QString()}
+            {u"additionalTrackers"_s, QString()},
+            // Watching (Flux's own, kept in the profile)
+            {u"afterWatching"_s, u"ask"_s},
+            {u"hardwareDecoding"_s, true}
         };
         return map;
     }
@@ -601,6 +605,32 @@ void AppSettings::registerLive()
         [s](const QVariant &v) { s->setAdditionalTrackers(v.toString()); return QString(); }});
 
     registerAdvancedLive();
+
+    // Watching: Flux's own values in the profile
+    const auto storedEntry = [this](const QString &key, const QString &storageKey, const QVariant &def, const QStringList &allowed)
+    {
+        m_entries.insert(key, {
+            [storageKey, def]
+            {
+                const SettingsStorage *storage = SettingsStorage::instance();
+                QVariant value = storage ? storage->loadValue<QVariant>(storageKey, def) : def;
+                // the INI file hands back strings ("true"): give QML the default's type
+                value.convert(def.metaType());
+                return value;
+            },
+            [storageKey, def, allowed](const QVariant &v) -> QString
+            {
+                if (!allowed.isEmpty() && !allowed.contains(v.toString()))
+                    return tr("Unknown option.");
+                QVariant value = v;
+                value.convert(def.metaType());
+                if (SettingsStorage *storage = SettingsStorage::instance())
+                    storage->storeValue(storageKey, value);
+                return {};
+            }});
+    };
+    storedEntry(u"afterWatching"_s, u"Flux/Player/AfterWatching"_s, u"ask"_s, {u"ask"_s, u"keep"_s, u"delete"_s});
+    storedEntry(u"hardwareDecoding"_s, u"Flux/Player/HardwareDecoding"_s, true, {});
 }
 
 QVariantList AppSettings::advancedSettings() const

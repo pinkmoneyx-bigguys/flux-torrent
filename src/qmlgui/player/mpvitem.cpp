@@ -463,9 +463,11 @@ bool MpvItem::command(const QStringList &args)
 
 void MpvItem::updateBitrate()
 {
-    qint64 bytesPerSecond = static_cast<qint64>((m_videoBitrate + m_audioBitrate) / 8);
-    if ((bytesPerSecond <= 0) && (m_fileSize > 0) && (m_duration > 0))
-        bytesPerSecond = static_cast<qint64>(m_fileSize / m_duration);
+    // The average over the file turns bytes into seconds best; the demuxer's packet bitrate is a moment's
+    // figure (a still scene reads as almost nothing) and only stands in until the size and length are known
+    qint64 bytesPerSecond = ((m_fileSize > 0) && (m_duration > 0))
+        ? static_cast<qint64>(m_fileSize / m_duration)
+        : static_cast<qint64>((m_videoBitrate + m_audioBitrate) / 8);
     // the demuxer's figure jitters every second: only report real changes (> 10 %)
     if ((bytesPerSecond > 0) && ((m_bitrate == 0) || (std::abs(bytesPerSecond - m_bitrate) * 10 > m_bitrate)))
     {

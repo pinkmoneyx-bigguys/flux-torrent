@@ -68,10 +68,11 @@ void FileStreamSource::noteRead(const qint64 offset)
     m_lastRead = offset;
 }
 
-void FileStreamSource::setAvailableLimit(const qint64 bytes)
+void FileStreamSource::setAvailableLimit(const qint64 bytes, const bool notify)
 {
     m_limit = bytes;
-    emit dataAvailable();
+    if (notify)
+        emit dataAvailable();
 }
 
 qint64 FileStreamSource::lastReadOffset() const

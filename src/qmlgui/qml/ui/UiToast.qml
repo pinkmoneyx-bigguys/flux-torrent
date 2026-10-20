@@ -3,16 +3,23 @@ import QtQuick.Layouts
 import Flux
 
 // shadcn Sonner-style toast: a popover card at the bottom right of its parent that fades in, stays a
-// few seconds and fades out. show(text, isError) replaces the current one.
+// few seconds and fades out. show(text, isError, actionText) replaces the current one; with an action it
+// stays 10 s and shows a button (actionTriggered).
 Rectangle {
     id: root
 
     property string text
     property bool isError: false
+    property string actionText: ""
+    signal actionTriggered()
+    // the toast went away (timeout or action)
+    signal dismissed()
 
-    function show(message, error) {
+    function show(message, error, action) {
         text = message
         isError = error === true
+        actionText = action ?? ""
+        hideTimer.interval = actionText !== "" ? 10000 : 3500
         opacity = 1
         hideTimer.restart()
     }
@@ -41,7 +48,10 @@ Rectangle {
     Timer {
         id: hideTimer
         interval: 3500
-        onTriggered: root.opacity = 0
+        onTriggered: {
+            root.opacity = 0
+            root.dismissed()
+        }
     }
 
     RowLayout {
@@ -67,6 +77,18 @@ Rectangle {
             wrapMode: Text.Wrap
             maximumLineCount: 3
             elide: Text.ElideRight
+        }
+        UiButton {
+            objectName: "toastAction"
+            visible: root.actionText !== ""
+            variant: "outline"
+            implicitHeight: 28
+            text: root.actionText
+            onClicked: {
+                hideTimer.stop()
+                root.opacity = 0
+                root.actionTriggered()
+            }
         }
     }
 }

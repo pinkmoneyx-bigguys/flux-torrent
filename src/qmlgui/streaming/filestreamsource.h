@@ -48,7 +48,8 @@ public:
     QByteArray read(qint64 offset, qint64 length) override;
     void noteRead(qint64 offset) override;
 
-    void setAvailableLimit(qint64 bytes);
+    // `notify` false: the data shows up without dataAvailable (like pieces confirmed by a recheck)
+    void setAvailableLimit(qint64 bytes, bool notify = true);
     qint64 lastReadOffset() const;
 
 private:

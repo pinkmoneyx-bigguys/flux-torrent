@@ -88,6 +88,9 @@ public:
         m_socket->setParent(this);
         m_waitTimer.setSingleShot(true);
         connect(&m_waitTimer, &QTimer::timeout, this, &StreamConnection::finish);
+        // data can also appear without a signal (pieces confirmed by a recheck): look again every second
+        m_pollTimer.setInterval(1000);
+        connect(&m_pollTimer, &QTimer::timeout, this, &StreamConnection::pump);
         connect(m_socket, &QTcpSocket::readyRead, this, &StreamConnection::onReadyRead);
         connect(m_socket, &QTcpSocket::bytesWritten, this, &StreamConnection::pump);
         connect(m_socket, &QTcpSocket::disconnected, this, &StreamConnection::finish);
@@ -198,9 +201,12 @@ private:
                 // not downloaded yet: wait for the source, but not forever
                 if (!m_waitTimer.isActive())
                     m_waitTimer.start(m_server->m_waitTimeout);
+                if (!m_pollTimer.isActive())
+                    m_pollTimer.start();
                 return;
             }
             m_waitTimer.stop();
+            m_pollTimer.stop();
 
             const QByteArray data = m_source->read(m_pos, ready);
             if (data.isEmpty())
@@ -228,6 +234,7 @@ private:
     {
         m_closing = true;
         m_waitTimer.stop();
+        m_pollTimer.stop();
         if (m_socket->bytesToWrite() == 0)
             m_socket->disconnectFromHost();
         else
@@ -240,6 +247,7 @@ private:
             return;
         m_finished = true;
         m_waitTimer.stop();
+        m_pollTimer.stop();
         m_socket->abort();
         --m_server->m_connections;
         emit m_server->connectionCountChanged();
@@ -256,6 +264,7 @@ private:
     qint64 m_pos = 0;
     qint64 m_end = -1;
     QTimer m_waitTimer;
+    QTimer m_pollTimer;
 };
 
 StreamServer::StreamServer(SourceProvider provider, QObject *parent)

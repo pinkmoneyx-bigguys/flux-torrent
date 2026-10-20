@@ -19,6 +19,7 @@ Surface {
         { key: "speed", label: qsTr("Speed"), icon: Icons.speed },
         { key: "connection", label: qsTr("Connection"), icon: Icons.network },
         { key: "bittorrent", label: qsTr("BitTorrent"), icon: Icons.bittorrent },
+        { key: "streaming", label: qsTr("Streaming"), icon: Icons.play },
         { key: "advanced", label: qsTr("Advanced"), icon: Icons.settings }
     ]
 
@@ -517,6 +518,66 @@ Surface {
                                 label: qsTr("Trackers")
                                 description: qsTr("One URL per line.")
                                 placeholder: "udp://tracker.example.org:1337/announce"
+                            }
+                        }
+                    }
+
+                    // ===== Streaming =====
+                    ColumnLayout {
+                        visible: root.section === "streaming"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
+
+                        SettingsGroup {
+                            title: qsTr("Watching while downloading")
+                            SettingRow {
+                                key: "streamMode"
+                                external: true
+                                externalValue: StreamManager.mode
+                                onExternalCommit: value => StreamManager.mode = value
+                                type: "select"
+                                label: qsTr("Stream mode")
+                                description: StreamManager.mode === "fast" ? qsTr("Starts soonest; may pause on a slow swarm.")
+                                           : StreamManager.mode === "economy" ? qsTr("Reads only a little ahead; the rest of the torrent keeps its pace.")
+                                           : qsTr("Keeps about four minutes downloaded ahead.")
+                                options: [
+                                    { key: "fast", label: qsTr("Fast start") },
+                                    { key: "smooth", label: qsTr("Smooth") },
+                                    { key: "economy", label: qsTr("Economy") }
+                                ]
+                            }
+                            SettingRow {
+                                key: "afterWatching"
+                                type: "select"
+                                label: qsTr("After watching")
+                                description: qsTr("What to do with a torrent once its video is watched to the end.")
+                                options: [
+                                    { key: "ask", label: qsTr("Ask") },
+                                    { key: "keep", label: qsTr("Keep seeding") },
+                                    { key: "delete", label: qsTr("Delete the files") }
+                                ]
+                            }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Player")
+                            SettingRow {
+                                key: "openWith"
+                                external: true
+                                externalValue: "builtin"
+                                type: "select"
+                                label: qsTr("Open videos with")
+                                description: qsTr("mpv and VLC are coming: Flux needs to know where you stopped and when you close them.")
+                                options: [
+                                    { key: "builtin", label: qsTr("Built-in player") },
+                                    { key: "mpv", label: qsTr("mpv — soon"), disabled: true },
+                                    { key: "vlc", label: qsTr("VLC — soon"), disabled: true }
+                                ]
+                                onExternalCommit: value => {} // only the built-in player for now
+                            }
+                            SettingRow {
+                                key: "hardwareDecoding"
+                                label: qsTr("Hardware decoding")
+                                description: qsTr("Decodes video on the graphics card. Turn off if the picture breaks up.")
                             }
                         }
                     }

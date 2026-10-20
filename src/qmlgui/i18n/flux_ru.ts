@@ -549,6 +549,42 @@
         <source>Settings: advanced</source>
         <translation>Настройки: дополнительно</translation>
     </message>
+    <message>
+        <source>Without the built-in player only downloaded files open.</source>
+        <translation>Без встроенного плеера открываются только скачанные файлы.</translation>
+    </message>
+    <message>
+        <source>This file was set to skip; it downloads now.</source>
+        <translation>Файл был отмечен «Не загружать» — теперь он загружается.</translation>
+    </message>
+    <message>
+        <source>“%1” will be deleted with its files</source>
+        <translation>«%1» будет удалён вместе с файлами</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Отменить</translation>
+    </message>
+    <message>
+        <source>Watched “%1”</source>
+        <translation>Досмотрено: «%1»</translation>
+    </message>
+    <message>
+        <source>Delete the torrent and its downloaded files, or keep seeding it?</source>
+        <translation>Удалить торрент вместе с загруженными файлами или продолжать раздавать?</translation>
+    </message>
+    <message>
+        <source>Don&apos;t ask again</source>
+        <translation>Больше не спрашивать</translation>
+    </message>
+    <message>
+        <source>Keep seeding</source>
+        <translation>Продолжать раздавать</translation>
+    </message>
+    <message>
+        <source>Delete files</source>
+        <translation>Удалить файлы</translation>
+    </message>
 </context>
 <context>
     <name>MediaPage</name>
@@ -653,12 +689,24 @@
         <translation>Закрыть</translation>
     </message>
     <message>
+        <source>Continue from %1</source>
+        <translation>Продолжить с %1</translation>
+    </message>
+    <message>
         <source>Play</source>
         <translation>Смотреть</translation>
     </message>
     <message>
-        <source>The file is still downloading. Watching while it downloads comes with the built-in player.</source>
-        <translation>Файл ещё загружается. Смотреть во время загрузки можно будет во встроенном плеере.</translation>
+        <source>Watch while downloading</source>
+        <translation>Смотреть во время загрузки</translation>
+    </message>
+    <message>
+        <source>Play from the start</source>
+        <translation>Смотреть сначала</translation>
+    </message>
+    <message>
+        <source>The file is still downloading. Watching while it downloads needs the built-in player.</source>
+        <translation>Файл ещё загружается. Смотреть во время загрузки можно только во встроенном плеере.</translation>
     </message>
     <message>
         <source>Show in folder</source>
@@ -683,6 +731,108 @@
     <message>
         <source>Location</source>
         <translation>Расположение</translation>
+    </message>
+</context>
+<context>
+    <name>MpvItem</name>
+    <message>
+        <source>The video player could not start.</source>
+        <translation>Не удалось запустить видеоплеер.</translation>
+    </message>
+</context>
+<context>
+    <name>PlayerView</name>
+    <message>
+        <source>Can&apos;t play this file: %1</source>
+        <translation>Не удаётся воспроизвести файл: %1</translation>
+    </message>
+    <message>
+        <source>Fetching the start of the file…</source>
+        <translation>Загружаем начало файла…</translation>
+    </message>
+    <message>
+        <source>Opening…</source>
+        <translation>Открываем…</translation>
+    </message>
+    <message>
+        <source>Waiting for the download…</source>
+        <translation>Ждём загрузки…</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Назад</translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation>Загружено</translation>
+    </message>
+    <message>
+        <source>Buffer %1 · %2</source>
+        <translation>Буфер %1 · %2</translation>
+    </message>
+    <message>
+        <source>Continued from %1</source>
+        <translation>Продолжено с %1</translation>
+    </message>
+    <message>
+        <source>From the start</source>
+        <translation>С начала</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Пауза</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Воспроизвести</translation>
+    </message>
+    <message>
+        <source>Back 10 seconds</source>
+        <translation>Назад на 10 секунд</translation>
+    </message>
+    <message>
+        <source>Stream mode</source>
+        <translation>Режим потока</translation>
+    </message>
+    <message>
+        <source>Fast start</source>
+        <translation>Быстрый старт</translation>
+    </message>
+    <message>
+        <source>Smooth</source>
+        <translation>Плавно</translation>
+    </message>
+    <message>
+        <source>Economy</source>
+        <translation>Эконом</translation>
+    </message>
+    <message>
+        <source>Audio track</source>
+        <translation>Звуковая дорожка</translation>
+    </message>
+    <message>
+        <source>Subtitles</source>
+        <translation>Субтитры</translation>
+    </message>
+    <message>
+        <source>Mute</source>
+        <translation>Без звука</translation>
+    </message>
+    <message>
+        <source>Exit full screen</source>
+        <translation>Выйти из полноэкранного режима</translation>
+    </message>
+    <message>
+        <source>Full screen</source>
+        <translation>Во весь экран</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Выключены</translation>
+    </message>
+    <message>
+        <source>Track %1</source>
+        <translation>Дорожка %1</translation>
     </message>
 </context>
 <context>
@@ -1435,6 +1585,10 @@
         <translation>BitTorrent</translation>
     </message>
     <message>
+        <source>Streaming</source>
+        <translation>Стриминг</translation>
+    </message>
+    <message>
         <source>Advanced</source>
         <translation>Дополнительно</translation>
     </message>
@@ -1967,6 +2121,90 @@
         <translation>По одному адресу в строке.</translation>
     </message>
     <message>
+        <source>Watching while downloading</source>
+        <translation>Просмотр во время загрузки</translation>
+    </message>
+    <message>
+        <source>Stream mode</source>
+        <translation>Режим потока</translation>
+    </message>
+    <message>
+        <source>Starts soonest; may pause on a slow swarm.</source>
+        <translation>Запускается быстрее всего; на медленной раздаче может прерываться.</translation>
+    </message>
+    <message>
+        <source>Reads only a little ahead; the rest of the torrent keeps its pace.</source>
+        <translation>Читает совсем немного вперёд; остальная раздача качается в своём темпе.</translation>
+    </message>
+    <message>
+        <source>Keeps about four minutes downloaded ahead.</source>
+        <translation>Держит около четырёх минут загруженными наперёд.</translation>
+    </message>
+    <message>
+        <source>Fast start</source>
+        <translation>Быстрый старт</translation>
+    </message>
+    <message>
+        <source>Smooth</source>
+        <translation>Плавно</translation>
+    </message>
+    <message>
+        <source>Economy</source>
+        <translation>Эконом</translation>
+    </message>
+    <message>
+        <source>After watching</source>
+        <translation>После просмотра</translation>
+    </message>
+    <message>
+        <source>What to do with a torrent once its video is watched to the end.</source>
+        <translation>Что делать с раздачей, когда видео досмотрено до конца.</translation>
+    </message>
+    <message>
+        <source>Ask</source>
+        <translation>Спросить</translation>
+    </message>
+    <message>
+        <source>Keep seeding</source>
+        <translation>Продолжать раздавать</translation>
+    </message>
+    <message>
+        <source>Delete the files</source>
+        <translation>Удалить файлы</translation>
+    </message>
+    <message>
+        <source>Player</source>
+        <translation>Плеер</translation>
+    </message>
+    <message>
+        <source>Open videos with</source>
+        <translation>Чем открывать видео</translation>
+    </message>
+    <message>
+        <source>mpv and VLC are coming: Flux needs to know where you stopped and when you close them.</source>
+        <translation>mpv и VLC — скоро: Flux должен знать, где вы остановились и когда закрыли плеер.</translation>
+    </message>
+    <message>
+        <source>Built-in player</source>
+        <translation>Встроенный плеер</translation>
+    </message>
+    <message>
+        <source>mpv — soon</source>
+        <translation>mpv — скоро</translation>
+    </message>
+    <message>
+        <source>VLC — soon</source>
+        <translation>VLC — скоро</translation>
+    </message>
+    <message>
+        <source>Hardware decoding</source>
+        <translation>Аппаратное декодирование</translation>
+    </message>
+    <message>
+        <source>Decodes video on the graphics card. Turn off if the picture breaks up.</source>
+        <translation>Декодирует видео на видеокарте. Выключите, если картинка рассыпается.</translation>
+    </message>
+    <message>
         <source>Fine-tuning of qBittorrent and libtorrent. The defaults suit almost everyone.</source>
         <translation>Тонкая настройка qBittorrent и libtorrent. Значения по умолчанию подходят почти всем.</translation>
     </message>
@@ -2020,6 +2258,32 @@
     <message>
         <source>Settings</source>
         <translation>Настройки</translation>
+    </message>
+</context>
+<context>
+    <name>StreamManager</name>
+    <message>
+        <source>The torrent is not in the list.</source>
+        <translation>Этого торрента нет в списке.</translation>
+    </message>
+    <message>
+        <source>Could not start the local stream server.</source>
+        <translation>Не удалось запустить локальный сервер потока.</translation>
+    </message>
+</context>
+<context>
+    <name>StreamSession</name>
+    <message>
+        <source>The torrent is gone.</source>
+        <translation>Торрент удалён.</translation>
+    </message>
+    <message>
+        <source>The torrent has no file list yet.</source>
+        <translation>У торрента пока нет списка файлов.</translation>
+    </message>
+    <message>
+        <source>There is no such file in the torrent.</source>
+        <translation>В торренте нет такого файла.</translation>
     </message>
 </context>
 <context>
@@ -2457,6 +2721,10 @@
     <message>
         <source>Force start</source>
         <translation>Запустить принудительно</translation>
+    </message>
+    <message>
+        <source>Watch</source>
+        <translation>Смотреть</translation>
     </message>
     <message>
         <source>Open folder</source>
