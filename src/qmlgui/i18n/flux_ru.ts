@@ -118,14 +118,364 @@
     </message>
 </context>
 <context>
+    <name>RssManager</name>
+    <message>
+        <source>Enter the feed address.</source>
+        <translation>Введите адрес ленты.</translation>
+    </message>
+    <message>
+        <source>RSS is not available.</source>
+        <translation>RSS недоступен.</translation>
+    </message>
+    <message>
+        <source>Enter a folder name.</source>
+        <translation>Введите имя папки.</translation>
+    </message>
+    <message>
+        <source>Enter a name.</source>
+        <translation>Введите имя.</translation>
+    </message>
+    <message>
+        <source>Enter a rule name.</source>
+        <translation>Введите имя правила.</translation>
+    </message>
+    <message>
+        <source>A rule with this name already exists.</source>
+        <translation>Правило с таким именем уже есть.</translation>
+    </message>
+    <message>
+        <source>Could not rename the rule.</source>
+        <translation>Не удалось переименовать правило.</translation>
+    </message>
+</context>
+<context>
     <name>RssPage</name>
     <message>
         <source>RSS feeds</source>
         <translation>RSS-ленты</translation>
     </message>
     <message>
-        <source>Subscribe to feeds and download new episodes automatically.</source>
-        <translation>Подписывайтесь на ленты и скачивайте новые выпуски автоматически.</translation>
+        <source>Follow feeds and download new episodes automatically.</source>
+        <translation>Следите за лентами и скачивайте новые серии автоматически.</translation>
+    </message>
+    <message>
+        <source>Auto-download · %1</source>
+        <translation>Автозагрузка · %1</translation>
+    </message>
+    <message>
+        <source>Auto-download</source>
+        <translation>Автозагрузка</translation>
+    </message>
+    <message>
+        <source>Refresh all feeds</source>
+        <translation>Обновить все ленты</translation>
+    </message>
+    <message>
+        <source>Add feed</source>
+        <translation>Добавить ленту</translation>
+    </message>
+    <message>
+        <source>Feed updates are off</source>
+        <translation>Обновление лент выключено</translation>
+    </message>
+    <message>
+        <source>Flux does not check your feeds for new articles, and auto-download rules do not run.</source>
+        <translation>Flux не проверяет ленты на новые статьи, и правила автозагрузки не работают.</translation>
+    </message>
+    <message>
+        <source>Turn on</source>
+        <translation>Включить</translation>
+    </message>
+    <message>
+        <source>Feeds</source>
+        <translation>Ленты</translation>
+    </message>
+    <message>
+        <source>New folder</source>
+        <translation>Новая папка</translation>
+    </message>
+    <message>
+        <source>All feeds</source>
+        <translation>Все ленты</translation>
+    </message>
+    <message>
+        <source>Search articles…</source>
+        <translation>Поиск по статьям…</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Все</translation>
+    </message>
+    <message>
+        <source>Unread</source>
+        <translation>Непрочитанные</translation>
+    </message>
+    <message>
+        <source>Add a feed to see its articles here.</source>
+        <translation>Добавьте ленту, и её статьи появятся здесь.</translation>
+    </message>
+    <message>
+        <source>No articles match.</source>
+        <translation>Подходящих статей нет.</translation>
+    </message>
+    <message>
+        <source>No articles yet.</source>
+        <translation>Статей пока нет.</translation>
+    </message>
+    <message>
+        <source>Download torrent</source>
+        <translation>Скачать торрент</translation>
+    </message>
+    <message>
+        <source>Added “%1”</source>
+        <translation>Добавлен «%1»</translation>
+    </message>
+    <message>
+        <source>This article has no torrent.</source>
+        <translation>В этой статье нет торрента.</translation>
+    </message>
+    <message>
+        <source>Open in browser</source>
+        <translation>Открыть в браузере</translation>
+    </message>
+    <message>
+        <source>This article has no description.</source>
+        <translation>У статьи нет описания.</translation>
+    </message>
+    <message>
+        <source>No feeds yet</source>
+        <translation>Лент пока нет</translation>
+    </message>
+    <message>
+        <source>No article selected</source>
+        <translation>Статья не выбрана</translation>
+    </message>
+    <message>
+        <source>Add the RSS address of a tracker or a show to follow its new releases.</source>
+        <translation>Добавьте RSS-адрес трекера или сериала, чтобы следить за новыми релизами.</translation>
+    </message>
+    <message>
+        <source>Pick an article on the left to read it here.</source>
+        <translation>Выберите статью слева, чтобы прочитать её здесь.</translation>
+    </message>
+    <message>
+        <source>torrent</source>
+        <translation>торрент</translation>
+    </message>
+    <message>
+        <source>now</source>
+        <translation>сейчас</translation>
+    </message>
+    <message>
+        <source>%1 min</source>
+        <translation>%1 мин</translation>
+    </message>
+    <message>
+        <source>%1 h</source>
+        <translation>%1 ч</translation>
+    </message>
+    <message>
+        <source>%1 d</source>
+        <translation>%1 д</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Обновить</translation>
+    </message>
+    <message>
+        <source>Mark all as read</source>
+        <translation>Отметить всё прочитанным</translation>
+    </message>
+    <message>
+        <source>Rename…</source>
+        <translation>Переименовать…</translation>
+    </message>
+    <message>
+        <source>Remove…</source>
+        <translation>Удалить…</translation>
+    </message>
+    <message>
+        <source>Paste the RSS or Atom address. Trackers usually list it next to a search or on your profile page.</source>
+        <translation>Вставьте адрес RSS или Atom. Трекеры обычно дают его рядом с поиском или в профиле.</translation>
+    </message>
+    <message>
+        <source>Folder</source>
+        <translation>Папка</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>Без папки</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Добавить</translation>
+    </message>
+    <message>
+        <source>Folders group feeds; a folder shows the articles of all its feeds.</source>
+        <translation>Папки группируют ленты; папка показывает статьи всех своих лент.</translation>
+    </message>
+    <message>
+        <source>Folder name</source>
+        <translation>Имя папки</translation>
+    </message>
+    <message>
+        <source>Create</source>
+        <translation>Создать</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Переименовать</translation>
+    </message>
+    <message>
+        <source>Remove the folder “%1”?</source>
+        <translation>Удалить папку «%1»?</translation>
+    </message>
+    <message>
+        <source>Remove the feed “%1”?</source>
+        <translation>Удалить ленту «%1»?</translation>
+    </message>
+    <message>
+        <source>The folder and every feed in it are removed with their articles.</source>
+        <translation>Папка и все её ленты удалятся вместе со статьями.</translation>
+    </message>
+    <message>
+        <source>The feed and its downloaded articles are removed. Torrents you added stay.</source>
+        <translation>Лента и её статьи удалятся. Добавленные торренты останутся.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Удалить</translation>
+    </message>
+</context>
+<context>
+    <name>RulesDialog</name>
+    <message>
+        <source>Auto-download rules</source>
+        <translation>Правила автозагрузки</translation>
+    </message>
+    <message>
+        <source>New articles of the chosen feeds that match a rule are downloaded automatically.</source>
+        <translation>Новые статьи выбранных лент, подходящие под правило, скачиваются автоматически.</translation>
+    </message>
+    <message>
+        <source>Auto-download is on</source>
+        <translation>Автозагрузка включена</translation>
+    </message>
+    <message>
+        <source>Auto-download is off: rules are kept but do not run</source>
+        <translation>Автозагрузка выключена: правила сохранены, но не работают</translation>
+    </message>
+    <message>
+        <source>No rules yet</source>
+        <translation>Правил пока нет</translation>
+    </message>
+    <message>
+        <source>New rule</source>
+        <translation>Новое правило</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Имя</translation>
+    </message>
+    <message>
+        <source>e.g. My show 1080p</source>
+        <translation>например, Мой сериал 1080p</translation>
+    </message>
+    <message>
+        <source>Rule is on</source>
+        <translation>Правило включено</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Включено</translation>
+    </message>
+    <message>
+        <source>Must contain</source>
+        <translation>Должно содержать</translation>
+    </message>
+    <message>
+        <source>A regular expression.</source>
+        <translation>Регулярное выражение.</translation>
+    </message>
+    <message>
+        <source>Words are all required; | means or; * matches anything.</source>
+        <translation>Нужны все слова; | — «или»; * — что угодно.</translation>
+    </message>
+    <message>
+        <source>Must not contain</source>
+        <translation>Не должно содержать</translation>
+    </message>
+    <message>
+        <source>Skips matching articles, e.g. 720p | CAM</source>
+        <translation>Пропускает подходящие статьи, например 720p | CAM</translation>
+    </message>
+    <message>
+        <source>Regular expressions</source>
+        <translation>Регулярные выражения</translation>
+    </message>
+    <message>
+        <source>Smart episode filter</source>
+        <translation>Умный фильтр серий</translation>
+    </message>
+    <message>
+        <source>Episodes</source>
+        <translation>Серии</translation>
+    </message>
+    <message>
+        <source>Optional, e.g. 1x2;8-15;5;30- (season 1: episode 2, 8 to 15, 5, 30 and later)</source>
+        <translation>Необязательно, например 1x2;8-15;5;30- (сезон 1: серия 2, с 8 по 15, 5, с 30 и дальше)</translation>
+    </message>
+    <message>
+        <source>Category</source>
+        <translation>Категория</translation>
+    </message>
+    <message>
+        <source>Save to</source>
+        <translation>Сохранять в</translation>
+    </message>
+    <message>
+        <source>Default save path</source>
+        <translation>Путь по умолчанию</translation>
+    </message>
+    <message>
+        <source>Apply to feeds</source>
+        <translation>Для лент</translation>
+    </message>
+    <message>
+        <source>Would download now (%1)</source>
+        <translation>Скачается сейчас (%1)</translation>
+    </message>
+    <message>
+        <source>Pick at least one feed.</source>
+        <translation>Выберите хотя бы одну ленту.</translation>
+    </message>
+    <message>
+        <source>No current article matches.</source>
+        <translation>Ни одна текущая статья не подходит.</translation>
+    </message>
+    <message>
+        <source>and %1 more</source>
+        <translation>и ещё %1</translation>
+    </message>
+    <message>
+        <source>Delete rule</source>
+        <translation>Удалить правило</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <source>Create rule</source>
+        <translation>Создать правило</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Сохранить</translation>
     </message>
 </context>
 <context>

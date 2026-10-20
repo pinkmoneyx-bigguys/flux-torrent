@@ -53,6 +53,7 @@ set_source_files_properties(qml/ui/UiSelect.qml PROPERTIES QT_RESOURCE_ALIAS ui/
 set_source_files_properties(qml/ui/UiSpinner.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSpinner.qml)
 set_source_files_properties(qml/ui/UiToast.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiToast.qml)
 set_source_files_properties(qml/pages/search/PluginsDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/search/PluginsDialog.qml)
+set_source_files_properties(qml/pages/rss/RulesDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/rss/RulesDialog.qml)
 
 # Singletons must be flagged before qt_add_qml_module sees the files
 set_source_files_properties(qml/Theme.qml qml/Icons.qml qml/pages/transfers/TorrentStatus.qml
@@ -108,6 +109,7 @@ qt_add_qml_module(qbt_qmlgui
         qml/ui/UiSpinner.qml
         qml/ui/UiToast.qml
         qml/pages/search/PluginsDialog.qml
+        qml/pages/rss/RulesDialog.qml
     RESOURCES
         fonts/Onest-Variable.ttf
         fonts/Unbounded-Variable.ttf
@@ -137,6 +139,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/searchresults.cpp
         backend/searchengine.h
         backend/searchengine.cpp
+        backend/rssmanager.h
+        backend/rssmanager.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h
