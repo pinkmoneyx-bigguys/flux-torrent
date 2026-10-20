@@ -73,6 +73,8 @@ Surface {
     // Each column has a width the user can drag (kept in the profile); Name takes the rest. When Name
     // would get narrower than nameMin, the optional columns drop out, last in `optionalColumns` first.
     readonly property real tableWidth: table.width
+    // the column divider being dragged, if any (the table draws a guide under it)
+    property Item activeGrip: null
     readonly property var defaultWidths: ({ size: 88, progress: 190, speed: 116, eta: 84, swarm: 100, ratio: 72 })
     readonly property var minWidths: ({ size: 56, progress: 110, speed: 88, eta: 48, swarm: 64, ratio: 48 })
     readonly property var optionalColumns: ["swarm", "eta", "ratio"]
@@ -196,8 +198,6 @@ Surface {
             Layout.fillWidth: true
             title: page.title
             subtitle: TransfersState.status === "all" ? "" : TransfersState.label(TransfersState.status)
-            // the column header right below closes the block
-            bordered: false
 
             leading: UiInput {
                 id: searchInput
@@ -267,6 +267,17 @@ Surface {
             Layout.fillHeight: true
             color: "transparent"
             clip: true
+
+            // the dragged boundary, down the whole table
+            Rectangle {
+                objectName: "columnGuide"
+                visible: page.activeGrip !== null
+                z: 10
+                x: page.activeGrip ? Theme.sp(6) + page.activeGrip.x + page.activeGrip.width / 2 - 1 : 0
+                width: 2
+                height: parent.height
+                color: Theme.alpha(Theme.ring, 0.6)
+            }
 
             Item {
                 id: table
@@ -544,14 +555,6 @@ Surface {
         Accessible.role: Accessible.ColumnHeader
         Accessible.name: text
 
-        ColumnResizer {
-            objectName: "resizer_" + hc.column
-            visible: hc.resizes !== ""
-            // inside this cell (the next one would cover anything past its edge), flush with the boundary
-            x: hc.width + hc.Layout.rightMargin - width
-            column: hc.resizes
-            invert: hc.resizes !== hc.column
-        }
 
         background: null
         contentItem: RowLayout {
@@ -584,7 +587,9 @@ Surface {
         }
     }
 
-    // An 8 px grip on a column boundary: drag to resize, double-click for the default width
+    // A column boundary: a short divider like the title bar's separators, with a 12 px grip around it.
+    // Hovered it stands full height; dragged it turns to the ring colour and a guide runs down the
+    // table. Double-click: the default width.
     component ColumnResizer: MouseArea {
         id: grip
         property string column
@@ -593,9 +598,8 @@ Surface {
         property real _startX
         property real _startWidth
 
-        width: 8
+        width: 12
         height: parent.height
-        z: 2
         hoverEnabled: true
         cursorShape: Qt.SplitHCursor
         preventStealing: true
@@ -603,6 +607,7 @@ Surface {
         onPressed: mouse => {
             _startX = mapToItem(page, mouse.x, 0).x
             _startWidth = page.cw(column)
+            page.activeGrip = grip
         }
         onPositionChanged: mouse => {
             if (!pressed)
@@ -610,32 +615,33 @@ Surface {
             const delta = mapToItem(page, mouse.x, 0).x - _startX
             page.resizeColumn(column, _startWidth + (invert ? -delta : delta))
         }
-        onReleased: page.saveColumns()
+        onReleased: {
+            page.activeGrip = null
+            page.saveColumns()
+        }
+        onCanceled: page.activeGrip = null
         onDoubleClicked: page.resetColumn(column)
 
         Rectangle {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.centerIn: parent
             width: grip.pressed ? 2 : 1
-            height: grip.pressed ? parent.height : parent.height * 0.5
+            height: grip.pressed || grip.containsMouse ? parent.height - 10 : 14
             radius: 1
-            color: grip.pressed ? Theme.ring : Theme.border
-            opacity: grip.pressed || grip.containsMouse ? 1 : 0
-            Behavior on opacity {
-                enabled: !Theme.reducedMotion
-                NumberAnimation { duration: Theme.durFast }
-            }
+            color: grip.pressed ? Theme.ring : grip.containsMouse ? Theme.alpha(Theme.text, 0.5) : Theme.border
             Behavior on height {
                 enabled: !Theme.reducedMotion
-                NumberAnimation { duration: Theme.durFast }
+                NumberAnimation { duration: Theme.durFast; easing.type: Easing.OutCubic }
+            }
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
             }
         }
     }
 
     component TableHeader: Rectangle {
-        height: 34
-        // the page's own surface: the title bar and the column names read as one header block
-        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : Theme.background
+        height: 36
+        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : "#111111"
 
         Rectangle {
             anchors.bottom: parent.bottom
@@ -658,26 +664,52 @@ Surface {
             }
             // starts over the name, past the kind tile
             HeaderCell {
+                id: nameHead
                 text: qsTr("Name"); sortKey: "name"; column: "name"; resizes: "size"
                 Layout.fillWidth: true; Layout.minimumWidth: 20; Layout.preferredWidth: 20; Layout.leftMargin: 44
             }
-            HeaderCell { text: qsTr("Size"); sortKey: "size"; column: "size"; alignRight: true; fixedWidth: page.cw("size") - 12 }
-            HeaderCell { text: qsTr("Progress"); sortKey: "progress"; column: "progress"; fixedWidth: page.cw("progress") - 16; Layout.leftMargin: 16 }
-            HeaderCell { text: qsTr("Speed"); sortKey: "dlSpeed"; column: "speed"; alignRight: true; fixedWidth: page.cw("speed") - 12 }
+            HeaderCell { id: sizeHead; text: qsTr("Size"); sortKey: "size"; column: "size"; alignRight: true; fixedWidth: page.cw("size") - 12 }
+            HeaderCell { id: progressHead; text: qsTr("Progress"); sortKey: "progress"; column: "progress"; fixedWidth: page.cw("progress") - 16; Layout.leftMargin: 16 }
+            HeaderCell { id: speedHead; text: qsTr("Speed"); sortKey: "dlSpeed"; column: "speed"; alignRight: true; fixedWidth: page.cw("speed") - 12 }
             HeaderCell {
+                id: etaHead
                 text: qsTr("ETA"); sortKey: "eta"; column: "eta"; alignRight: true
                 fixedWidth: page.cw("eta") - 12; visible: page.colVisible("eta")
             }
             HeaderCell {
+                id: swarmHead
                 objectName: "header_swarm"
                 text: qsTr("Seeds/peers"); sortKey: "seeds"; column: "swarm"; alignRight: true
                 fixedWidth: page.cw("swarm") - 12; visible: page.colVisible("swarm")
             }
             HeaderCell {
+                id: ratioHead
                 text: qsTr("Ratio"); sortKey: "ratio"; column: "ratio"; alignRight: true
                 fixedWidth: page.cw("ratio") - 12; visible: page.colVisible("ratio")
             }
             Item { Layout.preferredWidth: 36 }
+        }
+
+        // A divider on every column boundary, over the cells (a grip inside a cell would be covered
+        // by the next one): drag it to resize, double-click for the default width
+        Item {
+            anchors.fill: parent
+            anchors.leftMargin: Theme.sp(6)
+            anchors.rightMargin: Theme.sp(3)
+            z: 5
+
+            Repeater {
+                model: [nameHead, sizeHead, progressHead, speedHead, etaHead, swarmHead, ratioHead]
+                ColumnResizer {
+                    required property var modelData
+                    objectName: "resizer_" + modelData.column
+                    visible: modelData.visible
+                    // the boundary: the cell's right edge plus the gap after right-aligned text
+                    x: modelData.x + modelData.width + (modelData.alignRight ? 12 : 0) - width / 2
+                    column: modelData.resizes
+                    invert: modelData.resizes !== modelData.column
+                }
+            }
         }
     }
 

@@ -19,6 +19,9 @@ Item {
     default property alias content: contentItem.data
 
     readonly property bool _glass: Theme.glass && kind !== "inset"
+    // Cards and the inset draw their border over the content, 1 px in from it: rows and headers that run
+    // edge to edge would otherwise paint over the sides and break the outline
+    readonly property bool _outlined: !Theme.glass && (kind === "inset" || kind === "panel")
 
     Loader {
         anchors.fill: parent
@@ -46,7 +49,7 @@ Item {
         color: root.kind === "inset" ? Theme.background
              : root.kind === "field" ? Theme.inputFill
              : Theme.card
-        border.width: 1
+        border.width: root._outlined ? 0 : 1
         border.color: root.kind === "field" ? (root.focused ? Theme.ring : Theme.input) : Theme.border
     }
 
@@ -64,5 +67,15 @@ Item {
     Item {
         id: contentItem
         anchors.fill: parent
+        anchors.margins: root._outlined ? 1 : 0
+    }
+
+    Rectangle {
+        visible: root._outlined
+        anchors.fill: parent
+        radius: root.radius
+        color: "transparent"
+        border.width: 1
+        border.color: Theme.border
     }
 }

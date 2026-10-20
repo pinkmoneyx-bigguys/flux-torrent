@@ -166,7 +166,7 @@ TestCase {
         compare(pa.x + pageArea.width, root.width - 8, "8 px inset margin on the right")
         compare(pa.y + pageArea.height, root.height - 8, "8 px inset margin at the bottom: no status bar")
         compare(pageArea.radius, 12)
-        compare(pages.width, pageArea.width, "the pages fill the inset")
+        compare(pages.width, pageArea.width - 2, "the pages fill the inset, inside its 1 px outline")
         verify(!findChild(root, "statusPill"), "the status bar is gone")
     }
 
