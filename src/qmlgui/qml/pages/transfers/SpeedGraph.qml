@@ -33,14 +33,16 @@ Item {
     // solid behind the hover card and the dots (the glass background is see-through)
     readonly property color cardColor: Theme.glass ? "#16161C" : Theme.background
 
+    // A round figure in the units the labels use (KiB, MiB…: powers of 1024), so the scale reads 30 MiB/s
     function niceCeil(v) {
-        const units = [1, 1.5, 2, 3, 4, 5, 6, 8, 10]
-        const base = Math.pow(10, Math.floor(Math.log10(Math.max(v, 1))))
-        for (const u of units) {
-            if (u * base >= v)
-                return u * base
+        const unit = Math.pow(1024, Math.floor(Math.log(Math.max(v, 1)) / Math.log(1024)))
+        const x = v / unit
+        const base = Math.pow(10, Math.floor(Math.log10(Math.max(x, 1))))
+        for (const u of [1, 1.5, 2, 3, 4, 5, 6, 8, 10]) {
+            if (u * base >= x)
+                return u * base * unit
         }
-        return 10 * base
+        return 10 * base * unit
     }
 
     function reload() {
@@ -161,7 +163,8 @@ Item {
                 y: Math.round(plot.height * index / 3)
                 width: plot.width
                 height: 1
-                color: Theme.alpha(Theme.border, index === 0 ? 1 : 0.6)
+                color: Theme.border
+                opacity: index === 0 ? 1 : 0.6
             }
         }
         Rectangle {

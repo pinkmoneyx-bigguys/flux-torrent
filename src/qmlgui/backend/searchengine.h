@@ -39,11 +39,14 @@
 
 class QJSEngine;
 class QQmlEngine;
+class JacRedSearch;
 class SearchHandler;
 class SearchPluginManager;
 
 // Tracker search for QML: Python and plugin state, one search at a time with its results, downloads
-// of results, and plugin management. Wraps qBittorrent's SearchPluginManager (Python "nova" plugins).
+// of results, and plugin management. Wraps qBittorrent's SearchPluginManager (Python "nova" plugins),
+// plus a built-in source that needs no Python: JacRed ("jacred" in `plugins`, first, on by default),
+// the aggregator of the Russian movie and series trackers. Both answer into the same results.
 // FLUX_DEMO_SEARCH=<json file> fills the results without Python, for window captures.
 class SearchEngine : public QObject
 {
@@ -67,6 +70,8 @@ class SearchEngine : public QObject
     Q_PROPERTY(SearchResultsModel *results READ results CONSTANT FINAL)
     // Plugin install/update in progress
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged FINAL)
+    // The JacRed server (a mirror can be set instead of the default)
+    Q_PROPERTY(QString jacredUrl READ jacredUrl WRITE setJacredUrl NOTIFY pluginsChanged FINAL)
 
 public:
     explicit SearchEngine(QObject *parent = nullptr);
@@ -84,6 +89,8 @@ public:
     QString pattern() const;
     SearchResultsModel *results() const;
     bool busy() const;
+    QString jacredUrl() const;
+    void setJacredUrl(const QString &url);
 
     // `plugin`: "enabled" (all enabled plugins), "all", or one plugin name
     Q_INVOKABLE void start(const QString &pattern, const QString &category, const QString &plugin);
@@ -116,9 +123,14 @@ signals:
 private:
     SearchPluginManager *manager();
     void refreshPlugins();
+    // m_plugins, m_categories and the enabled count: JacRed first, then the Python plugins
+    void composePlugins();
     void setStatus(const QString &status, const QString &error = {});
     void setBusy(int delta);
     bool addSource(const QString &source);
+    bool jacredEnabled() const;
+    // a part of the search (Python plugins or JacRed) is over; the search is when all are
+    void partFinished(const QString &error);
 
     bool m_pythonAvailable = false;
     QString m_pythonVersion;
@@ -130,6 +142,13 @@ private:
     QString m_pattern;
     SearchResultsModel *m_results = nullptr;
     QPointer<SearchHandler> m_handler;
+    JacRedSearch *m_jacred = nullptr;
+    int m_pendingParts = 0;
+    int m_failedParts = 0;
+    QString m_partError;
+    QVariantList m_pythonPlugins;
+    QVariantList m_pythonCategories;
+    int m_pythonEnabledCount = 0;
     int m_busy = 0;
     bool m_demo = false;
 };

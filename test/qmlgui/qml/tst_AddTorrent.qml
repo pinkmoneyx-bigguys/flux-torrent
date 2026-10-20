@@ -29,13 +29,17 @@ TestCase {
     }
 
     property string addedName: ""
+    property var watched: null
     Connections {
         target: dialog
         function onTorrentAdded(name) { tc.addedName = name }
+        function onWatchRequested(id, file) { tc.watched = { id: id, file: file } }
     }
 
     function init() {
         addedName = ""
+        watched = null
+        dialog.watchMode = false
         dialog.draft.loadDemo(demo)
         dialog.open()
         tryCompare(dialog, "opened", true)
@@ -52,6 +56,29 @@ TestCase {
 
     function rowNamed(name) {
         return rows().find(r => r.name === name)
+    }
+
+    // With a video inside: watch without downloading plays the largest video; nothing to choose
+    function test_watchWithoutDownloading() {
+        verify(dialog.canWatch, "there is a video")
+        const tabs = findChild(dialog.contentItem, "addModeTabs")
+        verify(tabs.visible)
+        compare(dialog.draft.bestVideoFile(), 3, "b.mkv is the largest video")
+        dialog.watchMode = true
+        verify(findChild(dialog.contentItem, "addWatchInfo").visible, "it says what happens")
+        compare(dialog.draft.fileName(3), "b.mkv")
+        const watch = findChild(dialog.contentItem, "addWatchConfirm")
+        verify(watch.visible && watch.enabled)
+        mouseClick(watch)
+        verify(tc.watched !== null, "asked to play")
+        compare(tc.watched.file, 3)
+        tryCompare(dialog, "visible", false)
+    }
+
+    function test_noVideoNoWatching() {
+        dialog.draft.loadDemo({ name: "Docs", files: [{ path: "Docs/a.pdf", size: 10 }], savePath: "D:/Downloads" })
+        verify(!dialog.canWatch)
+        verify(!findChild(dialog.contentItem, "addModeTabs").visible, "no choice to make")
     }
 
     function test_treeFoldersFirst() {

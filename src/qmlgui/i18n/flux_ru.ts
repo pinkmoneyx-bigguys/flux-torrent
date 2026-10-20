@@ -12,6 +12,10 @@
         <translation>Добавить торрент</translation>
     </message>
     <message>
+        <source>Fetching the file list from peers… Watching starts as soon as it is here.</source>
+        <translation>Получаем список файлов от пиров… Просмотр начнётся, как только он придёт.</translation>
+    </message>
+    <message>
         <source>Fetching the file list from peers… You can add it now and choose files later.</source>
         <translation>Получаем список файлов от пиров… Можно добавить сейчас и выбрать файлы позже.</translation>
     </message>
@@ -26,6 +30,14 @@
             <numerusform>%1 · %n файла</numerusform>
             <numerusform>%1 · %n файлов</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Download</source>
+        <translation>Скачать</translation>
+    </message>
+    <message>
+        <source>Watch without downloading</source>
+        <translation>Смотреть без скачивания</translation>
     </message>
     <message>
         <source>All files</source>
@@ -46,6 +58,14 @@
     <message>
         <source>The file list is not known yet. All files will be downloaded; you can change that in the details later.</source>
         <translation>Список файлов пока неизвестен. Загрузятся все файлы; изменить это можно потом в деталях.</translation>
+    </message>
+    <message>
+        <source>Only the part you are watching comes down, into a temporary folder. When you close the player the torrent and its files are removed, so nothing takes up space.</source>
+        <translation>Загружается только то, что вы смотрите, во временную папку. Когда вы закроете плеер, торрент и его файлы удалятся — место на диске не занимается.</translation>
+    </message>
+    <message>
+        <source>Plays: %1</source>
+        <translation>Будет играть: %1</translation>
     </message>
     <message>
         <source>Save to</source>
@@ -119,6 +139,14 @@
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
+    <message>
+        <source>Watch</source>
+        <translation>Смотреть</translation>
+    </message>
+    <message>
+        <source>Waiting for the file list…</source>
+        <translation>Ждём список файлов…</translation>
+    </message>
 </context>
 <context>
     <name>AddTorrentDraft</name>
@@ -141,6 +169,14 @@
     <message>
         <source>The session is not running.</source>
         <translation>Сеанс не запущен.</translation>
+    </message>
+    <message>
+        <source>Wait for the file list.</source>
+        <translation>Дождитесь списка файлов.</translation>
+    </message>
+    <message>
+        <source>There is no video in this torrent.</source>
+        <translation>В этом торренте нет видео.</translation>
     </message>
 </context>
 <context>
@@ -398,6 +434,101 @@
     </message>
 </context>
 <context>
+    <name>CreateTorrentDialog</name>
+    <message>
+        <source>Create a torrent</source>
+        <translation>Создать торрент</translation>
+    </message>
+    <message>
+        <source>Share a file or a folder. The .torrent file is saved next to it.</source>
+        <translation>Раздайте файл или папку. Файл .torrent сохранится рядом с ними.</translation>
+    </message>
+    <message>
+        <source>File or folder</source>
+        <translation>Файл или папка</translation>
+    </message>
+    <message>
+        <source>Path to a file or folder</source>
+        <translation>Путь к файлу или папке</translation>
+    </message>
+    <message>
+        <source>File…</source>
+        <translation>Файл…</translation>
+    </message>
+    <message>
+        <source>Folder…</source>
+        <translation>Папка…</translation>
+    </message>
+    <message>
+        <source>Save the .torrent to</source>
+        <translation>Куда сохранить .torrent</translation>
+    </message>
+    <message>
+        <source>Trackers</source>
+        <translation>Трекеры</translation>
+    </message>
+    <message>
+        <source>One per line; an empty line starts a new tier</source>
+        <translation>По одному в строке; пустая строка начинает новый уровень</translation>
+    </message>
+    <message>
+        <source>Comment</source>
+        <translation>Комментарий</translation>
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation>Необязательно</translation>
+    </message>
+    <message>
+        <source>Piece size</source>
+        <translation>Размер части</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Автоматически</translation>
+    </message>
+    <message>
+        <source>Start seeding</source>
+        <translation>Начать раздачу</translation>
+    </message>
+    <message>
+        <source>Add it to Transfers from where the files are.</source>
+        <translation>Добавить в «Передачи» прямо с места, где лежат файлы.</translation>
+    </message>
+    <message>
+        <source>Private torrent</source>
+        <translation>Приватный торрент</translation>
+    </message>
+    <message>
+        <source>Peers only from its trackers: no DHT or peer exchange.</source>
+        <translation>Пиры только от его трекеров: без DHT и обмена пирами.</translation>
+    </message>
+    <message>
+        <source>Hashing the pieces…</source>
+        <translation>Считаем хеши частей…</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Остановить</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Create</source>
+        <translation>Создать</translation>
+    </message>
+    <message>
+        <source>File to share</source>
+        <translation>Файл для раздачи</translation>
+    </message>
+    <message>
+        <source>Folder to share</source>
+        <translation>Папка для раздачи</translation>
+    </message>
+</context>
+<context>
     <name>FirstRunWindow</name>
     <message>
         <source>Migrate your torrents from qBittorrent?</source>
@@ -452,6 +583,17 @@
     </message>
 </context>
 <context>
+    <name>JacRedSearch</name>
+    <message>
+        <source>The network is not ready.</source>
+        <translation>Сеть ещё не готова.</translation>
+    </message>
+    <message>
+        <source>JacRed did not answer: %1</source>
+        <translation>JacRed не ответил: %1</translation>
+    </message>
+</context>
+<context>
     <name>Main</name>
     <message>
         <source>Actions</source>
@@ -464,6 +606,18 @@
     <message>
         <source>Add magnet link…</source>
         <translation>Добавить magnet-ссылку…</translation>
+    </message>
+    <message>
+        <source>Create a torrent…</source>
+        <translation>Создать торрент…</translation>
+    </message>
+    <message>
+        <source>Expand the sidebar</source>
+        <translation>Развернуть меню</translation>
+    </message>
+    <message>
+        <source>Collapse the sidebar</source>
+        <translation>Свернуть меню</translation>
     </message>
     <message>
         <source>Start all torrents</source>
@@ -550,6 +704,10 @@
         <translation>Настройки: дополнительно</translation>
     </message>
     <message>
+        <source>The video did not show up in the library.</source>
+        <translation>Видео не появилось в медиатеке.</translation>
+    </message>
+    <message>
         <source>Without the built-in player only downloaded files open.</source>
         <translation>Без встроенного плеера открываются только скачанные файлы.</translation>
     </message>
@@ -564,6 +722,14 @@
     <message>
         <source>Undo</source>
         <translation>Отменить</translation>
+    </message>
+    <message>
+        <source>Created and seeding: %1</source>
+        <translation>Создан и раздаётся: %1</translation>
+    </message>
+    <message>
+        <source>Torrent created: %1</source>
+        <translation>Торрент создан: %1</translation>
     </message>
     <message>
         <source>Watched “%1”</source>
@@ -838,12 +1004,20 @@
 <context>
     <name>PluginsDialog</name>
     <message>
-        <source>Search plugins</source>
-        <translation>Плагины поиска</translation>
+        <source>Search sources</source>
+        <translation>Источники поиска</translation>
     </message>
     <message>
-        <source>Searches use the plugins that are on. Plugins are Python scripts: install only the ones you trust.</source>
-        <translation>Поиск идёт по включённым плагинам. Плагины — это скрипты на Python: ставьте только те, которым доверяете.</translation>
+        <source>Searches use the sources that are on. Plugins are Python scripts: install only the ones you trust.</source>
+        <translation>Поиск идёт по включённым источникам. Плагины — это скрипты на Python: ставьте только те, которым доверяете.</translation>
+    </message>
+    <message>
+        <source>JacRed works as is. Python plugins need Python 3.9 or newer installed.</source>
+        <translation>JacRed работает сразу. Для плагинов на Python нужен установленный Python 3.9 или новее.</translation>
+    </message>
+    <message>
+        <source>Built in</source>
+        <translation>Встроенный</translation>
     </message>
     <message>
         <source>Remove %1</source>
@@ -1289,8 +1463,20 @@
         <translation>Не удалось проверить обновления: %1</translation>
     </message>
     <message>
-        <source>No search plugins are enabled.</source>
-        <translation>Нет включённых плагинов поиска.</translation>
+        <source>JacRed: movies and series</source>
+        <translation>JacRed: фильмы и сериалы</translation>
+    </message>
+    <message>
+        <source>No search sources are enabled.</source>
+        <translation>Ни один источник поиска не включён.</translation>
+    </message>
+    <message>
+        <source>No enabled source searches this category.</source>
+        <translation>Ни один включённый источник не ищет в этой категории.</translation>
+    </message>
+    <message>
+        <source>The search failed.</source>
+        <translation>Поиск не удался.</translation>
     </message>
     <message>
         <source>Could not add the torrent.</source>
@@ -1352,24 +1538,12 @@
         <translation>Сериалы</translation>
     </message>
     <message>
-        <source>Plugins · %1</source>
-        <translation>Плагины · %1</translation>
-    </message>
-    <message>
-        <source>Plugins</source>
-        <translation>Плагины</translation>
-    </message>
-    <message>
         <source>What are you looking for?</source>
         <translation>Что ищем?</translation>
     </message>
     <message>
         <source>Category</source>
         <translation>Категория</translation>
-    </message>
-    <message>
-        <source>All enabled plugins</source>
-        <translation>Все включённые</translation>
     </message>
     <message>
         <source>Stop</source>
@@ -1451,17 +1625,29 @@
         <source>Search all your trackers at once</source>
         <translation>Поиск сразу по всем трекерам</translation>
     </message>
+    <message>
+        <source>Sources · %1</source>
+        <translation>Источники · %1</translation>
+    </message>
+    <message>
+        <source>Sources</source>
+        <translation>Источники</translation>
+    </message>
+    <message>
+        <source>All enabled sources</source>
+        <translation>Все включённые источники</translation>
+    </message>
     <message numerus="yes">
-        <source>Type what you are looking for and press Enter. Results arrive as each of %n tracker(s) answers.</source>
+        <source>Type what you are looking for and press Enter. Results arrive as each of %n source(s) answers.</source>
         <translation>
-            <numerusform>Введите запрос и нажмите Enter. Результаты появляются по мере ответа %n трекера.</numerusform>
-            <numerusform>Введите запрос и нажмите Enter. Результаты появляются по мере ответа %n трекеров.</numerusform>
-            <numerusform>Введите запрос и нажмите Enter. Результаты появляются по мере ответа %n трекеров.</numerusform>
+            <numerusform>Введите, что ищете, и нажмите Enter. Результаты приходят по мере ответа %n источника.</numerusform>
+            <numerusform>Введите, что ищете, и нажмите Enter. Результаты приходят по мере ответа %n источников.</numerusform>
+            <numerusform>Введите, что ищете, и нажмите Enter. Результаты приходят по мере ответа %n источников.</numerusform>
         </translation>
     </message>
     <message>
-        <source>All plugins are turned off. Turn some on in Plugins.</source>
-        <translation>Все плагины выключены. Включите нужные в «Плагинах».</translation>
+        <source>All sources are turned off. Turn some on in Sources.</source>
+        <translation>Все источники выключены. Включите какие-нибудь в «Источниках».</translation>
     </message>
     <message>
         <source>No results match the filter</source>
@@ -1518,6 +1704,14 @@
     <message>
         <source>Published</source>
         <translation>Опубликован</translation>
+    </message>
+    <message>
+        <source>Watch %1 without downloading</source>
+        <translation>Смотреть «%1» без скачивания</translation>
+    </message>
+    <message>
+        <source>Watch without downloading</source>
+        <translation>Смотреть без скачивания</translation>
     </message>
     <message>
         <source>Open the page of %1</source>
@@ -2173,6 +2367,14 @@
         <translation>Удалить файлы</translation>
     </message>
     <message>
+        <source>Watch without downloading: temporary folder</source>
+        <translation>Просмотр без скачивания: временная папка</translation>
+    </message>
+    <message>
+        <source>Where pieces wait while they play. The torrent and its files are removed when the player closes.</source>
+        <translation>Здесь части фильма лежат, пока идёт просмотр. Торрент и его файлы удаляются, когда закрывается плеер.</translation>
+    </message>
+    <message>
         <source>Player</source>
         <translation>Плеер</translation>
     </message>
@@ -2256,8 +2458,39 @@
         <translation>Медиатека</translation>
     </message>
     <message>
+        <source>Download speed %1</source>
+        <translation>Скорость загрузки %1</translation>
+    </message>
+    <message>
+        <source>Upload speed %1</source>
+        <translation>Скорость отдачи %1</translation>
+    </message>
+    <message>
         <source>Settings</source>
         <translation>Настройки</translation>
+    </message>
+</context>
+<context>
+    <name>SpeedGraph</name>
+    <message>
+        <source>Download</source>
+        <translation>Загрузка</translation>
+    </message>
+    <message>
+        <source>Upload</source>
+        <translation>Отдача</translation>
+    </message>
+    <message>
+        <source>%1 s ago</source>
+        <translation>%1 с назад</translation>
+    </message>
+    <message>
+        <source>%1 min ago</source>
+        <translation>%1 мин назад</translation>
+    </message>
+    <message>
+        <source>now</source>
+        <translation>сейчас</translation>
     </message>
 </context>
 <context>
@@ -2320,12 +2553,32 @@
         <translation>Поиск и команды</translation>
     </message>
     <message>
-        <source>Download speed %1</source>
-        <translation>Скорость загрузки %1</translation>
+        <source>Expand the sidebar</source>
+        <translation>Развернуть меню</translation>
     </message>
     <message>
-        <source>Upload speed %1</source>
-        <translation>Скорость отдачи %1</translation>
+        <source>Collapse the sidebar</source>
+        <translation>Свернуть меню</translation>
+    </message>
+    <message>
+        <source>Add a torrent file</source>
+        <translation>Добавить торрент-файл</translation>
+    </message>
+    <message>
+        <source>Add a magnet link</source>
+        <translation>Добавить magnet-ссылку</translation>
+    </message>
+    <message>
+        <source>Create a torrent</source>
+        <translation>Создать торрент</translation>
+    </message>
+    <message>
+        <source>Start all</source>
+        <translation>Запустить все</translation>
+    </message>
+    <message>
+        <source>Stop all</source>
+        <translation>Остановить все</translation>
     </message>
     <message>
         <source>Alternative speed limits</source>
@@ -2372,6 +2625,10 @@
     <message>
         <source>Peers</source>
         <translation>Пиры</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Скорость</translation>
     </message>
     <message>
         <source>Close details</source>
@@ -2547,6 +2804,21 @@
     <message>
         <source>This torrent is already in the list.</source>
         <translation>Этот торрент уже в списке.</translation>
+    </message>
+</context>
+<context>
+    <name>TorrentMaker</name>
+    <message>
+        <source>A torrent is being created already.</source>
+        <translation>Торрент уже создаётся.</translation>
+    </message>
+    <message>
+        <source>Choose a file or folder to share.</source>
+        <translation>Выберите файл или папку для раздачи.</translation>
+    </message>
+    <message>
+        <source>The file or folder cannot be read.</source>
+        <translation>Файл или папку не удаётся прочитать.</translation>
     </message>
 </context>
 <context>

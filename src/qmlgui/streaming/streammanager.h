@@ -48,6 +48,10 @@ class StreamStateStore;
 // Streaming for QML: open(torrentId, fileIndex) gives the player a local URL for the file, served by
 // StreamServer from a StreamSession. Owns the sessions, the server and streams.json; at creation it
 // rolls back the torrents a crashed run left mid-stream, and it closes every stream when the app quits.
+//
+// Watch-only torrents ("watch without downloading"): added with the WATCH_TAG tag into cachePath(),
+// every file set to skip, so only what the player reads comes down; discard() removes such a torrent
+// with its files once the player closes, and any a previous run left behind go at start.
 class StreamManager : public QObject
 {
     Q_OBJECT
@@ -59,12 +63,19 @@ class StreamManager : public QObject
     Q_PROPERTY(QString mode READ mode WRITE setMode NOTIFY modeChanged FINAL)
     Q_PROPERTY(int openCount READ openCount NOTIFY streamsChanged FINAL)
     Q_PROPERTY(QString lastError READ lastError NOTIFY streamsChanged FINAL)
+    // Where watch-only torrents keep their pieces while they play (a temp folder unless set)
+    Q_PROPERTY(QString cachePath READ cachePathProperty WRITE setCachePath NOTIFY cachePathChanged FINAL)
 
 public:
     explicit StreamManager(QObject *parent = nullptr);
     ~StreamManager() override;
 
     static StreamManager *create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
+
+    static constexpr QStringView WATCH_TAG = u"flux-watch";
+    static QString cachePath();
+    QString cachePathProperty() const;
+    void setCachePath(const QString &path);
 
     QString mode() const;
     void setMode(const QString &mode);
@@ -81,15 +92,21 @@ public:
     Q_INVOKABLE QVariantMap stats(const QString &torrentId, int fileIndex, qint64 fromByte = -1) const;
     // Whether open() turned on a file marked "do not download" (the UI tells the user)
     Q_INVOKABLE bool enabledSkippedFile(const QString &torrentId, int fileIndex) const;
+    // Whether the torrent was added to watch without downloading
+    Q_INVOKABLE bool isWatchOnly(const QString &torrentId) const;
+    // Removes a watch-only torrent and its cached files (its streams close first)
+    Q_INVOKABLE void discard(const QString &torrentId);
 
 signals:
     void modeChanged();
     void streamsChanged();
+    void cachePathChanged();
 
 private:
     static QString keyOf(const QString &torrentId, int fileIndex);
     StreamSession *session(const QString &key) const;
     void restoreLeftovers();
+    void discardLeftovers();
 
     std::unique_ptr<StreamStateStore> m_store;
     StreamServer *m_server = nullptr;

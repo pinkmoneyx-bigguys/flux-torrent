@@ -30,6 +30,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QStandardPaths>
 #include <QTimer>
 
 #include "base/bittorrent/infohash.h"
@@ -39,6 +40,7 @@
 #include "base/path.h"
 #include "base/profile.h"
 #include "base/settingsstorage.h"
+#include "base/tag.h"
 #include "streamserver.h"
 #include "streamsession.h"
 #include "streamstatestore.h"
@@ -85,6 +87,7 @@ StreamManager::StreamManager(QObject *parent)
         m_mode = modeFromName(storage->loadValue<QString>(MODE_KEY, u"smooth"_s));
 
     restoreLeftovers();
+    discardLeftovers();
     connect(qApp, &QCoreApplication::aboutToQuit, this, &StreamManager::closeAll);
 
     // Development aid for end-to-end checks: FLUX_STREAM_PROBE=<torrentId>/<fileIndex> opens that stream a
@@ -126,6 +129,73 @@ void StreamManager::restoreLeftovers()
     {
         StreamSession::restoreTorrent(session->getTorrent(BitTorrent::TorrentID::fromString(record.torrentId)), record);
     });
+}
+
+namespace
+{
+    const QString CACHE_KEY = u"Flux/Streaming/CachePath"_s;
+    QString g_cachePath;  // without a profile (tests)
+}
+
+QString StreamManager::cachePath()
+{
+    const SettingsStorage *storage = SettingsStorage::instance();
+    const QString chosen = storage ? storage->loadValue<QString>(CACHE_KEY) : g_cachePath;
+    if (!chosen.isEmpty())
+        return chosen;
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath(u"Flux Watch"_s);
+}
+
+QString StreamManager::cachePathProperty() const
+{
+    return cachePath();
+}
+
+void StreamManager::setCachePath(const QString &path)
+{
+    QString value = path.trimmed();
+    if (value.startsWith(u"file:", Qt::CaseInsensitive))
+        value = QUrl(value).toLocalFile();
+    if (value == cachePath())
+        return;
+    if (SettingsStorage *storage = SettingsStorage::instance())
+        storage->storeValue(CACHE_KEY, value);
+    else
+        g_cachePath = value;
+    emit cachePathChanged();
+}
+
+bool StreamManager::isWatchOnly(const QString &torrentId) const
+{
+    const auto *session = BitTorrent::Session::instance();
+    const BitTorrent::Torrent *torrent = session ? session->getTorrent(BitTorrent::TorrentID::fromString(torrentId)) : nullptr;
+    return torrent && torrent->hasTag(Tag(WATCH_TAG.toString()));
+}
+
+void StreamManager::discard(const QString &torrentId)
+{
+    if (!isWatchOnly(torrentId))
+        return;
+    for (const QString &key : m_sessions.keys())
+    {
+        if (key.startsWith(torrentId + u'/'))
+            close(torrentId, key.section(u'/', 1, 1).toInt());
+    }
+    BitTorrent::Session::instance()->removeTorrent(BitTorrent::TorrentID::fromString(torrentId)
+        , BitTorrent::TorrentRemoveOption::RemoveContent);
+}
+
+void StreamManager::discardLeftovers()
+{
+    auto *session = BitTorrent::Session::instance();
+    if (!session)
+        return;
+    const Tag tag {WATCH_TAG.toString()};
+    for (const BitTorrent::Torrent *torrent : session->torrents())
+    {
+        if (torrent->hasTag(tag))
+            session->removeTorrent(torrent->id(), BitTorrent::TorrentRemoveOption::RemoveContent);
+    }
 }
 
 QString StreamManager::keyOf(const QString &torrentId, const int fileIndex)

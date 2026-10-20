@@ -268,8 +268,12 @@ ApplicationWindow {
                 TransfersPage {
                     id: transfersPage
                     onPlayRequested: key => window.playMedia(key, -1)
+                    onWatchRequested: (id, file) => window.watchWhenReady(id + ":" + file)
                 }
-                SearchPage { id: searchPage }
+                SearchPage {
+                    id: searchPage
+                    onWatchRequested: source => transfersPage.openSource(source, true)
+                }
                 RssPage {}
                 MediaPage {
                     playerAvailable: playerView.available
@@ -312,6 +316,32 @@ ApplicationWindow {
 
     // Plays a media library item (key "torrentId:fileIndex"): a downloaded file from disk, otherwise through
     // the stream server while it downloads. `startAt` < 0 continues from the saved position.
+    // A torrent just added to watch: the library lists it a moment later, then it plays
+    property string pendingWatchKey: ""
+    function watchWhenReady(key) {
+        pendingWatchKey = key
+        watchPoll.tries = 0
+        watchPoll.restart()
+    }
+    Timer {
+        id: watchPoll
+        property int tries: 0
+        interval: 200
+        repeat: true
+        onTriggered: {
+            if (MediaLibraryModel.get(window.pendingWatchKey).key !== undefined) {
+                stop()
+                const key = window.pendingWatchKey
+                window.pendingWatchKey = ""
+                window.playMedia(key, -1)
+            } else if (++tries > 75) {
+                stop()
+                window.pendingWatchKey = ""
+                windowToast.show(qsTr("The video did not show up in the library."), true)
+            }
+        }
+    }
+
     function playMedia(key, startAt) {
         const m = MediaLibraryModel.get(key)
         if (m.key === undefined)
@@ -333,7 +363,7 @@ ApplicationWindow {
                 windowToast.show(StreamManager.lastError, true)
                 return
             }
-            if (StreamManager.enabledSkippedFile(m.torrentId, m.fileIndex))
+            if (StreamManager.enabledSkippedFile(m.torrentId, m.fileIndex) && !StreamManager.isWatchOnly(m.torrentId))
                 windowToast.show(qsTr("This file was set to skip; it downloads now."), false)
         }
         const pad = n => (n < 10 ? "0" : "") + n
@@ -344,6 +374,11 @@ ApplicationWindow {
 
     // The player closed: give the torrent back, then "After watching" (Settings → Streaming)
     function afterPlayback(watchedToEnd) {
+        // watched without downloading: nothing is kept
+        if (StreamManager.isWatchOnly(playerView.torrentId)) {
+            StreamManager.discard(playerView.torrentId)
+            return
+        }
         if (playerView.streaming)
             StreamManager.close(playerView.torrentId, playerView.fileIndex)
         if (!watchedToEnd)

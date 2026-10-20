@@ -6,16 +6,24 @@ import Flux
 
 // Add torrent: the files as a tree with checkboxes on the left, where and how to add on the right.
 // show(source) takes a .torrent file URL or a magnet link; a magnet's file list arrives while the
-// dialog is open.
+// dialog is open. With a video inside, it can instead be added to watch without downloading
+// (show(source, true) starts there): nothing is kept, the player streams the largest video.
 UiDialog {
     id: root
     objectName: "addTorrentDialog"
 
     property alias draft: draft
     signal torrentAdded(string name)
+    signal watchRequested(string torrentId, int fileIndex)
 
-    function show(source) {
+    // "Watch without downloading" picked
+    property bool watchMode: false
+    // a video is in it (known once the file list is)
+    readonly property bool canWatch: draft.hasMetadata && draft.fileCount >= 0 && draft.bestVideoFile() >= 0
+
+    function show(source, watch) {
         error = ""
+        watchMode = watch ?? false
         draft.source = ""
         draft.source = source
         open()
@@ -29,7 +37,8 @@ UiDialog {
         if (draft.status === "error")
             return draft.error
         if (draft.status === "metadata")
-            return qsTr("Fetching the file list from peers… You can add it now and choose files later.")
+            return root.watchMode ? qsTr("Fetching the file list from peers… Watching starts as soon as it is here.")
+                                  : qsTr("Fetching the file list from peers… You can add it now and choose files later.")
         if (!draft.hasMetadata)
             return qsTr("Magnet link · %1").arg(draft.hash)
         return qsTr("%1 · %n file(s)", "", draft.fileCount).arg(Format.size(draft.totalSize))
@@ -41,6 +50,19 @@ UiDialog {
         id: draft
         objectName: "addTorrentDraft"
         onAdded: name => root.torrentAdded(name)
+        onAddedForWatching: (id, file) => root.watchRequested(id, file)
+    }
+
+    // Download it, or watch it without keeping anything
+    UiTabs {
+        objectName: "addModeTabs"
+        visible: draft.status !== "error" && (root.canWatch || root.watchMode)
+        currentKey: root.watchMode ? "watch" : "download"
+        model: [
+            { key: "download", label: qsTr("Download") },
+            { key: "watch", label: qsTr("Watch without downloading") }
+        ]
+        onActivated: key => root.watchMode = key === "watch"
     }
 
     RowLayout {
@@ -198,8 +220,60 @@ UiDialog {
             }
         }
 
+        // --- Watching: what happens ----------------------------------------------------------
+        ColumnLayout {
+            objectName: "addWatchInfo"
+            visible: root.watchMode
+            Layout.fillWidth: false
+            Layout.preferredWidth: 300
+            Layout.alignment: Qt.AlignTop
+            spacing: Theme.sp(3)
+
+            Rectangle {
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 40
+                radius: 10
+                color: Theme.alpha(Theme.download, 0.14)
+                Icon {
+                    anchors.centerIn: parent
+                    path: Icons.play
+                    size: 18
+                    strokeWidth: 2
+                    color: Theme.download
+                }
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Watch without downloading")
+                color: Theme.text
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textBase
+                font.weight: Font.DemiBold
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Only the part you are watching comes down, into a temporary folder. When you close the player the torrent and its files are removed, so nothing takes up space.")
+                color: Theme.textDim
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textSm
+                wrapMode: Text.Wrap
+                lineHeight: 1.15
+            }
+            Text {
+                visible: root.canWatch
+                Layout.fillWidth: true
+                // files: re-read when the list changes
+                text: draft.files.length >= 0 && root.canWatch ? qsTr("Plays: %1").arg(draft.fileName(draft.bestVideoFile())) : ""
+                color: Theme.text
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textXs
+                elide: Text.ElideMiddle
+            }
+        }
+
         // --- Options ----------------------------------------------------------------------------
         ColumnLayout {
+            visible: !root.watchMode
             Layout.fillWidth: false
             Layout.preferredWidth: 300
             Layout.alignment: Qt.AlignTop
@@ -335,12 +409,25 @@ UiDialog {
         },
         UiButton {
             objectName: "addTorrentConfirm"
+            visible: !root.watchMode
             iconPath: Icons.plus
             text: qsTr("Add torrent")
             enabled: (draft.status === "ready" || draft.status === "metadata") && !draft.alreadyAdded
                      && (!draft.hasMetadata || draft.wantedCount > 0)
             onClicked: {
                 root.error = draft.accept()
+                if (root.error === "")
+                    root.close()
+            }
+        },
+        UiButton {
+            objectName: "addWatchConfirm"
+            visible: root.watchMode
+            iconPath: draft.hasMetadata ? Icons.play : ""
+            text: draft.hasMetadata ? qsTr("Watch") : qsTr("Waiting for the file list…")
+            enabled: root.canWatch && !draft.alreadyAdded
+            onClicked: {
+                root.error = draft.acceptForWatching()
                 if (root.error === "")
                     root.close()
             }

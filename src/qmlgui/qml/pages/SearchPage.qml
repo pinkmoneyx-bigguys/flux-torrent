@@ -17,8 +17,11 @@ Surface {
     radius: Theme.radiusPanel
 
     readonly property bool running: SearchEngine.status === "running"
-    readonly property bool ready: SearchEngine.pythonAvailable && SearchEngine.plugins.length > 0
+    // JacRed (built in) needs no Python: searching is possible as soon as there is a source
+    readonly property bool ready: SearchEngine.plugins.length > 0
     property string category: "all"
+    // "Watch without downloading" on a result (a magnet link)
+    signal watchRequested(string source)
     property string plugin: "enabled"
 
     function categoryLabel(key) {
@@ -93,9 +96,9 @@ Surface {
                 variant: "outline"
                 iconPath: Icons.puzzle
                 text: SearchEngine.plugins.length > 0
-                      ? qsTr("Plugins · %1").arg(SearchEngine.enabledPluginCount)
-                      : qsTr("Plugins")
-                enabled: SearchEngine.pythonAvailable
+                      ? qsTr("Sources · %1").arg(SearchEngine.enabledPluginCount)
+                      : qsTr("Sources")
+                enabled: SearchEngine.pythonAvailable || SearchEngine.plugins.length > 0
                 onClicked: pluginsDialog.open()
             }
         }
@@ -133,9 +136,9 @@ Surface {
                 objectName: "searchPlugin"
                 implicitHeight: 36
                 Layout.preferredWidth: 200
-                text: qsTr("Plugins")
+                text: qsTr("Sources")
                 currentKey: page.plugin
-                model: [{ key: "enabled", label: qsTr("All enabled plugins") }]
+                model: [{ key: "enabled", label: qsTr("All enabled sources") }]
                        .concat(SearchEngine.plugins.filter(p => p.enabled).map(p => ({ key: p.name, label: p.fullName })))
                 onActivated: key => page.plugin = key
             }
@@ -244,7 +247,7 @@ Surface {
             // Empty states, in order of what blocks the user first
             EmptyState {
                 objectName: "searchNoPython"
-                visible: !SearchEngine.pythonAvailable
+                visible: !SearchEngine.pythonAvailable && SearchEngine.enabledPluginCount === 0
                 iconPath: Icons.app
                 title: qsTr("Python is required")
                 text: qsTr("Tracker search runs plugins written in Python. Install Python 3.9 or newer for all users, then check again.")
@@ -286,8 +289,8 @@ Surface {
                 iconPath: Icons.search
                 title: qsTr("Search all your trackers at once")
                 text: SearchEngine.enabledPluginCount > 0
-                      ? qsTr("Type what you are looking for and press Enter. Results arrive as each of %n tracker(s) answers.", "", SearchEngine.enabledPluginCount)
-                      : qsTr("All plugins are turned off. Turn some on in Plugins.")
+                      ? qsTr("Type what you are looking for and press Enter. Results arrive as each of %n source(s) answers.", "", SearchEngine.enabledPluginCount)
+                      : qsTr("All sources are turned off. Turn some on in Sources.")
             }
             EmptyState {
                 objectName: "searchNothing"
@@ -459,7 +462,7 @@ Surface {
             HeaderCell { text: qsTr("Leechers"); sortKey: "leechers"; alignRight: true; Layout.preferredWidth: 88 }
             HeaderCell { text: qsTr("Tracker"); sortKey: "engine"; Layout.preferredWidth: 150; Layout.leftMargin: 16 }
             HeaderCell { text: qsTr("Published"); sortKey: "published"; alignRight: true; Layout.preferredWidth: 110; visible: page._wide }
-            Item { Layout.preferredWidth: 76 }
+            Item { Layout.preferredWidth: 108 }
         }
     }
 
@@ -488,6 +491,8 @@ Surface {
         required property string engine
         required property var published
         required property bool downloaded
+        required property string fileUrl
+        readonly property bool watchable: fileUrl.toLowerCase().startsWith("magnet:")
 
         readonly property string trackerName: {
             for (const p of SearchEngine.plugins) {
@@ -518,6 +523,7 @@ Surface {
             onClicked: mouse => {
                 if (mouse.button === Qt.RightButton) {
                     resultMenu.row = resultsFilter.sourceRow(rr.index)
+                    resultMenu.fileUrl = rr.fileUrl
                     resultMenu.popup()
                 }
             }
@@ -580,9 +586,25 @@ Surface {
                 text: rr.published && !isNaN(rr.published) ? rr.published.toLocaleDateString(Qt.locale(), Locale.ShortFormat) : "—"
             }
             RowLayout {
-                Layout.preferredWidth: 76
+                Layout.preferredWidth: 108
                 Layout.fillHeight: true
                 spacing: 2
+                UiButton {
+                    objectName: "searchWatch"
+                    size: "iconSm"
+                    variant: "ghost"
+                    iconPath: Icons.play
+                    focusPolicy: Qt.NoFocus
+                    // always in view: watching straight from the results is the point
+                    visible: rr.watchable
+                    Accessible.name: qsTr("Watch %1 without downloading").arg(rr.name)
+                    onClicked: page.watchRequested(rr.fileUrl)
+
+                    UiTooltip {
+                        text: qsTr("Watch without downloading")
+                        shown: parent.hovered
+                    }
+                }
                 UiButton {
                     size: "iconSm"
                     variant: "ghost"
@@ -607,6 +629,13 @@ Surface {
     UiMenu {
         id: resultMenu
         property int row: -1
+        property string fileUrl
+        UiMenuItem {
+            visible: resultMenu.fileUrl.toLowerCase().startsWith("magnet:")
+            text: qsTr("Watch without downloading")
+            iconPath: Icons.play
+            onTriggered: page.watchRequested(resultMenu.fileUrl)
+        }
         UiMenuItem { text: qsTr("Download"); iconPath: Icons.download; onTriggered: SearchEngine.download(resultMenu.row) }
         UiMenuItem { text: qsTr("Open description page"); iconPath: Icons.externalLink; onTriggered: SearchEngine.openPage(resultMenu.row) }
     }

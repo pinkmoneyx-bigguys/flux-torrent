@@ -113,6 +113,13 @@ public:
     Q_INVOKABLE void toggleExpanded(int row);
     // Adds the torrent; returns "" on success or the error text
     Q_INVOKABLE QString accept();
+    // Adds the torrent to watch without downloading (see StreamManager): into the stream cache, every
+    // file set to skip, in order. The video to play is the largest one, given by addedForWatching().
+    Q_INVOKABLE QString acceptForWatching();
+    // The largest video file, or -1 (needs the metadata)
+    Q_INVOKABLE int bestVideoFile() const;
+    // The file name (no folders) of file `index`, or ""
+    Q_INVOKABLE QString fileName(int index) const;
     // Drops the draft (and stops fetching a magnet's metadata)
     Q_INVOKABLE void cancel();
 
@@ -126,6 +133,7 @@ signals:
     void optionsChanged();
     // accept() added the torrent
     void added(const QString &name);
+    void addedForWatching(const QString &torrentId, int fileIndex);
 
 private:
     struct FileEntry

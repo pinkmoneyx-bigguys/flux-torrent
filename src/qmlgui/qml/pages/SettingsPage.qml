@@ -561,6 +561,15 @@ Surface {
                                     { key: "delete", label: qsTr("Delete the files") }
                                 ]
                             }
+                            SettingRow {
+                                key: "watchCache"
+                                external: true
+                                externalValue: StreamManager.cachePath
+                                onExternalCommit: value => StreamManager.cachePath = value
+                                type: "path"
+                                label: qsTr("Watch without downloading: temporary folder")
+                                description: qsTr("Where pieces wait while they play. The torrent and its files are removed when the player closes.")
+                            }
                         }
                         SettingsGroup {
                             title: qsTr("Player")

@@ -1234,6 +1234,13 @@ Surface {
 
     // Watch a torrent's main video in the built-in player (Main handles it)
     signal playRequested(string key)
+    // a torrent was added to watch without downloading: play it once it is in the library
+    signal watchRequested(string torrentId, int fileIndex)
+
+    // The add dialog for a link or file; `watch` starts on "Watch without downloading"
+    function openSource(source, watch) {
+        addDialog.show(source, watch)
+    }
 
     function openAddFile() {
         fileDialog.open()
@@ -1285,6 +1292,7 @@ Surface {
             }
         }
         onTorrentAdded: name => toast.show(qsTr("Added “%1”").arg(name), false)
+        onWatchRequested: (id, file) => page.watchRequested(id, file)
     }
 
     UiToast {

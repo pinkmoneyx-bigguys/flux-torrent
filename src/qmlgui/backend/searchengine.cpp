@@ -42,7 +42,9 @@
 #include "base/search/searchdownloadhandler.h"
 #include "base/search/searchhandler.h"
 #include "base/search/searchpluginmanager.h"
+#include "base/settingsstorage.h"
 #include "base/utils/foreignapps.h"
+#include "jacredsearch.h"
 
 namespace
 {
@@ -51,12 +53,27 @@ namespace
         u"eztv"_s, u"limetorrents"_s, u"piratebay"_s, u"solidtorrents"_s, u"torlock"_s, u"torrentproject"_s, u"torrentscsv"_s
     };
     const QString OFFICIAL_PLUGIN_URL = u"https://raw.githubusercontent.com/qbittorrent/search-plugins/master/nova3/engines/%1.py"_s;
+
+    const QString JACRED = u"jacred"_s;
+    const QString JACRED_ENABLED_KEY = u"Flux/Search/JacRedEnabled"_s;
+    const QString JACRED_URL_KEY = u"Flux/Search/JacRedUrl"_s;
+
+    // without a profile (tests) the choices live here
+    bool g_jacredEnabled = true;
+    QString g_jacredUrl;
 }
 
 SearchEngine::SearchEngine(QObject *parent)
     : QObject(parent)
     , m_results {new SearchResultsModel(this)}
+    , m_jacred {new JacRedSearch(this)}
 {
+    connect(m_jacred, &JacRedSearch::newResults, this, [this](const QList<SearchResult> &results)
+    {
+        m_results->append(results);
+    });
+    connect(m_jacred, &JacRedSearch::finished, this, &SearchEngine::partFinished);
+
     // Development aid for window captures: {pattern, plugins: [...], results: [...]}
     if (const QString demo = qEnvironmentVariable("FLUX_DEMO_SEARCH"); !demo.isEmpty())
     {
@@ -81,11 +98,13 @@ void SearchEngine::loadDemo(const QVariantMap &state)
     m_pythonVersion = m_pythonAvailable ? u"3.13"_s : QString();
     m_pattern = state.value(u"pattern"_s).toString();
     m_plugins = state.value(u"plugins"_s).toList();
+    m_pythonPlugins = m_plugins;
     m_enabledCount = 0;
     for (const QVariant &p : std::as_const(m_plugins))
         m_enabledCount += p.toMap().value(u"enabled"_s).toBool() ? 1 : 0;
     m_categories = {QVariantMap {{u"key"_s, u"all"_s}}, QVariantMap {{u"key"_s, u"movies"_s}},
         QVariantMap {{u"key"_s, u"tv"_s}}, QVariantMap {{u"key"_s, u"software"_s}}};
+    m_pythonCategories = m_categories;
     m_results->setRows(state.value(u"results"_s).toList());
     m_status = state.value(u"status"_s, m_pattern.isEmpty() ? u"idle"_s : u"finished"_s).toString();
     m_error = state.value(u"error"_s).toString();
@@ -98,6 +117,31 @@ SearchEngine::~SearchEngine()
 {
     if (m_handler)
         m_handler->cancelSearch();
+}
+
+bool SearchEngine::jacredEnabled() const
+{
+    const SettingsStorage *storage = SettingsStorage::instance();
+    return storage ? storage->loadValue<bool>(JACRED_ENABLED_KEY, true) : g_jacredEnabled;
+}
+
+QString SearchEngine::jacredUrl() const
+{
+    const SettingsStorage *storage = SettingsStorage::instance();
+    const QString url = storage ? storage->loadValue<QString>(JACRED_URL_KEY) : g_jacredUrl;
+    return url.isEmpty() ? JacRedSearch::DEFAULT_URL.toString() : url;
+}
+
+void SearchEngine::setJacredUrl(const QString &url)
+{
+    const QString value = url.trimmed();
+    if (value == jacredUrl())
+        return;
+    if (SettingsStorage *storage = SettingsStorage::instance())
+        storage->storeValue(JACRED_URL_KEY, value);
+    else
+        g_jacredUrl = value;
+    refreshPlugins();
 }
 
 SearchEngine *SearchEngine::create(QQmlEngine *, QJSEngine *)
@@ -215,8 +259,13 @@ SearchPluginManager *SearchEngine::manager()
 
 void SearchEngine::recheckPython()
 {
-    if (m_demo || !BitTorrent::Session::instance())
+    if (m_demo)
         return;
+    if (!BitTorrent::Session::instance())
+    {
+        composePlugins();
+        return;
+    }
 
     const Utils::ForeignApps::PythonInfo info = Utils::ForeignApps::pythonInfo();
     const bool available = info.isValid() && info.isSupportedVersion();
@@ -234,7 +283,17 @@ void SearchEngine::refreshPlugins()
 {
     SearchPluginManager *mgr = manager();
     if (!mgr)
+    {
+        // no Python: the built-in source alone
+        if (!m_demo)
+        {
+            m_pythonPlugins.clear();
+            m_pythonEnabledCount = 0;
+            m_pythonCategories = {QVariantMap {{u"key"_s, u"all"_s}}};
+        }
+        composePlugins();
         return;
+    }
 
     QList<QVariantMap> list;
     int enabled = 0;
@@ -258,15 +317,50 @@ void SearchEngine::refreshPlugins()
         return a.value(u"fullName"_s).toString().compare(b.value(u"fullName"_s).toString(), Qt::CaseInsensitive) < 0;
     });
 
-    m_plugins.clear();
+    m_pythonPlugins.clear();
     for (const QVariantMap &p : std::as_const(list))
-        m_plugins.append(p);
-    m_enabledCount = enabled;
+        m_pythonPlugins.append(p);
+    m_pythonEnabledCount = enabled;
 
-    m_categories = {QVariantMap {{u"key"_s, u"all"_s}}};
+    m_pythonCategories = {QVariantMap {{u"key"_s, u"all"_s}}};
     for (const QString &category : mgr->supportedCategories())
     {
         if (category != u"all")
+            m_pythonCategories.append(QVariantMap {{u"key"_s, category}});
+    }
+    composePlugins();
+}
+
+void SearchEngine::composePlugins()
+{
+    if (m_demo)
+    {
+        emit pluginsChanged();
+        return;
+    }
+
+    const bool jacredOn = jacredEnabled();
+    m_plugins = {QVariantMap {
+        {u"name"_s, JACRED},
+        {u"fullName"_s, tr("JacRed: movies and series")},
+        {u"url"_s, jacredUrl()},
+        {u"version"_s, QString()},
+        {u"enabled"_s, jacredOn},
+        {u"builtin"_s, true},
+        {u"categories"_s, QStringList {u"movies"_s, u"tv"_s, u"anime"_s}}
+    }};
+    m_plugins.append(m_pythonPlugins);
+    m_enabledCount = m_pythonEnabledCount + (jacredOn ? 1 : 0);
+
+    m_categories = m_pythonCategories;
+    if (m_categories.isEmpty())
+        m_categories = {QVariantMap {{u"key"_s, u"all"_s}}};
+    for (const QString &category : {u"movies"_s, u"tv"_s, u"anime"_s})
+    {
+        bool present = false;
+        for (const QVariant &c : std::as_const(m_categories))
+            present = present || (c.toMap().value(u"key"_s).toString() == category);
+        if (!present && jacredOn)
             m_categories.append(QVariantMap {{u"key"_s, category}});
     }
     emit pluginsChanged();
@@ -292,57 +386,101 @@ void SearchEngine::setBusy(const int delta)
 
 void SearchEngine::start(const QString &pattern, const QString &category, const QString &plugin)
 {
-    SearchPluginManager *mgr = manager();
     const QString text = pattern.trimmed();
-    if (!mgr || text.isEmpty())
+    if (m_demo || text.isEmpty())
         return;
 
     stop();
     m_results->clear();
     m_pattern = text;
+    const QString cat = category.isEmpty() ? u"all"_s : category;
 
+    // which parts take part: JacRed (when on, or picked alone) and the Python plugins
+    const bool useJacred = ((plugin == JACRED) || ((plugin != JACRED) && jacredEnabled() && (plugin == u"enabled" || plugin == u"all" || plugin.isEmpty())))
+        && JacRedSearch::covers(cat);
     QStringList plugins;
-    if (plugin == u"all")
-        plugins = mgr->allPlugins();
-    else if ((plugin == u"enabled") || plugin.isEmpty())
-        plugins = mgr->enabledPlugins();
-    else
-        plugins = {plugin};
-
-    if (plugins.isEmpty())
+    if (SearchPluginManager *mgr = manager(); mgr && (plugin != JACRED))
     {
-        setStatus(u"failed"_s, tr("No search plugins are enabled."));
+        if (plugin == u"all")
+            plugins = mgr->allPlugins();
+        else if ((plugin == u"enabled") || plugin.isEmpty())
+            plugins = mgr->enabledPlugins();
+        else
+            plugins = {plugin};
+    }
+
+    if (!useJacred && plugins.isEmpty())
+    {
+        setStatus(u"failed"_s, JacRedSearch::covers(cat) ? tr("No search sources are enabled.")
+                                                          : tr("No enabled source searches this category."));
         return;
     }
 
-    SearchHandler *handler = mgr->startSearch(text, category.isEmpty() ? u"all"_s : category, plugins);
-    m_handler = handler;
-    connect(handler, &SearchHandler::newSearchResults, this, [this, handler](const QList<SearchResult> &results)
-    {
-        if (handler == m_handler)
-            m_results->append(results);
-    });
-    connect(handler, &SearchHandler::searchFinished, this, [this, handler](const bool cancelled)
-    {
-        if (handler == m_handler)
-            setStatus(cancelled ? u"cancelled"_s : u"finished"_s);
-        handler->deleteLater();
-    });
-    connect(handler, &SearchHandler::searchFailed, this, [this, handler](const QString &errorMessage)
-    {
-        if (handler == m_handler)
-            setStatus(u"failed"_s, errorMessage);
-        handler->deleteLater();
-    });
+    m_pendingParts = (useJacred ? 1 : 0) + (plugins.isEmpty() ? 0 : 1);
+    m_failedParts = 0;
+    m_partError.clear();
     m_status = u"running"_s;
     m_error.clear();
     emit statusChanged();
+
+    if (!plugins.isEmpty())
+    {
+        SearchHandler *handler = manager()->startSearch(text, cat, plugins);
+        m_handler = handler;
+        connect(handler, &SearchHandler::newSearchResults, this, [this, handler](const QList<SearchResult> &results)
+        {
+            if (handler == m_handler)
+                m_results->append(results);
+        });
+        connect(handler, &SearchHandler::searchFinished, this, [this, handler](const bool cancelled)
+        {
+            if (handler == m_handler)
+                partFinished(cancelled ? u"cancelled"_s : QString());
+            handler->deleteLater();
+        });
+        connect(handler, &SearchHandler::searchFailed, this, [this, handler](const QString &errorMessage)
+        {
+            if (handler == m_handler)
+                partFinished(errorMessage.isEmpty() ? tr("The search failed.") : errorMessage);
+            handler->deleteLater();
+        });
+    }
+    if (useJacred)
+        m_jacred->start(jacredUrl(), text, cat);
+}
+
+void SearchEngine::partFinished(const QString &error)
+{
+    if (m_pendingParts <= 0)
+        return;
+    --m_pendingParts;
+    if (!error.isEmpty() && (error != u"cancelled"))
+    {
+        ++m_failedParts;
+        m_partError = error;
+    }
+    if (m_pendingParts > 0)
+        return;
+
+    if (error == u"cancelled")
+        setStatus(u"cancelled"_s);
+    else if ((m_failedParts > 0) && (m_results->rowCount() == 0))
+        setStatus(u"failed"_s, m_partError);
+    else
+        setStatus(u"finished"_s);
 }
 
 void SearchEngine::stop()
 {
+    const bool running = (m_pendingParts > 0);
     if (m_handler && m_handler->isActive())
         m_handler->cancelSearch();
+    m_jacred->cancel();
+    if (running)
+    {
+        m_pendingParts = 0;
+        setStatus(u"cancelled"_s);
+    }
 }
 
 bool SearchEngine::addSource(const QString &source)
@@ -402,6 +540,15 @@ void SearchEngine::openUrl(const QString &url)
 
 void SearchEngine::enablePlugin(const QString &name, const bool enabled)
 {
+    if (name == JACRED)
+    {
+        if (SettingsStorage *storage = SettingsStorage::instance())
+            storage->storeValue(JACRED_ENABLED_KEY, enabled);
+        else
+            g_jacredEnabled = enabled;
+        composePlugins();
+        return;
+    }
     if (SearchPluginManager *mgr = manager())
     {
         mgr->enablePlugin(name, enabled);

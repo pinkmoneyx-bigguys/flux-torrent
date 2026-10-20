@@ -40,10 +40,14 @@
 #include "base/bittorrent/downloadpriority.h"
 #include "base/bittorrent/infohash.h"
 #include "base/bittorrent/session.h"
+#include "base/bittorrent/torrent.h"
 #include "base/bittorrent/torrentcontentlayout.h"
 #include "base/bittorrent/torrentinfo.h"
 #include "base/global.h"
 #include "base/path.h"
+#include "base/tag.h"
+#include "medialibrary.h"
+#include "../streaming/streammanager.h"
 
 using BitTorrent::Session;
 
@@ -360,7 +364,7 @@ void AddTorrentDraft::rebuildRows()
         }
         m_rowMaps.append(QVariantMap {
             {u"row"_s, r}, {u"name"_s, row.name}, {u"path"_s, row.path}, {u"depth"_s, row.depth},
-            {u"folder"_s, row.folder}, {u"size"_s, size}, {u"state"_s, state},
+            {u"folder"_s, row.folder}, {u"file"_s, row.file}, {u"size"_s, size}, {u"state"_s, state},
             {u"expanded"_s, row.folder && !m_collapsed.contains(row.path)}
         });
     }
@@ -465,6 +469,74 @@ QString AddTorrentDraft::accept()
         return tr("This torrent is already in the list.");
 
     emit added(m_name);
+    return {};
+}
+
+int AddTorrentDraft::bestVideoFile() const
+{
+    int best = -1;
+    qint64 bestSize = -1;
+    for (int i = 0; i < m_files.size(); ++i)
+    {
+        const FileEntry &f = m_files.at(i);
+        if (MediaLibraryModel::isVideoFile(f.path.section(u'/', -1)) && (f.size > bestSize))
+        {
+            best = i;
+            bestSize = f.size;
+        }
+    }
+    return best;
+}
+
+QString AddTorrentDraft::fileName(const int index) const
+{
+    return ((index >= 0) && (index < m_files.size())) ? m_files.at(index).path.section(u'/', -1) : QString();
+}
+
+QString AddTorrentDraft::acceptForWatching()
+{
+    if (m_status == u"error")
+        return m_error;
+    if (!m_hasMetadata)
+        return tr("Wait for the file list.");
+    if (m_alreadyAdded)
+        return tr("This torrent is already in the list.");
+    const int video = bestVideoFile();
+    if (video < 0)
+        return tr("There is no video in this torrent.");
+
+    if (m_demo)
+    {
+        emit addedForWatching(m_hash, video);
+        return {};
+    }
+
+    Session *session = Session::instance();
+    if (!session)
+        return tr("The session is not running.");
+
+    BitTorrent::AddTorrentParams params;
+    params.savePath = Path(StreamManager::cachePath());
+    params.useAutoTMM = false;
+    params.useDownloadPath = false;
+    params.addStopped = false;
+    params.sequential = true;
+    params.firstLastPiecePriority = true;
+    params.contentLayout = BitTorrent::TorrentContentLayout::Original;
+    params.stopCondition = BitTorrent::Torrent::StopCondition::None;
+    params.tags.insert(Tag(StreamManager::WATCH_TAG.toString()));
+    // nothing downloads until the player asks for it (the stream turns its file on)
+    params.filePriorities.fill(BitTorrent::DownloadPriority::Ignored, m_files.size());
+
+    if (m_fetching)
+    {
+        session->cancelDownloadMetadata(m_descriptor.infoHash().toTorrentID());
+        m_fetching = false;
+    }
+    if (!session->addTorrent(m_descriptor, params))
+        return tr("This torrent is already in the list.");
+
+    emit addedForWatching(m_descriptor.infoHash().toTorrentID().toString(), video);
     return {};
 }
 

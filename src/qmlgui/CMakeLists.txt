@@ -145,6 +145,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/sessionfacade.cpp
         backend/systemprefs.h
         backend/systemprefs.cpp
+        backend/jacredsearch.h
+        backend/jacredsearch.cpp
         backend/torrentmaker.h
         backend/torrentmaker.cpp
         backend/uisettings.h
