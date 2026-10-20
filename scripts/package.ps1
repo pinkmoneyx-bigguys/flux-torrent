@@ -2,7 +2,8 @@
 # the file to attach to a GitHub release. Flux's updater offers that archive to everyone on an older version
 # once a release tagged v<version> is published.
 param(
-    [string]$Version = ''
+    [string]$Version = '',
+    [string]$DeployDir = ''   # default: deploy\ in the repository
 )
 . (Join-Path $PSScriptRoot 'common.ps1')
 
@@ -13,7 +14,7 @@ if ($Version -eq '') {
     else { throw 'FLUX_VERSION not found in src\qmlgui\CMakeLists.txt' }
 }
 
-$deploy = Join-Path $root 'deploy'
+$deploy = if ($DeployDir -ne '') { $DeployDir } else { Join-Path $root 'deploy' }
 if (-not (Test-Path (Join-Path $deploy 'Flux.exe'))) {
     throw 'deploy\Flux.exe is missing: run scripts\build.ps1 -Gui Qml -Deploy first'
 }
