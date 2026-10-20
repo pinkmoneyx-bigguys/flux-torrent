@@ -17,19 +17,16 @@ Surface {
     radius: Theme.radiusPanel
 
     // --- Selection ------------------------------------------------------------------------------
-    // id -> true; `selectionRevision` bumps on every change so bindings re-evaluate
+    // id -> true; replaced (never mutated) on every change, so bindings that read it re-evaluate
     property var _selection: ({})
-    property int selectionRevision: 0
     // The torrent shown in the details pane and the anchor of shift-selection
     property string currentId: ""
-    readonly property int selectedCount: { selectionRevision; return Object.keys(_selection).length }
+    readonly property int selectedCount: Object.keys(_selection).length
 
     function isSelected(id) {
-        selectionRevision
         return _selection[id] === true
     }
     function selectedIds() {
-        selectionRevision
         return Object.keys(_selection)
     }
     function _set(ids) {
@@ -37,7 +34,6 @@ Surface {
         for (const id of ids)
             s[id] = true
         _selection = s
-        ++selectionRevision
     }
     function selectOnly(id) {
         _set([id])
@@ -50,7 +46,6 @@ Surface {
         else
             s[id] = true
         _selection = s
-        ++selectionRevision
         currentId = id
     }
     function selectRangeTo(id) {

@@ -3,114 +3,41 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Flux
 
-// Settings. For now only Interface → Appearance: the choice between the default look and Liquid Glass,
-// saved in the profile through UiSettings and applied live.
+// Settings, laid out like the shadcn settings example: sections on the left, the section's form on the
+// right as cards of rows. Every change applies at once through AppSettings (the look through UiSettings).
 Surface {
     id: root
     objectName: "page_settings"
 
     property string title: qsTr("Settings")
     property string hint: qsTr("Application settings will appear here.")
+    property string section: "interface"
+
+    readonly property var sections: [
+        { key: "interface", label: qsTr("Interface"), icon: Icons.uiPanel },
+        { key: "downloads", label: qsTr("Downloads"), icon: Icons.download },
+        { key: "speed", label: qsTr("Speed"), icon: Icons.speed },
+        { key: "connection", label: qsTr("Connection"), icon: Icons.network },
+        { key: "bittorrent", label: qsTr("BitTorrent"), icon: Icons.bittorrent }
+    ]
+
+    function sectionLabel(key) {
+        for (const s of sections) {
+            if (s.key === key)
+                return s.label
+        }
+        return ""
+    }
+    // `revision >= 0` keeps the calling binding subscribed to every settings change
+    function on(key) {
+        return AppSettings.revision >= 0 && AppSettings.value(key) === true
+    }
+    function proxyOn() {
+        return AppSettings.revision >= 0 && AppSettings.value("proxyType") !== "none"
+    }
 
     kind: Theme.glass ? "panel" : "chrome"
     radius: Theme.radiusPanel
-
-    // One choice of the look (shadcn "appearance" radio card): a preview, the name under it
-    component StyleCard: AbstractButton {
-        id: card
-
-        property string styleId
-        property string description
-        readonly property bool current: UiSettings.style === styleId
-        default property alias preview: previewBox.data
-
-        implicitWidth: 236
-        implicitHeight: col.implicitHeight
-        focusPolicy: Qt.StrongFocus
-        hoverEnabled: true
-        checkable: false
-
-        Accessible.role: Accessible.RadioButton
-        Accessible.name: text
-        Accessible.description: description
-        Accessible.checked: current
-        Accessible.onPressAction: card.clicked()
-
-        onClicked: UiSettings.style = styleId
-
-        contentItem: ColumnLayout {
-            id: col
-            spacing: Theme.sp(2)
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 148
-                radius: Theme.radiusCtl + 2
-                color: "transparent"
-                border.width: 2
-                border.color: card.current ? Theme.primary : card.hovered ? Theme.alpha(Theme.text, 0.25) : Theme.muted
-
-                Item {
-                    id: previewBox
-                    anchors.fill: parent
-                    anchors.margins: 6
-                    clip: true
-                }
-                Rectangle {
-                    visible: card.visualFocus
-                    anchors.fill: parent
-                    anchors.margins: -4
-                    radius: parent.radius + 4
-                    color: "transparent"
-                    border.width: 2
-                    border.color: Theme.alpha(Theme.ring, 0.6)
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.sp(2)
-
-                // radio indicator
-                Rectangle {
-                    implicitWidth: 16
-                    implicitHeight: 16
-                    radius: 8
-                    color: Theme.inputFill
-                    border.width: 1
-                    border.color: card.current ? Theme.primary : Theme.input
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 8
-                        height: 8
-                        radius: 4
-                        visible: card.current
-                        color: Theme.primary
-                    }
-                }
-                Text {
-                    text: card.text
-                    color: Theme.text
-                    font.family: Theme.fontText
-                    font.pixelSize: Theme.textSm
-                    font.weight: Font.Medium
-                }
-            }
-            Text {
-                Layout.fillWidth: true
-                text: card.description
-                color: Theme.textDim
-                font.family: Theme.fontText
-                font.pixelSize: Theme.textXs
-                wrapMode: Text.Wrap
-            }
-        }
-    }
-
-    // A thin placeholder line in the previews (shadcn skeleton bars)
-    component Bar: Rectangle {
-        height: 6
-        radius: 3
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -119,180 +46,392 @@ Surface {
         PageHeader {
             Layout.fillWidth: true
             title: root.title
-            subtitle: qsTr("Interface")
+            subtitle: root.sectionLabel(root.section)
         }
 
-        Flickable {
+        RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            contentHeight: content.implicitHeight + 2 * Theme.sp(6)
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
+            spacing: 0
 
+            // --- Section nav ----------------------------------------------------------------------
             ColumnLayout {
-                id: content
-                x: Theme.sp(6)
-                y: Theme.sp(6)
-                width: Math.min(parent.width - 2 * Theme.sp(6), 720)
-                spacing: Theme.sp(6)
+                Layout.fillWidth: false
+                Layout.preferredWidth: 220
+                Layout.fillHeight: true
+                Layout.topMargin: Theme.sp(4)
+                Layout.leftMargin: Theme.sp(4)
+                spacing: 2
 
-                ColumnLayout {
-                    spacing: Theme.sp(1)
-                    Text {
-                        text: qsTr("Appearance")
-                        color: Theme.text
-                        font.family: Theme.fontText
-                        font.pixelSize: 16
-                        font.weight: Font.Medium
-                        Accessible.role: Accessible.Heading
+                Repeater {
+                    model: root.sections
+                    AbstractButton {
+                        id: navItem
+                        required property var modelData
+                        readonly property bool current: root.section === modelData.key
+                        objectName: "settingsNav_" + modelData.key
+                        Layout.fillWidth: true
+                        implicitHeight: 34
+                        leftPadding: 10
+                        rightPadding: 10
+                        hoverEnabled: true
+                        focusPolicy: Qt.StrongFocus
+                        text: modelData.label
+                        onClicked: root.section = modelData.key
+
+                        Accessible.role: Accessible.PageTab
                         Accessible.name: text
-                    }
-                    Text {
-                        text: qsTr("Choose how Flux looks. The change applies right away.")
-                        color: Theme.textDim
-                        font.family: Theme.fontText
-                        font.pixelSize: Theme.textSm
+                        Accessible.selected: current
+
+                        background: Rectangle {
+                            radius: Theme.radiusCtl
+                            color: navItem.current ? Theme.selected : navItem.hovered ? Theme.hover : "transparent"
+                            border.width: navItem.visualFocus ? 2 : 0
+                            border.color: Theme.ring
+                        }
+                        contentItem: RowLayout {
+                            spacing: Theme.sp(2)
+                            Icon {
+                                path: navItem.modelData.icon
+                                size: 16
+                                strokeWidth: 1.75
+                                color: navItem.current ? Theme.text : Theme.textDim
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: navItem.text
+                                color: navItem.current ? Theme.text : Theme.alpha(Theme.text, 0.8)
+                                font.family: Theme.fontText
+                                font.pixelSize: Theme.textSm
+                                font.weight: navItem.current ? Font.Medium : Font.Normal
+                            }
+                        }
                     }
                 }
+                Item { Layout.fillHeight: true }
+            }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 1
-                    color: Theme.border
+            // --- Form -----------------------------------------------------------------------------
+            Flickable {
+                id: form
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                contentHeight: content.implicitHeight + 2 * Theme.sp(6)
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar {}
+
+                // back to the top when switching sections
+                Connections {
+                    target: root
+                    function onSectionChanged() {
+                        form.contentY = 0
+                    }
                 }
 
                 ColumnLayout {
-                    spacing: Theme.sp(3)
+                    id: content
+                    x: Theme.sp(6)
+                    y: Theme.sp(4)
+                    width: Math.min(form.width - 2 * Theme.sp(6), 760)
+                    spacing: Theme.sp(8)
 
+                    // ===== Interface =====
                     ColumnLayout {
-                        spacing: Theme.sp(1)
-                        Text {
-                            text: qsTr("Theme")
-                            color: Theme.text
-                            font.family: Theme.fontText
-                            font.pixelSize: Theme.textSm
-                            font.weight: Font.Medium
+                        visible: root.section === "interface"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(4)
+
+                        SectionTitle {
+                            title: qsTr("Appearance")
+                            text: qsTr("Choose how Flux looks. The change applies right away.")
                         }
-                        Text {
-                            text: qsTr("Select the look of the window.")
-                            color: Theme.textDim
-                            font.family: Theme.fontText
-                            font.pixelSize: Theme.textXs + 1
-                        }
+                        ThemePicker {}
                     }
 
-                    RowLayout {
-                        spacing: Theme.sp(4)
-                        Accessible.role: Accessible.Grouping
-                        Accessible.name: qsTr("Theme")
+                    // ===== Downloads =====
+                    ColumnLayout {
+                        visible: root.section === "downloads"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
 
-                        StyleCard {
-                            objectName: "styleDefault"
-                            styleId: "default"
-                            text: qsTr("Default")
-                            description: qsTr("Calm neutral surfaces with clear borders. Easy on the eyes for long sessions.")
-
-                            // flat preview: chrome, sidebar rows and an inset with table rows
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: Theme.radiusCtl - 2
-                                color: "#171717"
-
-                                Column {
-                                    x: 8; y: 10
-                                    spacing: 6
-                                    Bar { width: 40; color: "#404040" }
-                                    Bar { width: 44; color: "#2E2E2E" }
-                                    Bar { width: 36; color: "#2E2E2E" }
-                                    Bar { width: 42; color: "#2E2E2E" }
-                                }
-                                Rectangle {
-                                    x: 60; y: 6
-                                    width: parent.width - 66
-                                    height: parent.height - 12
-                                    radius: 6
-                                    color: "#0A0A0A"
-                                    border.width: 1
-                                    border.color: Qt.rgba(1, 1, 1, 0.1)
-
-                                    Column {
-                                        x: 10; y: 12
-                                        spacing: 9
-                                        Bar { width: 70; color: "#3A3A3A" }
-                                        Repeater {
-                                            model: 4
-                                            Row {
-                                                spacing: 8
-                                                Bar { width: 56; color: "#262626" }
-                                                Bar { width: 34; color: index % 2 ? "#4ADE80" : "#60A5FA"; opacity: 0.8 }
-                                            }
-                                        }
-                                    }
-                                }
+                        SettingsGroup {
+                            title: qsTr("Where files go")
+                            SettingRow {
+                                key: "savePath"
+                                type: "path"
+                                label: qsTr("Save to")
+                                description: qsTr("The default folder for new torrents.")
+                            }
+                            SettingRow {
+                                key: "downloadPathEnabled"
+                                label: qsTr("Keep incomplete torrents elsewhere")
+                                description: qsTr("Files move to the save folder when they finish.")
+                            }
+                            SettingRow {
+                                visible: root.on("downloadPathEnabled")
+                                key: "downloadPath"
+                                type: "path"
+                                label: qsTr("Incomplete torrents")
+                            }
+                            SettingRow {
+                                key: "appendExtension"
+                                label: qsTr("Mark incomplete files")
+                                description: qsTr("Adds .!qB to files until they are complete.")
+                            }
+                            SettingRow {
+                                key: "preallocation"
+                                label: qsTr("Reserve disk space up front")
+                                description: qsTr("Allocates the full size when a download starts.")
                             }
                         }
 
-                        StyleCard {
-                            objectName: "styleGlass"
-                            styleId: "glass"
-                            text: qsTr("Liquid Glass")
-                            description: qsTr("Frosted glass panes over a soft colour backdrop.")
+                        SettingsGroup {
+                            title: qsTr("When adding a torrent")
+                            SettingRow {
+                                key: "contentLayout"
+                                type: "select"
+                                label: qsTr("Content layout")
+                                description: qsTr("Whether a torrent's files get a folder of their own.")
+                                options: [
+                                    { key: "original", label: qsTr("As in the torrent") },
+                                    { key: "subfolder", label: qsTr("Always a subfolder") },
+                                    { key: "noSubfolder", label: qsTr("Never a subfolder") }
+                                ]
+                            }
+                            SettingRow {
+                                key: "addStopped"
+                                label: qsTr("Add stopped")
+                                description: qsTr("New torrents wait until you start them.")
+                            }
+                            SettingRow {
+                                key: "addToQueueTop"
+                                label: qsTr("Put new torrents first in the queue")
+                            }
+                        }
+                    }
 
-                            // glass preview: coloured blobs under translucent rounded panes
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: Theme.radiusCtl - 2
-                                clip: true
-                                gradient: Gradient {
-                                    orientation: Gradient.Horizontal
-                                    GradientStop { position: 0; color: "#2A1F57" }
-                                    GradientStop { position: 0.55; color: "#14122A" }
-                                    GradientStop { position: 1; color: "#0F3B33" }
-                                }
+                    // ===== Speed =====
+                    ColumnLayout {
+                        visible: root.section === "speed"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
 
-                                Rectangle {
-                                    x: 6; y: 6
-                                    width: 50
-                                    height: parent.height - 12
-                                    radius: 10
-                                    color: Qt.rgba(1, 1, 1, 0.08)
-                                    border.width: 1
-                                    border.color: Qt.rgba(1, 1, 1, 0.12)
-                                    Column {
-                                        x: 7; y: 10
-                                        spacing: 6
-                                        Bar { width: 36; color: Qt.rgba(1, 1, 1, 0.28) }
-                                        Bar { width: 30; color: Qt.rgba(1, 1, 1, 0.14) }
-                                        Bar { width: 34; color: Qt.rgba(1, 1, 1, 0.14) }
-                                    }
+                        SettingsGroup {
+                            title: qsTr("Speed limits")
+                            description: qsTr("0 means unlimited.")
+                            SettingRow { key: "dlLimit"; type: "number"; suffix: qsTr("KiB/s"); label: qsTr("Download") }
+                            SettingRow { key: "upLimit"; type: "number"; suffix: qsTr("KiB/s"); label: qsTr("Upload") }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Alternative limits")
+                            description: qsTr("A second pair of limits you switch with the turtle in the title bar.")
+                            SettingRow {
+                                key: "altSpeedEnabled"
+                                label: qsTr("Use alternative limits now")
+                            }
+                            SettingRow { key: "altDlLimit"; type: "number"; suffix: qsTr("KiB/s"); label: qsTr("Download") }
+                            SettingRow { key: "altUpLimit"; type: "number"; suffix: qsTr("KiB/s"); label: qsTr("Upload") }
+                            SettingRow {
+                                key: "schedulerEnabled"
+                                label: qsTr("Switch on a schedule")
+                                description: qsTr("Uses the schedule from your qBittorrent settings.")
+                            }
+                        }
+                        SettingsGroup {
+                            title: qsTr("How limits apply")
+                            SettingRow { key: "utpRateLimited"; label: qsTr("Limit µTP connections too") }
+                            SettingRow { key: "includeOverhead"; label: qsTr("Count protocol overhead") }
+                            SettingRow {
+                                key: "ignoreLimitsOnLAN"
+                                label: qsTr("No limits on the local network")
+                            }
+                        }
+                    }
+
+                    // ===== Connection =====
+                    ColumnLayout {
+                        visible: root.section === "connection"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
+
+                        SettingsGroup {
+                            title: qsTr("Listening port")
+                            SettingRow {
+                                id: portRow
+                                key: "port"
+                                type: "number"
+                                controlWidth: 110
+                                label: qsTr("Port for incoming connections")
+                                description: qsTr("Other peers connect to you on this port.")
+                                UiButton {
+                                    variant: "outline"
+                                    text: qsTr("Random")
+                                    onClicked: portRow.commit(AppSettings.randomPort())
                                 }
-                                Rectangle {
-                                    x: 62; y: 6
-                                    width: parent.width - 68
-                                    height: parent.height - 12
-                                    radius: 10
-                                    color: Qt.rgba(1, 1, 1, 0.08)
-                                    border.width: 1
-                                    border.color: Qt.rgba(1, 1, 1, 0.12)
-                                    Column {
-                                        x: 10; y: 12
-                                        spacing: 9
-                                        Bar { width: 70; color: Qt.rgba(1, 1, 1, 0.3) }
-                                        Repeater {
-                                            model: 4
-                                            Row {
-                                                spacing: 8
-                                                Bar { width: 56; color: Qt.rgba(1, 1, 1, 0.12) }
-                                                Bar { width: 34; color: "#3EF0B0"; opacity: 0.8 }
-                                            }
-                                        }
-                                    }
-                                }
+                            }
+                            SettingRow {
+                                key: "upnp"
+                                label: qsTr("Open the port on the router")
+                                description: qsTr("UPnP / NAT-PMP forwarding.")
+                            }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Connections")
+                            description: qsTr("-1 means unlimited.")
+                            SettingRow {
+                                key: "protocol"
+                                type: "select"
+                                label: qsTr("Peer protocol")
+                                options: [
+                                    { key: "both", label: qsTr("TCP and µTP") },
+                                    { key: "tcp", label: "TCP" },
+                                    { key: "utp", label: "µTP" }
+                                ]
+                            }
+                            SettingRow { key: "maxConnections"; type: "number"; label: qsTr("Connections in total") }
+                            SettingRow { key: "maxConnectionsPerTorrent"; type: "number"; label: qsTr("Connections per torrent") }
+                            SettingRow { key: "maxUploads"; type: "number"; label: qsTr("Upload slots in total") }
+                            SettingRow { key: "maxUploadsPerTorrent"; type: "number"; label: qsTr("Upload slots per torrent") }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Proxy")
+                            SettingRow {
+                                key: "proxyType"
+                                type: "select"
+                                label: qsTr("Proxy")
+                                options: [
+                                    { key: "none", label: qsTr("None") },
+                                    { key: "http", label: "HTTP" },
+                                    { key: "socks5", label: "SOCKS5" },
+                                    { key: "socks4", label: "SOCKS4" }
+                                ]
+                            }
+                            SettingRow { visible: root.proxyOn(); key: "proxyHost"; type: "text"; label: qsTr("Host"); placeholder: "127.0.0.1" }
+                            SettingRow { visible: root.proxyOn(); key: "proxyPort"; type: "number"; controlWidth: 110; label: qsTr("Port") }
+                            SettingRow { visible: root.proxyOn(); key: "proxyAuth"; label: qsTr("Sign in to the proxy") }
+                            SettingRow { visible: root.proxyOn() && root.on("proxyAuth"); key: "proxyUser"; type: "text"; label: qsTr("User name") }
+                            SettingRow { visible: root.proxyOn() && root.on("proxyAuth"); key: "proxyPassword"; type: "password"; label: qsTr("Password") }
+                            SettingRow {
+                                visible: root.proxyOn()
+                                key: "proxyPeers"
+                                label: qsTr("Connect to peers through the proxy")
+                                description: qsTr("Otherwise only trackers and downloads use it.")
+                            }
+                        }
+                    }
+
+                    // ===== BitTorrent =====
+                    ColumnLayout {
+                        visible: root.section === "bittorrent"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
+
+                        SettingsGroup {
+                            title: qsTr("Finding peers and privacy")
+                            SettingRow { key: "dht"; label: qsTr("DHT"); description: qsTr("Finds peers without trackers.") }
+                            SettingRow { key: "pex"; label: qsTr("Peer exchange"); description: qsTr("Peers share the peers they know.") }
+                            SettingRow { key: "lsd"; label: qsTr("Local peer discovery"); description: qsTr("Finds peers on your local network.") }
+                            SettingRow {
+                                key: "encryption"
+                                type: "select"
+                                label: qsTr("Encryption")
+                                options: [
+                                    { key: "prefer", label: qsTr("Allow") },
+                                    { key: "require", label: qsTr("Require") },
+                                    { key: "disable", label: qsTr("Turn off") }
+                                ]
+                            }
+                            SettingRow {
+                                key: "anonymous"
+                                label: qsTr("Anonymous mode")
+                                description: qsTr("Hides the client name and version from peers and trackers.")
+                            }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Queue")
+                            SettingRow {
+                                key: "queueing"
+                                label: qsTr("Limit active torrents")
+                                description: qsTr("Torrents beyond the limits wait in the queue.")
+                            }
+                            SettingRow { visible: root.on("queueing"); key: "maxActiveDownloads"; type: "number"; label: qsTr("Active downloads") }
+                            SettingRow { visible: root.on("queueing"); key: "maxActiveUploads"; type: "number"; label: qsTr("Active uploads") }
+                            SettingRow { visible: root.on("queueing"); key: "maxActiveTorrents"; type: "number"; label: qsTr("Active torrents") }
+                            SettingRow {
+                                visible: root.on("queueing")
+                                key: "ignoreSlow"
+                                label: qsTr("Don't count slow torrents")
+                            }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Seeding limits")
+                            description: qsTr("What happens when a torrent has seeded enough.")
+                            SettingRow { key: "ratioLimitEnabled"; label: qsTr("Stop at a ratio") }
+                            SettingRow { visible: root.on("ratioLimitEnabled"); key: "ratioLimit"; type: "decimal"; label: qsTr("Ratio") }
+                            SettingRow { key: "seedTimeEnabled"; label: qsTr("Stop after seeding for a while") }
+                            SettingRow {
+                                visible: root.on("seedTimeEnabled")
+                                key: "seedTimeMinutes"
+                                type: "number"
+                                suffix: qsTr("min")
+                                label: qsTr("Seeding time")
+                            }
+                            SettingRow {
+                                visible: root.on("ratioLimitEnabled") || root.on("seedTimeEnabled")
+                                key: "shareAction"
+                                type: "select"
+                                label: qsTr("Then")
+                                options: [
+                                    { key: "stop", label: qsTr("Stop the torrent") },
+                                    { key: "remove", label: qsTr("Remove the torrent") },
+                                    { key: "removeContent", label: qsTr("Remove it and its files") },
+                                    { key: "superSeed", label: qsTr("Switch to super-seeding") }
+                                ]
+                            }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Trackers")
+                            SettingRow {
+                                key: "addTrackersEnabled"
+                                label: qsTr("Add these trackers to new torrents")
+                            }
+                            SettingRow {
+                                visible: root.on("addTrackersEnabled")
+                                key: "additionalTrackers"
+                                type: "textarea"
+                                label: qsTr("Trackers")
+                                description: qsTr("One URL per line.")
+                                placeholder: "udp://tracker.example.org:1337/announce"
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    component SectionTitle: ColumnLayout {
+        property string title
+        property string text
+        Layout.fillWidth: true
+        spacing: 2
+        Text {
+            text: parent.title
+            color: Theme.text
+            font.family: Theme.fontText
+            font.pixelSize: Theme.textBase
+            font.weight: Font.DemiBold
+            Accessible.role: Accessible.Heading
+            Accessible.name: text
+        }
+        Text {
+            Layout.fillWidth: true
+            text: parent.text
+            color: Theme.textDim
+            font.family: Theme.fontText
+            font.pixelSize: Theme.textSm
+            wrapMode: Text.Wrap
         }
     }
 }

@@ -18,10 +18,7 @@ Surface {
 
     // The article in the reader (row of RssManager.articles), -1 for none
     property int currentArticle: -1
-    readonly property var article: {
-        currentArticle // re-evaluate when it changes
-        return articleList.currentItem ? articleList.currentItem.info : null
-    }
+    readonly property var article: currentArticle >= 0 && articleList.currentItem ? articleList.currentItem.info : null
 
     function selectArticle(row) {
         currentArticle = row

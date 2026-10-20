@@ -2,6 +2,21 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU" sourcelanguage="en">
 <context>
+    <name>AppSettings</name>
+    <message>
+        <source>Unknown setting.</source>
+        <translation>Неизвестная настройка.</translation>
+    </message>
+    <message>
+        <source>Choose a folder.</source>
+        <translation>Выберите папку.</translation>
+    </message>
+    <message>
+        <source>Enter a ratio from 0 to 9998.</source>
+        <translation>Введите рейтинг от 0 до 9998.</translation>
+    </message>
+</context>
+<context>
     <name>FirstRunWindow</name>
     <message>
         <source>Migrate your torrents from qBittorrent?</source>
@@ -239,6 +254,17 @@
     <message>
         <source>Search plugins (*.py)</source>
         <translation>Плагины поиска (*.py)</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <source>Enter a number from %1 to %2.</source>
+        <translation>Введите число от %1 до %2.</translation>
+    </message>
+    <message>
+        <source>Unknown option.</source>
+        <translation>Неизвестный вариант.</translation>
     </message>
 </context>
 <context>
@@ -888,6 +914,13 @@
     </message>
 </context>
 <context>
+    <name>SettingRow</name>
+    <message>
+        <source>Choose folder</source>
+        <translation>Выбрать папку</translation>
+    </message>
+</context>
+<context>
     <name>SettingsPage</name>
     <message>
         <source>Settings</source>
@@ -902,6 +935,22 @@
         <translation>Интерфейс</translation>
     </message>
     <message>
+        <source>Downloads</source>
+        <translation>Загрузки</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Скорость</translation>
+    </message>
+    <message>
+        <source>Connection</source>
+        <translation>Соединение</translation>
+    </message>
+    <message>
+        <source>BitTorrent</source>
+        <translation>BitTorrent</translation>
+    </message>
+    <message>
         <source>Appearance</source>
         <translation>Внешний вид</translation>
     </message>
@@ -910,28 +959,368 @@
         <translation>Выберите, как выглядит Flux. Изменение применяется сразу.</translation>
     </message>
     <message>
-        <source>Theme</source>
-        <translation>Тема</translation>
+        <source>Where files go</source>
+        <translation>Куда сохранять</translation>
     </message>
     <message>
-        <source>Select the look of the window.</source>
-        <translation>Оформление окна.</translation>
+        <source>Save to</source>
+        <translation>Сохранять в</translation>
     </message>
     <message>
-        <source>Default</source>
-        <translation>Стандартная</translation>
+        <source>The default folder for new torrents.</source>
+        <translation>Папка по умолчанию для новых торрентов.</translation>
     </message>
     <message>
-        <source>Calm neutral surfaces with clear borders. Easy on the eyes for long sessions.</source>
-        <translation>Спокойные нейтральные поверхности с чёткими границами. Не утомляет глаза.</translation>
+        <source>Keep incomplete torrents elsewhere</source>
+        <translation>Хранить незавершённые отдельно</translation>
     </message>
     <message>
-        <source>Liquid Glass</source>
-        <translation>Liquid Glass</translation>
+        <source>Files move to the save folder when they finish.</source>
+        <translation>Файлы переедут в папку сохранения, когда загрузятся.</translation>
     </message>
     <message>
-        <source>Frosted glass panes over a soft colour backdrop.</source>
-        <translation>Матовые стеклянные панели поверх мягкого цветного фона.</translation>
+        <source>Incomplete torrents</source>
+        <translation>Незавершённые торренты</translation>
+    </message>
+    <message>
+        <source>Mark incomplete files</source>
+        <translation>Помечать незавершённые файлы</translation>
+    </message>
+    <message>
+        <source>Adds .!qB to files until they are complete.</source>
+        <translation>Добавляет .!qB к файлам, пока они не загрузятся.</translation>
+    </message>
+    <message>
+        <source>Reserve disk space up front</source>
+        <translation>Сразу резервировать место</translation>
+    </message>
+    <message>
+        <source>Allocates the full size when a download starts.</source>
+        <translation>Выделяет весь размер на диске при начале загрузки.</translation>
+    </message>
+    <message>
+        <source>When adding a torrent</source>
+        <translation>При добавлении торрента</translation>
+    </message>
+    <message>
+        <source>Content layout</source>
+        <translation>Структура содержимого</translation>
+    </message>
+    <message>
+        <source>Whether a torrent&apos;s files get a folder of their own.</source>
+        <translation>Получают ли файлы торрента собственную папку.</translation>
+    </message>
+    <message>
+        <source>As in the torrent</source>
+        <translation>Как в торренте</translation>
+    </message>
+    <message>
+        <source>Always a subfolder</source>
+        <translation>Всегда подпапка</translation>
+    </message>
+    <message>
+        <source>Never a subfolder</source>
+        <translation>Без подпапки</translation>
+    </message>
+    <message>
+        <source>Add stopped</source>
+        <translation>Добавлять остановленными</translation>
+    </message>
+    <message>
+        <source>New torrents wait until you start them.</source>
+        <translation>Новые торренты ждут, пока вы их не запустите.</translation>
+    </message>
+    <message>
+        <source>Put new torrents first in the queue</source>
+        <translation>Ставить новые торренты в начало очереди</translation>
+    </message>
+    <message>
+        <source>Speed limits</source>
+        <translation>Ограничения скорости</translation>
+    </message>
+    <message>
+        <source>0 means unlimited.</source>
+        <translation>0 — без ограничения.</translation>
+    </message>
+    <message>
+        <source>KiB/s</source>
+        <translation>КиБ/с</translation>
+    </message>
+    <message>
+        <source>Download</source>
+        <translation>Загрузка</translation>
+    </message>
+    <message>
+        <source>Upload</source>
+        <translation>Отдача</translation>
+    </message>
+    <message>
+        <source>Alternative limits</source>
+        <translation>Альтернативные ограничения</translation>
+    </message>
+    <message>
+        <source>A second pair of limits you switch with the turtle in the title bar.</source>
+        <translation>Вторая пара ограничений, включается черепахой в заголовке окна.</translation>
+    </message>
+    <message>
+        <source>Use alternative limits now</source>
+        <translation>Включить сейчас</translation>
+    </message>
+    <message>
+        <source>Switch on a schedule</source>
+        <translation>Включать по расписанию</translation>
+    </message>
+    <message>
+        <source>Uses the schedule from your qBittorrent settings.</source>
+        <translation>По расписанию из настроек qBittorrent.</translation>
+    </message>
+    <message>
+        <source>How limits apply</source>
+        <translation>Как применять ограничения</translation>
+    </message>
+    <message>
+        <source>Limit µTP connections too</source>
+        <translation>Ограничивать и µTP-соединения</translation>
+    </message>
+    <message>
+        <source>Count protocol overhead</source>
+        <translation>Учитывать служебный трафик</translation>
+    </message>
+    <message>
+        <source>No limits on the local network</source>
+        <translation>Без ограничений в локальной сети</translation>
+    </message>
+    <message>
+        <source>Listening port</source>
+        <translation>Порт</translation>
+    </message>
+    <message>
+        <source>Port for incoming connections</source>
+        <translation>Порт входящих соединений</translation>
+    </message>
+    <message>
+        <source>Other peers connect to you on this port.</source>
+        <translation>Через этот порт к вам подключаются другие пиры.</translation>
+    </message>
+    <message>
+        <source>Random</source>
+        <translation>Случайный</translation>
+    </message>
+    <message>
+        <source>Open the port on the router</source>
+        <translation>Открывать порт на роутере</translation>
+    </message>
+    <message>
+        <source>UPnP / NAT-PMP forwarding.</source>
+        <translation>Проброс через UPnP / NAT-PMP.</translation>
+    </message>
+    <message>
+        <source>Connections</source>
+        <translation>Соединения</translation>
+    </message>
+    <message>
+        <source>-1 means unlimited.</source>
+        <translation>-1 — без ограничения.</translation>
+    </message>
+    <message>
+        <source>Peer protocol</source>
+        <translation>Протокол пиров</translation>
+    </message>
+    <message>
+        <source>TCP and µTP</source>
+        <translation>TCP и µTP</translation>
+    </message>
+    <message>
+        <source>Connections in total</source>
+        <translation>Всего соединений</translation>
+    </message>
+    <message>
+        <source>Connections per torrent</source>
+        <translation>Соединений на торрент</translation>
+    </message>
+    <message>
+        <source>Upload slots in total</source>
+        <translation>Всего слотов отдачи</translation>
+    </message>
+    <message>
+        <source>Upload slots per torrent</source>
+        <translation>Слотов отдачи на торрент</translation>
+    </message>
+    <message>
+        <source>Proxy</source>
+        <translation>Прокси</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Нет</translation>
+    </message>
+    <message>
+        <source>Host</source>
+        <translation>Хост</translation>
+    </message>
+    <message>
+        <source>Port</source>
+        <translation>Порт</translation>
+    </message>
+    <message>
+        <source>Sign in to the proxy</source>
+        <translation>Вход на прокси</translation>
+    </message>
+    <message>
+        <source>User name</source>
+        <translation>Имя пользователя</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Пароль</translation>
+    </message>
+    <message>
+        <source>Connect to peers through the proxy</source>
+        <translation>Подключаться к пирам через прокси</translation>
+    </message>
+    <message>
+        <source>Otherwise only trackers and downloads use it.</source>
+        <translation>Иначе через прокси идут только трекеры и загрузки.</translation>
+    </message>
+    <message>
+        <source>Finding peers and privacy</source>
+        <translation>Поиск пиров и приватность</translation>
+    </message>
+    <message>
+        <source>DHT</source>
+        <translation>DHT</translation>
+    </message>
+    <message>
+        <source>Finds peers without trackers.</source>
+        <translation>Находит пиров без трекеров.</translation>
+    </message>
+    <message>
+        <source>Peer exchange</source>
+        <translation>Обмен пирами (PeX)</translation>
+    </message>
+    <message>
+        <source>Peers share the peers they know.</source>
+        <translation>Пиры делятся известными им пирами.</translation>
+    </message>
+    <message>
+        <source>Local peer discovery</source>
+        <translation>Поиск пиров в локальной сети</translation>
+    </message>
+    <message>
+        <source>Finds peers on your local network.</source>
+        <translation>Находит пиров в вашей локальной сети.</translation>
+    </message>
+    <message>
+        <source>Encryption</source>
+        <translation>Шифрование</translation>
+    </message>
+    <message>
+        <source>Allow</source>
+        <translation>Разрешить</translation>
+    </message>
+    <message>
+        <source>Require</source>
+        <translation>Требовать</translation>
+    </message>
+    <message>
+        <source>Turn off</source>
+        <translation>Выключить</translation>
+    </message>
+    <message>
+        <source>Anonymous mode</source>
+        <translation>Анонимный режим</translation>
+    </message>
+    <message>
+        <source>Hides the client name and version from peers and trackers.</source>
+        <translation>Скрывает имя и версию клиента от пиров и трекеров.</translation>
+    </message>
+    <message>
+        <source>Queue</source>
+        <translation>Очередь</translation>
+    </message>
+    <message>
+        <source>Limit active torrents</source>
+        <translation>Ограничивать активные торренты</translation>
+    </message>
+    <message>
+        <source>Torrents beyond the limits wait in the queue.</source>
+        <translation>Торренты сверх лимита ждут в очереди.</translation>
+    </message>
+    <message>
+        <source>Active downloads</source>
+        <translation>Активные загрузки</translation>
+    </message>
+    <message>
+        <source>Active uploads</source>
+        <translation>Активные раздачи</translation>
+    </message>
+    <message>
+        <source>Active torrents</source>
+        <translation>Активные торренты</translation>
+    </message>
+    <message>
+        <source>Don&apos;t count slow torrents</source>
+        <translation>Не учитывать медленные торренты</translation>
+    </message>
+    <message>
+        <source>Seeding limits</source>
+        <translation>Ограничения раздачи</translation>
+    </message>
+    <message>
+        <source>What happens when a torrent has seeded enough.</source>
+        <translation>Что делать, когда торрент раздан достаточно.</translation>
+    </message>
+    <message>
+        <source>Stop at a ratio</source>
+        <translation>Остановить по рейтингу</translation>
+    </message>
+    <message>
+        <source>Ratio</source>
+        <translation>Рейтинг</translation>
+    </message>
+    <message>
+        <source>Stop after seeding for a while</source>
+        <translation>Остановить по времени раздачи</translation>
+    </message>
+    <message>
+        <source>min</source>
+        <translation>мин</translation>
+    </message>
+    <message>
+        <source>Seeding time</source>
+        <translation>Время раздачи</translation>
+    </message>
+    <message>
+        <source>Then</source>
+        <translation>Затем</translation>
+    </message>
+    <message>
+        <source>Stop the torrent</source>
+        <translation>Остановить торрент</translation>
+    </message>
+    <message>
+        <source>Remove the torrent</source>
+        <translation>Удалить торрент</translation>
+    </message>
+    <message>
+        <source>Remove it and its files</source>
+        <translation>Удалить вместе с файлами</translation>
+    </message>
+    <message>
+        <source>Switch to super-seeding</source>
+        <translation>Включить суперсид</translation>
+    </message>
+    <message>
+        <source>Trackers</source>
+        <translation>Трекеры</translation>
+    </message>
+    <message>
+        <source>Add these trackers to new torrents</source>
+        <translation>Добавлять эти трекеры к новым торрентам</translation>
+    </message>
+    <message>
+        <source>One URL per line.</source>
+        <translation>По одному адресу в строке.</translation>
     </message>
 </context>
 <context>
@@ -963,6 +1352,29 @@
     <message>
         <source>Settings</source>
         <translation>Настройки</translation>
+    </message>
+</context>
+<context>
+    <name>ThemePicker</name>
+    <message>
+        <source>Theme</source>
+        <translation>Тема</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Стандартная</translation>
+    </message>
+    <message>
+        <source>Calm neutral surfaces with clear borders. Easy on the eyes for long sessions.</source>
+        <translation>Спокойные нейтральные поверхности с чёткими границами. Не утомляет глаза.</translation>
+    </message>
+    <message>
+        <source>Liquid Glass</source>
+        <translation>Liquid Glass</translation>
+    </message>
+    <message>
+        <source>Frosted glass panes over a soft colour backdrop.</source>
+        <translation>Матовые стеклянные панели поверх мягкого цветного фона.</translation>
     </message>
 </context>
 <context>

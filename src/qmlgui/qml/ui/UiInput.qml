@@ -11,6 +11,8 @@ Surface {
     property alias placeholderText: field.placeholderText
     property alias field: field
     property string iconPath
+    // the × that empties the field
+    property bool clearable: true
     signal accepted()
 
     kind: "field"
@@ -61,7 +63,7 @@ Surface {
             }
         }
         UiButton {
-            visible: field.text !== ""
+            visible: root.clearable && field.text !== ""
             size: "iconSm"
             variant: "ghost"
             iconPath: Icons.x
