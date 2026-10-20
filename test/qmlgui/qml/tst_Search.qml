@@ -123,4 +123,33 @@ TestCase {
         tryCompare(dialog, "opened", true)
         compare(findChild(dialog.contentItem, "pluginList").count, 3, "every installed plugin, on or off")
     }
+
+    // Cards: one per film, its releases grouped under it; a card opens them
+    function test_cardsGroupByFilm() {
+        SearchEngine.loadDemo({ python: true, plugins: plugins, pattern: "interstellar", results: [
+            { name: "Интерстеллар / Interstellar (Кристофер Нолан) [2014, BDRip 1080p]", size: 3000, seeds: 385, leechers: 19, engine: "eztv", fileUrl: "magnet:?xt=urn:btih:a" },
+            { name: "Интерстеллар / Interstellar (2014) UHD BDRip 2160p", size: 40000, seeds: 120, leechers: 5, engine: "lime", fileUrl: "magnet:?xt=urn:btih:b" },
+            { name: "Interstellar.2014.720p.BluRay.x264", size: 1500, seeds: 30, leechers: 1, engine: "lime", fileUrl: "magnet:?xt=urn:btih:c" },
+            { name: "Interstellar (1971) TVRip", size: 700, seeds: 2, leechers: 0, engine: "eztv", fileUrl: "magnet:?xt=urn:btih:d" },
+            { name: "Интерстеллар / Interstellar BDRip 720p", size: 1400, seeds: 7, leechers: 0, engine: "eztv", fileUrl: "magnet:?xt=urn:btih:e" }
+        ] })
+        page.setView("cards")
+        const grid = findChild(page, "searchGrid")
+        tryVerify(() => grid.visible && grid.count === 2, 2000, "two films: " + grid.count)
+        const film = grid.model[0]
+        compare(film.title, "Интерстеллар")
+        compare(film.year, 2014)
+        compare(film.count, 4, "the 2014 film's three releases and the one that names no year")
+        compare(film.seeds, 385)
+        compare(film.qualities, ["2160p", "1080p", "720p"])
+
+        const dialog = findChild(page, "releasesDialog")
+        dialog.show(film)
+        tryCompare(dialog, "opened", true)
+        compare(findChild(dialog.contentItem, "releaseList").count, 4)
+        dialog.close()
+        tryCompare(dialog, "visible", false)
+        page.setView("list")
+        verify(findChild(page, "searchList").visible)
+    }
 }

@@ -640,14 +640,6 @@
         <translation>Обновить RSS-ленты</translation>
     </message>
     <message>
-        <source>Switch to the default look</source>
-        <translation>Переключить на стандартную тему</translation>
-    </message>
-    <message>
-        <source>Switch to Liquid Glass</source>
-        <translation>Переключить на Liquid Glass</translation>
-    </message>
-    <message>
         <source>Go to</source>
         <translation>Перейти</translation>
     </message>
@@ -682,6 +674,14 @@
     <message>
         <source>Settings</source>
         <translation>Настройки</translation>
+    </message>
+    <message>
+        <source>About Flux</source>
+        <translation>О приложении</translation>
+    </message>
+    <message>
+        <source>Check for updates</source>
+        <translation>Проверить обновления</translation>
     </message>
     <message>
         <source>Settings: downloads</source>
@@ -722,6 +722,14 @@
     <message>
         <source>Undo</source>
         <translation>Отменить</translation>
+    </message>
+    <message>
+        <source>Flux %1 is available</source>
+        <translation>Доступен Flux %1</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Подробнее</translation>
     </message>
     <message>
         <source>Created and seeding: %1</source>
@@ -1538,10 +1546,6 @@
         <translation>Сериалы</translation>
     </message>
     <message>
-        <source>What are you looking for?</source>
-        <translation>Что ищем?</translation>
-    </message>
-    <message>
         <source>Category</source>
         <translation>Категория</translation>
     </message>
@@ -1576,10 +1580,6 @@
             <numerusform>%n результата по «%1»</numerusform>
             <numerusform>%n результатов по «%1»</numerusform>
         </translation>
-    </message>
-    <message>
-        <source>With seeds only</source>
-        <translation>Только с сидами</translation>
     </message>
     <message>
         <source>Filter results…</source>
@@ -1630,12 +1630,36 @@
         <translation>Источники · %1</translation>
     </message>
     <message>
+        <source>Film, series, game, anything…</source>
+        <translation>Фильм, сериал, игра — что угодно…</translation>
+    </message>
+    <message>
         <source>Sources</source>
         <translation>Источники</translation>
     </message>
     <message>
         <source>All enabled sources</source>
         <translation>Все включённые источники</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n film(s), %1 release(s) for “%2”</source>
+        <translation>
+            <numerusform>%n фильм, %1 раздач по «%2»</numerusform>
+            <numerusform>%n фильма, %1 раздач по «%2»</numerusform>
+            <numerusform>%n фильмов, %1 раздач по «%2»</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>With seeds</source>
+        <translation>С сидами</translation>
+    </message>
+    <message>
+        <source>List</source>
+        <translation>Список</translation>
+    </message>
+    <message>
+        <source>Cards</source>
+        <translation>Карточки</translation>
     </message>
     <message numerus="yes">
         <source>Type what you are looking for and press Enter. Results arrive as each of %n source(s) answers.</source>
@@ -1730,6 +1754,26 @@
         <translation>Скачать</translation>
     </message>
     <message>
+        <source>Added</source>
+        <translation>Добавлен</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n release(s)</source>
+        <translation>
+            <numerusform>%n раздача</numerusform>
+            <numerusform>%n раздачи</numerusform>
+            <numerusform>%n раздач</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>up to %1 seeds</source>
+        <translation>до %1 сидов</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
         <source>Open description page</source>
         <translation>Открыть страницу описания</translation>
     </message>
@@ -1757,10 +1801,6 @@
     <message>
         <source>Application settings will appear here.</source>
         <translation>Здесь появятся настройки приложения.</translation>
-    </message>
-    <message>
-        <source>Interface</source>
-        <translation>Интерфейс</translation>
     </message>
     <message>
         <source>Downloads</source>
@@ -1883,14 +1923,6 @@
         <translation>Сбросить всё</translation>
     </message>
     <message>
-        <source>Appearance</source>
-        <translation>Внешний вид</translation>
-    </message>
-    <message>
-        <source>Choose how Flux looks. The change applies right away.</source>
-        <translation>Выберите, как выглядит Flux. Изменение применяется сразу.</translation>
-    </message>
-    <message>
         <source>Where files go</source>
         <translation>Куда сохранять</translation>
     </message>
@@ -1965,6 +1997,30 @@
     <message>
         <source>Put new torrents first in the queue</source>
         <translation>Ставить новые торренты в начало очереди</translation>
+    </message>
+    <message>
+        <source>Double-click in Transfers</source>
+        <translation>Двойной клик в «Передачах»</translation>
+    </message>
+    <message>
+        <source>On a finished torrent</source>
+        <translation>По завершённому торренту</translation>
+    </message>
+    <message>
+        <source>Open the folder</source>
+        <translation>Открыть папку</translation>
+    </message>
+    <message>
+        <source>Start or stop</source>
+        <translation>Запустить или остановить</translation>
+    </message>
+    <message>
+        <source>Nothing</source>
+        <translation>Ничего</translation>
+    </message>
+    <message>
+        <source>On a downloading torrent</source>
+        <translation>По загружаемому торренту</translation>
     </message>
     <message>
         <source>Speed limits</source>
@@ -2279,6 +2335,10 @@
         <translation>мин</translation>
     </message>
     <message>
+        <source>About Flux</source>
+        <translation>О приложении</translation>
+    </message>
+    <message>
         <source>Seeding time</source>
         <translation>Время раздачи</translation>
     </message>
@@ -2407,6 +2467,102 @@
         <translation>Декодирует видео на видеокарте. Выключите, если картинка рассыпается.</translation>
     </message>
     <message>
+        <source>Version %1</source>
+        <translation>Версия %1</translation>
+    </message>
+    <message>
+        <source>A torrent client for Windows built on qBittorrent %1, with a player that streams while it downloads.</source>
+        <translation>Торрент-клиент для Windows на основе qBittorrent %1, со встроенным плеером, который показывает видео прямо во время загрузки.</translation>
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation>Обновления</translation>
+    </message>
+    <message>
+        <source>New versions are published as releases on GitHub.</source>
+        <translation>Новые версии выходят как релизы на GitHub.</translation>
+    </message>
+    <message>
+        <source>This build does not say where its releases are published.</source>
+        <translation>В этой сборке не указано, где публикуются её релизы.</translation>
+    </message>
+    <message>
+        <source>Checking for updates…</source>
+        <translation>Проверяем обновления…</translation>
+    </message>
+    <message>
+        <source>Version %1 is available</source>
+        <translation>Доступна версия %1</translation>
+    </message>
+    <message>
+        <source>You have the latest version</source>
+        <translation>У вас последняя версия</translation>
+    </message>
+    <message>
+        <source>Could not check for updates</source>
+        <translation>Не удалось проверить обновления</translation>
+    </message>
+    <message>
+        <source>Updates have not been checked yet</source>
+        <translation>Обновления ещё не проверялись</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Checked %1</source>
+        <translation>Проверено %1</translation>
+    </message>
+    <message>
+        <source>Check now</source>
+        <translation>Проверить</translation>
+    </message>
+    <message>
+        <source>Check for updates automatically</source>
+        <translation>Проверять обновления автоматически</translation>
+    </message>
+    <message>
+        <source>Once a day, when Flux starts.</source>
+        <translation>Раз в день, при запуске Flux.</translation>
+    </message>
+    <message>
+        <source>Project</source>
+        <translation>Проект</translation>
+    </message>
+    <message>
+        <source>GitHub</source>
+        <translation>GitHub</translation>
+    </message>
+    <message>
+        <source>All releases</source>
+        <translation>Все релизы</translation>
+    </message>
+    <message>
+        <source>Report a problem</source>
+        <translation>Сообщить о проблеме</translation>
+    </message>
+    <message>
+        <source>Components</source>
+        <translation>Компоненты</translation>
+    </message>
+    <message>
+        <source>Copy version info</source>
+        <translation>Скопировать сведения о версии</translation>
+    </message>
+    <message>
+        <source>Open the profile folder</source>
+        <translation>Открыть папку профиля</translation>
+    </message>
+    <message>
+        <source>Copied</source>
+        <translation>Скопировано</translation>
+    </message>
+    <message>
+        <source>Flux is free software built on qBittorrent and distributed under the GNU General Public License, version 2 or later. It comes with no warranty.</source>
+        <translation>Flux — свободная программа на основе qBittorrent, распространяется по лицензии GNU General Public License версии 2 или новее. Без каких-либо гарантий.</translation>
+    </message>
+    <message>
         <source>Fine-tuning of qBittorrent and libtorrent. The defaults suit almost everyone.</source>
         <translation>Тонкая настройка qBittorrent и libtorrent. Значения по умолчанию подходят почти всем.</translation>
     </message>
@@ -2517,29 +2673,6 @@
     <message>
         <source>There is no such file in the torrent.</source>
         <translation>В торренте нет такого файла.</translation>
-    </message>
-</context>
-<context>
-    <name>ThemePicker</name>
-    <message>
-        <source>Theme</source>
-        <translation>Тема</translation>
-    </message>
-    <message>
-        <source>Default</source>
-        <translation>Стандартная</translation>
-    </message>
-    <message>
-        <source>Calm neutral surfaces with clear borders. Easy on the eyes for long sessions.</source>
-        <translation>Спокойные нейтральные поверхности с чёткими границами. Не утомляет глаза.</translation>
-    </message>
-    <message>
-        <source>Liquid Glass</source>
-        <translation>Liquid Glass</translation>
-    </message>
-    <message>
-        <source>Frosted glass panes over a soft colour backdrop.</source>
-        <translation>Матовые стеклянные панели поверх мягкого цветного фона.</translation>
     </message>
 </context>
 <context>
@@ -3115,6 +3248,25 @@
     <message>
         <source>Clear</source>
         <translation>Очистить</translation>
+    </message>
+</context>
+<context>
+    <name>Updater</name>
+    <message>
+        <source>This build does not say where its releases are published.</source>
+        <translation>В этой сборке не указано, где публикуются её релизы.</translation>
+    </message>
+    <message>
+        <source>The network is not ready.</source>
+        <translation>Сеть ещё не готова.</translation>
+    </message>
+    <message>
+        <source>Could not reach GitHub: %1</source>
+        <translation>Не удалось связаться с GitHub: %1</translation>
+    </message>
+    <message>
+        <source>GitHub sent an answer Flux does not understand.</source>
+        <translation>GitHub прислал ответ, который Flux не понимает.</translation>
     </message>
 </context>
 </TS>

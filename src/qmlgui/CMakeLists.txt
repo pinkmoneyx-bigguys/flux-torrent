@@ -149,6 +149,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/appinfo.cpp
         backend/jacredsearch.h
         backend/jacredsearch.cpp
+        backend/posters.h
+        backend/posters.cpp
         backend/torrentmaker.h
         backend/torrentmaker.cpp
         backend/uisettings.h

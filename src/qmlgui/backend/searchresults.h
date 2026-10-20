@@ -33,6 +33,7 @@
 #include <QList>
 #include <QSet>
 #include <QSortFilterProxyModel>
+#include <QTimer>
 #include <QString>
 #include <QStringList>
 #include <QtQmlIntegration/qqmlintegration.h>
@@ -112,6 +113,10 @@ class SearchResultsFilter : public QSortFilterProxyModel
     Q_PROPERTY(QString sortKey READ sortKey WRITE setSortKey NOTIFY sortChanged FINAL)
     Q_PROPERTY(bool descending READ descending WRITE setDescending NOTIFY sortChanged FINAL)
     Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
+    // The shown results by film (FilmInfo), in the current order: [{key, title, original, year, series,
+    // qualities, count, seeds, minSize, maxSize, releases: [{row, name, size, seeds, leechers, engine,
+    // fileUrl, published, downloaded, quality}]}]. Rebuilt shortly after the results change.
+    Q_PROPERTY(QVariantList groups READ groups NOTIFY groupsChanged FINAL)
 
 public:
     explicit SearchResultsFilter(QObject *parent = nullptr);
@@ -128,11 +133,15 @@ public:
 
     // The source row of visible row `row` (for SearchEngine.download), or -1
     Q_INVOKABLE int sourceRow(int row) const;
+    QVariantList groups() const;
+    // Builds the groups now (tests)
+    Q_INVOKABLE void regroup();
 
 signals:
     void filterChanged();
     void sortChanged();
     void countChanged();
+    void groupsChanged();
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
@@ -146,4 +155,6 @@ private:
     bool m_seededOnly = false;
     QString m_sortKey;
     bool m_descending = false;
+    QVariantList m_groups;
+    QTimer *m_groupTimer = nullptr;
 };

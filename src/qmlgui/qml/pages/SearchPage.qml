@@ -1,11 +1,13 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import QtQuick.Effects
 import QtQuick.Layouts
 import Flux
 
-// Tracker search: a query bar (words, category, plugins), the results as a shadcn data table that fills
-// while trackers answer, and the plugin manager. Needs Python and at least one plugin; both missing
-// states explain what to do.
+// Tracker search. The header holds the query; a slim bar under it the category, the source, the
+// filters, the result count and the view switch. Results show as a table (each release with a small
+// poster and the film it is) or as cards, one per film with its poster, that open the film's releases.
+// Posters come from Posters (IMDb title suggestions). Python is needed only for plugins: JacRed works as is.
 Surface {
     id: page
     objectName: "page_search"
@@ -19,10 +21,18 @@ Surface {
     readonly property bool running: SearchEngine.status === "running"
     // JacRed (built in) needs no Python: searching is possible as soon as there is a source
     readonly property bool ready: SearchEngine.plugins.length > 0
+    readonly property bool hasResults: page.ready && SearchEngine.status !== "idle"
     property string category: "all"
+    property string plugin: "enabled"
+    // "list" or "cards"; remembered
+    property string view: UiSettings.layoutValue("searchView", "list")
+    function setView(v) {
+        view = v
+        UiSettings.setLayoutValue("searchView", v)
+    }
+
     // "Watch without downloading" on a result (a magnet link)
     signal watchRequested(string source)
-    property string plugin: "enabled"
 
     function categoryLabel(key) {
         switch (key) {
@@ -67,6 +77,26 @@ Surface {
         }
     }
 
+    function trackerName(engine) {
+        for (const p of SearchEngine.plugins) {
+            if (p.name === engine)
+                return p.fullName
+        }
+        return engine
+    }
+
+    // "Interstellar · 2014 · 1080p": what a release is, under its name
+    function filmLine(film) {
+        const parts = []
+        if (film.original !== "" && film.original !== film.title)
+            parts.push(film.original)
+        if (film.year > 0)
+            parts.push(String(film.year))
+        if (film.quality !== "")
+            parts.push(film.quality === "2160p" ? "4K" : film.quality)
+        return parts.join(" · ")
+    }
+
     SearchResultsFilter {
         id: resultsFilter
         sourceModel: SearchEngine.results
@@ -87,147 +117,174 @@ Surface {
         anchors.fill: parent
         spacing: 0
 
-        PageHeader {
-            Layout.fillWidth: true
-            title: page.title
-
-            UiButton {
-                objectName: "pluginsButton"
-                variant: "outline"
-                iconPath: Icons.puzzle
-                text: SearchEngine.plugins.length > 0
-                      ? qsTr("Sources · %1").arg(SearchEngine.enabledPluginCount)
-                      : qsTr("Sources")
-                enabled: SearchEngine.pythonAvailable || SearchEngine.plugins.length > 0
-                onClicked: pluginsDialog.open()
-            }
-        }
-
         // --- Query ------------------------------------------------------------------------------
-        RowLayout {
+        Item {
             Layout.fillWidth: true
-            Layout.leftMargin: Theme.sp(6)
-            Layout.rightMargin: Theme.sp(6)
-            Layout.topMargin: Theme.sp(4)
-            spacing: Theme.sp(2)
-            enabled: page.ready
+            implicitHeight: 56
 
-            UiInput {
-                id: queryInput
-                objectName: "searchQuery"
-                Layout.fillWidth: true
-                implicitHeight: 36
-                iconPath: Icons.search
-                placeholderText: qsTr("What are you looking for?")
-                onAccepted: page.search()
-                // the last query stays in the field when coming back to the page
-                Component.onCompleted: text = SearchEngine.pattern
-            }
-            UiSelect {
-                objectName: "searchCategory"
-                implicitHeight: 36
-                Layout.preferredWidth: 170
-                text: qsTr("Category")
-                currentKey: page.category
-                model: SearchEngine.categories.map(c => ({ key: c.key, label: page.categoryLabel(c.key) }))
-                onActivated: key => page.category = key
-            }
-            UiSelect {
-                objectName: "searchPlugin"
-                implicitHeight: 36
-                Layout.preferredWidth: 200
-                text: qsTr("Sources")
-                currentKey: page.plugin
-                model: [{ key: "enabled", label: qsTr("All enabled sources") }]
-                       .concat(SearchEngine.plugins.filter(p => p.enabled).map(p => ({ key: p.name, label: p.fullName })))
-                onActivated: key => page.plugin = key
-            }
-            UiButton {
-                objectName: "searchButton"
-                size: "default"
-                variant: page.running ? "outline" : "default"
-                iconPath: page.running ? Icons.x : Icons.search
-                text: page.running ? qsTr("Stop") : qsTr("Search")
-                enabled: page.running || queryInput.text.trim() !== ""
-                onClicked: page.running ? SearchEngine.stop() : page.search()
-            }
-        }
-
-        // --- Results toolbar ----------------------------------------------------------------------
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.leftMargin: Theme.sp(6)
-            Layout.rightMargin: Theme.sp(6)
-            Layout.topMargin: Theme.sp(4)
-            Layout.bottomMargin: Theme.sp(3)
-            Layout.preferredHeight: 32
-            spacing: Theme.sp(3)
-            visible: page.ready && SearchEngine.status !== "idle"
-
-            UiSpinner {
-                visible: page.running
-            }
-            Text {
-                objectName: "searchStatus"
-                Layout.fillWidth: true
-                text: {
-                    const n = SearchEngine.results.count
-                    switch (SearchEngine.status) {
-                    case "running": return qsTr("Searching for “%1”… %n result(s) so far", "", n).arg(SearchEngine.pattern)
-                    case "failed": return SearchEngine.error
-                    case "cancelled": return qsTr("Stopped. %n result(s) for “%1”", "", n).arg(SearchEngine.pattern)
-                    default: return qsTr("%n result(s) for “%1”", "", n).arg(SearchEngine.pattern)
-                    }
-                }
-                color: SearchEngine.status === "failed" ? Theme.error : Theme.textDim
-                font.family: Theme.fontText
-                font.pixelSize: Theme.textSm
-                elide: Text.ElideRight
-            }
             RowLayout {
-                spacing: Theme.sp(2)
-                UiSwitch {
-                    id: seededSwitch
-                    Accessible.name: seededLabel.text
-                }
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp(6)
+                anchors.rightMargin: Theme.sp(4)
+                spacing: Theme.sp(3)
+
                 Text {
-                    id: seededLabel
-                    text: qsTr("With seeds only")
+                    text: page.title
                     color: Theme.text
                     font.family: Theme.fontText
-                    font.pixelSize: Theme.textSm
-                    TapHandler { onTapped: seededSwitch.toggle() }
+                    font.pixelSize: 15
+                    font.weight: Font.Medium
+                    Accessible.role: Accessible.Heading
+                    Accessible.name: text
                 }
-            }
-            UiInput {
-                id: resultFilterInput
-                objectName: "searchResultFilter"
-                Layout.preferredWidth: 240
-                iconPath: Icons.filter
-                placeholderText: qsTr("Filter results…")
+                UiInput {
+                    id: queryInput
+                    objectName: "searchQuery"
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: 640
+                    Layout.leftMargin: Theme.sp(2)
+                    implicitHeight: 36
+                    enabled: page.ready
+                    iconPath: Icons.search
+                    placeholderText: qsTr("Film, series, game, anything…")
+                    onAccepted: page.search()
+                    // the last query stays in the field when coming back to the page
+                    Component.onCompleted: text = SearchEngine.pattern
+                }
+                UiButton {
+                    objectName: "searchButton"
+                    size: "default"
+                    variant: page.running ? "outline" : "default"
+                    iconPath: page.running ? Icons.x : Icons.search
+                    text: page.running ? qsTr("Stop") : qsTr("Search")
+                    enabled: page.ready && (page.running || queryInput.text.trim() !== "")
+                    onClicked: page.running ? SearchEngine.stop() : page.search()
+                }
+                Item { Layout.fillWidth: true }
+                UiButton {
+                    objectName: "pluginsButton"
+                    variant: "ghost"
+                    iconPath: Icons.puzzle
+                    text: SearchEngine.plugins.length > 0
+                          ? qsTr("Sources · %1").arg(SearchEngine.enabledPluginCount)
+                          : qsTr("Sources")
+                    enabled: SearchEngine.pythonAvailable || SearchEngine.plugins.length > 0
+                    onClicked: pluginsDialog.open()
+                }
             }
         }
 
-        // --- Results table ------------------------------------------------------------------------
+        // --- Options and results bar --------------------------------------------------------------
         Rectangle {
             Layout.fillWidth: true
+            implicitHeight: 44
+            color: Theme.glass ? Qt.rgba(1, 1, 1, 0.03) : "#111111"
+            visible: page.ready
+
+            Rectangle { width: parent.width; height: 1; color: Theme.border }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp(6)
+                anchors.rightMargin: Theme.sp(4)
+                spacing: Theme.sp(2)
+
+                UiSelect {
+                    objectName: "searchCategory"
+                    implicitHeight: 30
+                    Layout.preferredWidth: 160
+                    text: qsTr("Category")
+                    currentKey: page.category
+                    model: SearchEngine.categories.map(c => ({ key: c.key, label: page.categoryLabel(c.key) }))
+                    onActivated: key => page.category = key
+                }
+                UiSelect {
+                    objectName: "searchPlugin"
+                    implicitHeight: 30
+                    Layout.preferredWidth: 190
+                    text: qsTr("Sources")
+                    currentKey: page.plugin
+                    model: [{ key: "enabled", label: qsTr("All enabled sources") }]
+                           .concat(SearchEngine.plugins.filter(p => p.enabled).map(p => ({ key: p.name, label: p.fullName })))
+                    onActivated: key => page.plugin = key
+                }
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: Theme.sp(1)
+                    Layout.rightMargin: Theme.sp(1)
+                    implicitWidth: 1
+                    implicitHeight: 18
+                    color: Theme.border
+                }
+                UiSpinner {
+                    visible: page.running
+                }
+                Text {
+                    objectName: "searchStatus"
+                    Layout.fillWidth: true
+                    text: {
+                        const n = SearchEngine.results.count
+                        switch (SearchEngine.status) {
+                        case "idle": return ""
+                        case "running": return qsTr("Searching for “%1”… %n result(s) so far", "", n).arg(SearchEngine.pattern)
+                        case "failed": return SearchEngine.error
+                        case "cancelled": return qsTr("Stopped. %n result(s) for “%1”", "", n).arg(SearchEngine.pattern)
+                        default: return page.view === "cards" && resultsFilter.groups.length > 0
+                                 ? qsTr("%n film(s), %1 release(s) for “%2”", "", resultsFilter.groups.length).arg(n).arg(SearchEngine.pattern)
+                                 : qsTr("%n result(s) for “%1”", "", n).arg(SearchEngine.pattern)
+                        }
+                    }
+                    color: SearchEngine.status === "failed" ? Theme.error : Theme.textDim
+                    font.family: Theme.fontText
+                    font.pixelSize: Theme.textSm
+                    elide: Text.ElideRight
+                }
+                RowLayout {
+                    visible: page.hasResults
+                    spacing: Theme.sp(2)
+                    UiSwitch {
+                        id: seededSwitch
+                        Accessible.name: seededLabel.text
+                    }
+                    Text {
+                        id: seededLabel
+                        text: qsTr("With seeds")
+                        color: Theme.text
+                        font.family: Theme.fontText
+                        font.pixelSize: Theme.textSm
+                        TapHandler { onTapped: seededSwitch.toggle() }
+                    }
+                }
+                UiInput {
+                    id: resultFilterInput
+                    objectName: "searchResultFilter"
+                    visible: page.hasResults
+                    Layout.preferredWidth: 200
+                    implicitHeight: 30
+                    iconPath: Icons.filter
+                    placeholderText: qsTr("Filter results…")
+                }
+                // list / cards
+                Row {
+                    objectName: "searchViewSwitch"
+                    spacing: 2
+                    ViewButton { view: "list"; iconPath: Icons.list; text: qsTr("List") }
+                    ViewButton { view: "cards"; iconPath: Icons.grid; text: qsTr("Cards") }
+                }
+            }
+        }
+
+        // --- Results --------------------------------------------------------------------------------
+        Item {
+            Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.leftMargin: Theme.sp(6)
-            Layout.rightMargin: Theme.sp(6)
-            Layout.bottomMargin: Theme.sp(6)
-            Layout.topMargin: page.ready && SearchEngine.status !== "idle" ? 0 : Theme.sp(4)
-            radius: Theme.radiusCtl + 2
-            color: "transparent"
-            border.width: 1
-            border.color: Theme.border
-            clip: true
 
             ListView {
                 id: list
                 objectName: "searchList"
                 anchors.fill: parent
-                anchors.margins: 1
-                visible: page.ready && resultsFilter.count > 0
+                visible: page.ready && resultsFilter.count > 0 && page.view === "list"
                 model: resultsFilter
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
@@ -241,6 +298,27 @@ Surface {
                 }
                 delegate: ResultRow {
                     width: list.width
+                }
+            }
+
+            GridView {
+                id: grid
+                objectName: "searchGrid"
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp(5)
+                anchors.rightMargin: Theme.sp(3)
+                anchors.topMargin: Theme.sp(4)
+                visible: page.ready && resultsFilter.count > 0 && page.view === "cards"
+                model: resultsFilter.groups
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar {}
+                readonly property int columns: Math.max(2, Math.floor(width / 190))
+                cellWidth: Math.floor(width / columns)
+                cellHeight: cellWidth * 1.5 + 78
+                delegate: FilmCard {
+                    width: grid.cellWidth
+                    height: grid.cellHeight
                 }
             }
 
@@ -339,7 +417,126 @@ Surface {
         id: pluginsDialog
     }
 
+    ReleasesDialog {
+        id: releasesDialog
+    }
+
     // --- Pieces ---------------------------------------------------------------------------------
+    component ViewButton: AbstractButton {
+        id: vb
+        property string view
+        property string iconPath
+        readonly property bool current: page.view === view
+
+        implicitWidth: 30
+        implicitHeight: 30
+        hoverEnabled: true
+        focusPolicy: Qt.NoFocus
+        onClicked: page.setView(view)
+
+        Accessible.role: Accessible.RadioButton
+        Accessible.name: text
+        Accessible.checked: current
+
+        background: Rectangle {
+            radius: Theme.radiusCtl
+            color: vb.current ? Theme.muted : vb.hovered ? Theme.alpha(Theme.muted, 0.6) : Theme.alpha(Theme.muted, 0)
+            border.width: vb.current ? 1 : 0
+            border.color: Theme.input
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
+        }
+        contentItem: Item {
+            Icon {
+                anchors.centerIn: parent
+                path: vb.iconPath
+                size: 15
+                strokeWidth: 1.9
+                color: vb.current ? Theme.text : Theme.textDim
+            }
+        }
+        UiTooltip {
+            text: vb.text
+            shown: vb.hovered
+        }
+    }
+
+    // A film poster from Posters, or a tinted placeholder with a film glyph until (or unless) one is found
+    component Poster: Rectangle {
+        id: poster
+        property var film: ({})
+        readonly property string url: Posters.revision >= 0 && film.key ? Posters.poster(film.key) : ""
+        readonly property real hue: {
+            let h = 0
+            const t = film.title || ""
+            for (let i = 0; i < t.length; ++i)
+                h = (h * 31 + t.charCodeAt(i)) % 360
+            return h / 360
+        }
+
+        radius: 6
+        clip: true
+        gradient: Gradient {
+            GradientStop { position: 0; color: Qt.hsla(poster.hue, 0.25, 0.20, 1) }
+            GradientStop { position: 1; color: Qt.hsla((poster.hue + 0.06) % 1, 0.28, 0.10, 1) }
+        }
+        Component.onCompleted: {
+            if (film.key)
+                Posters.request(film.key, film.title, film.original, film.year, film.series)
+        }
+        onFilmChanged: {
+            if (film.key)
+                Posters.request(film.key, film.title, film.original, film.year, film.series)
+        }
+
+        Icon {
+            anchors.centerIn: parent
+            visible: image.status !== Image.Ready
+            path: Icons.film
+            size: Math.min(28, poster.width * 0.35)
+            strokeWidth: 1.4
+            color: Qt.rgba(1, 1, 1, 0.3)
+        }
+        Image {
+            id: image
+            anchors.fill: parent
+            source: poster.url
+            asynchronous: true
+            fillMode: Image.PreserveAspectCrop
+            sourceSize.width: Math.ceil(poster.width * 2)
+            opacity: status === Image.Ready ? 1 : 0
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durMed }
+            }
+            // the picture takes the poster's rounded corners
+            layer.enabled: status === Image.Ready && poster.radius > 0
+            layer.effect: MultiEffect {
+                maskEnabled: true
+                maskSource: posterMask
+                maskThresholdMin: 0.5
+                maskSpreadAtMin: 1
+            }
+        }
+        Rectangle {
+            id: posterMask
+            anchors.fill: parent
+            radius: poster.radius
+            visible: false
+            layer.enabled: true
+        }
+        // the outline over the picture
+        Rectangle {
+            anchors.fill: parent
+            radius: poster.radius
+            color: "transparent"
+            border.width: poster.border.width
+            border.color: poster.border.color
+        }
+    }
+
     component EmptyState: ColumnLayout {
         id: es
         property string iconPath
@@ -417,22 +614,24 @@ Surface {
             layoutDirection: hc.alignRight ? Qt.RightToLeft : Qt.LeftToRight
             Text {
                 text: hc.text
-                color: hc.hovered || hc.sorted ? Theme.text : Theme.textDim
+                color: hc.hovered || hc.sorted ? Theme.text : Theme.textFaint
                 Behavior on color {
                     enabled: !Theme.reducedMotion
                     ColorAnimation { duration: Theme.durFast }
                 }
                 font.family: Theme.fontText
-                font.pixelSize: Theme.textSm
+                font.pixelSize: 11
                 font.weight: Font.Medium
+                font.letterSpacing: 0.6
+                font.capitalization: Font.AllUppercase
                 elide: Text.ElideRight
                 Layout.fillWidth: !hc.alignRight
             }
             Icon {
                 visible: hc.sorted
                 path: resultsFilter.descending ? Icons.chevronDown : Icons.chevronUp
-                size: 14
-                strokeWidth: 2
+                size: 12
+                strokeWidth: 2.25
                 color: Theme.text
             }
             Item { Layout.fillWidth: hc.alignRight }
@@ -442,8 +641,8 @@ Surface {
     readonly property bool _wide: list.width >= 900
 
     component ResultsHeader: Rectangle {
-        height: 40
-        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : "#141414"
+        height: 36
+        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : Theme.background
 
         Rectangle {
             anchors.bottom: parent.bottom
@@ -453,16 +652,16 @@ Surface {
         }
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 16
-            anchors.rightMargin: 4
+            anchors.leftMargin: Theme.sp(6) + 44
+            anchors.rightMargin: Theme.sp(3)
             spacing: 0
             HeaderCell { text: qsTr("Name"); sortKey: "name"; Layout.fillWidth: true; Layout.minimumWidth: 160 }
-            HeaderCell { text: qsTr("Size"); sortKey: "size"; alignRight: true; Layout.preferredWidth: 96 }
-            HeaderCell { text: qsTr("Seeds"); sortKey: "seeds"; alignRight: true; Layout.preferredWidth: 80 }
-            HeaderCell { text: qsTr("Leechers"); sortKey: "leechers"; alignRight: true; Layout.preferredWidth: 88 }
-            HeaderCell { text: qsTr("Tracker"); sortKey: "engine"; Layout.preferredWidth: 150; Layout.leftMargin: 16 }
-            HeaderCell { text: qsTr("Published"); sortKey: "published"; alignRight: true; Layout.preferredWidth: 110; visible: page._wide }
-            Item { Layout.preferredWidth: 108 }
+            HeaderCell { text: qsTr("Size"); sortKey: "size"; alignRight: true; Layout.preferredWidth: 88 }
+            HeaderCell { text: qsTr("Seeds"); sortKey: "seeds"; alignRight: true; Layout.preferredWidth: 72 }
+            HeaderCell { text: qsTr("Leechers"); sortKey: "leechers"; alignRight: true; Layout.preferredWidth: 72 }
+            HeaderCell { text: qsTr("Tracker"); sortKey: "engine"; Layout.preferredWidth: 130; Layout.leftMargin: 12 }
+            HeaderCell { text: qsTr("Published"); sortKey: "published"; alignRight: true; Layout.preferredWidth: 96; visible: page._wide }
+            Item { Layout.preferredWidth: 100 }
         }
     }
 
@@ -472,12 +671,64 @@ Surface {
         Layout.fillHeight: true
         Layout.rightMargin: alignRight ? 12 : 0
         color: dim ? Theme.textFaint : Theme.text
-        font.family: Theme.fontText
-        font.pixelSize: Theme.textSm
+        font.family: Theme.fontMono
+        font.pixelSize: 12
         font.features: { "tnum": 1 }
         horizontalAlignment: alignRight ? Text.AlignRight : Text.AlignLeft
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
+    }
+
+    // Download / watch buttons of a release
+    component ReleaseActions: RowLayout {
+        id: ra
+        property int row: -1
+        property string fileUrl
+        property string name
+        property bool downloaded: false
+        property bool showPage: true
+        readonly property bool watchable: fileUrl.toLowerCase().startsWith("magnet:")
+        spacing: 2
+
+        UiButton {
+            objectName: "searchWatch"
+            size: "iconSm"
+            variant: "ghost"
+            iconPath: Icons.play
+            focusPolicy: Qt.NoFocus
+            visible: ra.watchable
+            Accessible.name: qsTr("Watch %1 without downloading").arg(ra.name)
+            onClicked: page.watchRequested(ra.fileUrl)
+            UiTooltip {
+                text: qsTr("Watch without downloading")
+                shown: parent.hovered
+            }
+        }
+        UiButton {
+            visible: ra.showPage
+            size: "iconSm"
+            variant: "ghost"
+            iconPath: Icons.externalLink
+            focusPolicy: Qt.NoFocus
+            Accessible.name: qsTr("Open the page of %1").arg(ra.name)
+            onClicked: SearchEngine.openPage(ra.row)
+            UiTooltip {
+                text: qsTr("Open description page")
+                shown: parent.hovered
+            }
+        }
+        UiButton {
+            size: "iconSm"
+            variant: ra.downloaded ? "ghost" : "secondary"
+            iconPath: ra.downloaded ? Icons.check : Icons.download
+            focusPolicy: Qt.NoFocus
+            Accessible.name: ra.downloaded ? qsTr("Added: %1").arg(ra.name) : qsTr("Download %1").arg(ra.name)
+            onClicked: SearchEngine.download(ra.row)
+            UiTooltip {
+                text: ra.downloaded ? qsTr("Added") : qsTr("Download")
+                shown: parent.hovered
+            }
+        }
     }
 
     component ResultRow: Rectangle {
@@ -492,17 +743,11 @@ Surface {
         required property var published
         required property bool downloaded
         required property string fileUrl
-        readonly property bool watchable: fileUrl.toLowerCase().startsWith("magnet:")
 
-        readonly property string trackerName: {
-            for (const p of SearchEngine.plugins) {
-                if (p.name === engine)
-                    return p.fullName
-            }
-            return engine
-        }
+        readonly property var film: Posters.film(name)
+        readonly property int sourceRow: resultsFilter.sourceRow(index)
 
-        height: 40
+        height: 52
         color: hover.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
         Behavior on color {
             enabled: !Theme.reducedMotion
@@ -512,22 +757,18 @@ Surface {
         Accessible.role: Accessible.Row
         Accessible.name: name
 
-        function download() {
-            SearchEngine.download(resultsFilter.sourceRow(rr.index))
-        }
-
         HoverHandler { id: hover }
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             onClicked: mouse => {
                 if (mouse.button === Qt.RightButton) {
-                    resultMenu.row = resultsFilter.sourceRow(rr.index)
+                    resultMenu.row = rr.sourceRow
                     resultMenu.fileUrl = rr.fileUrl
                     resultMenu.popup()
                 }
             }
-            onDoubleClicked: rr.download()
+            onDoubleClicked: SearchEngine.download(rr.sourceRow)
         }
         Rectangle {
             anchors.bottom: parent.bottom
@@ -538,92 +779,297 @@ Surface {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 16
-            anchors.rightMargin: 4
+            anchors.leftMargin: Theme.sp(6)
+            anchors.rightMargin: Theme.sp(3)
             spacing: 0
 
-            Cell {
+            Poster {
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: 40
+                Layout.rightMargin: 16
+                Layout.alignment: Qt.AlignVCenter
+                radius: 4
+                film: rr.film
+            }
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 160
                 Layout.rightMargin: 12
-                text: rr.name
-                font.weight: Font.Medium
-                color: rr.downloaded ? Theme.textDim : Theme.text
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 2
+                Text {
+                    Layout.fillWidth: true
+                    text: rr.name
+                    color: rr.downloaded ? Theme.textDim : Theme.text
+                    font.family: Theme.fontText
+                    font.pixelSize: Theme.textSm
+                    font.weight: Font.Medium
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: text !== ""
+                    text: page.filmLine(rr.film)
+                    color: Theme.textDim
+                    font.family: Theme.fontText
+                    font.pixelSize: Theme.textXs
+                    elide: Text.ElideRight
+                }
             }
             Cell {
-                Layout.preferredWidth: 96
+                Layout.preferredWidth: 88
                 alignRight: true
                 dim: rr.size < 0
                 text: rr.size >= 0 ? Format.size(rr.size) : "—"
             }
             Cell {
-                Layout.preferredWidth: 80
+                Layout.preferredWidth: 72
                 alignRight: true
                 text: rr.seeds >= 0 ? rr.seeds.toLocaleString(Qt.locale(), "f", 0) : "—"
                 color: rr.seeds > 0 ? Theme.upload : Theme.textFaint
             }
             Cell {
-                Layout.preferredWidth: 88
+                Layout.preferredWidth: 72
                 alignRight: true
                 dim: rr.leechers <= 0
                 text: rr.leechers >= 0 ? rr.leechers.toLocaleString(Qt.locale(), "f", 0) : "—"
             }
             Item {
-                Layout.preferredWidth: 150
+                Layout.preferredWidth: 130
                 Layout.fillHeight: true
-                Layout.leftMargin: 16
+                Layout.leftMargin: 12
                 UiBadge {
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, parent.width)
-                    text: rr.trackerName
+                    text: page.trackerName(rr.engine)
                 }
             }
             Cell {
                 visible: page._wide
-                Layout.preferredWidth: 110
+                Layout.preferredWidth: 96
                 alignRight: true
                 dim: !rr.published || isNaN(rr.published)
                 text: rr.published && !isNaN(rr.published) ? rr.published.toLocaleDateString(Qt.locale(), Locale.ShortFormat) : "—"
             }
-            RowLayout {
-                Layout.preferredWidth: 108
-                Layout.fillHeight: true
-                spacing: 2
-                UiButton {
-                    objectName: "searchWatch"
-                    size: "iconSm"
-                    variant: "ghost"
-                    iconPath: Icons.play
-                    focusPolicy: Qt.NoFocus
-                    // always in view: watching straight from the results is the point
-                    visible: rr.watchable
-                    Accessible.name: qsTr("Watch %1 without downloading").arg(rr.name)
-                    onClicked: page.watchRequested(rr.fileUrl)
+            ReleaseActions {
+                Layout.preferredWidth: 100
+                Layout.alignment: Qt.AlignVCenter
+                layoutDirection: Qt.RightToLeft
+                row: rr.sourceRow
+                fileUrl: rr.fileUrl
+                name: rr.name
+                downloaded: rr.downloaded
+            }
+        }
+    }
 
-                    UiTooltip {
-                        text: qsTr("Watch without downloading")
-                        shown: parent.hovered
+    // A film: its poster, title, year and what is on offer; a click lists its releases
+    component FilmCard: Item {
+        id: card
+        required property var modelData
+
+        Accessible.role: Accessible.Button
+        Accessible.name: modelData.title
+
+        HoverHandler { id: cardHover }
+        TapHandler { onTapped: releasesDialog.show(card.modelData) }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: Theme.sp(2)
+            anchors.bottomMargin: Theme.sp(4)
+            spacing: Theme.sp(2)
+
+            Poster {
+                id: cardPoster
+                Layout.fillWidth: true
+                Layout.preferredHeight: width * 1.5
+                radius: 8
+                film: card.modelData
+                border.width: 1
+                border.color: cardHover.hovered ? Theme.alpha(Theme.text, 0.3) : Theme.border
+                scale: cardHover.hovered && !Theme.reducedMotion ? 1.02 : 1
+                Behavior on scale {
+                    NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutCubic }
+                }
+
+                // what is on offer, top left; the release count, top right
+                Row {
+                    x: 6
+                    y: 6
+                    spacing: 4
+                    Repeater {
+                        model: card.modelData.qualities.slice(0, 2)
+                        Rectangle {
+                            required property string modelData
+                            implicitWidth: ql.implicitWidth + 10
+                            implicitHeight: 18
+                            radius: 4
+                            color: Qt.rgba(0, 0, 0, 0.62)
+                            Text {
+                                id: ql
+                                anchors.centerIn: parent
+                                text: modelData === "2160p" ? "4K" : modelData
+                                color: "#FAFAFA"
+                                font.family: Theme.fontText
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                            }
+                        }
                     }
                 }
-                UiButton {
-                    size: "iconSm"
-                    variant: "ghost"
-                    iconPath: Icons.externalLink
-                    focusPolicy: Qt.NoFocus
-                    opacity: hover.hovered ? 1 : 0
-                    Accessible.name: qsTr("Open the page of %1").arg(rr.name)
-                    onClicked: SearchEngine.openPage(resultsFilter.sourceRow(rr.index))
+                Rectangle {
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 6
+                    implicitWidth: countText.implicitWidth + 10
+                    implicitHeight: 18
+                    radius: 4
+                    color: Qt.rgba(0, 0, 0, 0.62)
+                    Text {
+                        id: countText
+                        anchors.centerIn: parent
+                        text: card.modelData.count
+                        color: "#FAFAFA"
+                        font.family: Theme.fontMono
+                        font.pixelSize: 10
+                    }
                 }
-                UiButton {
-                    size: "iconSm"
-                    variant: rr.downloaded ? "ghost" : "secondary"
-                    iconPath: rr.downloaded ? Icons.check : Icons.download
-                    focusPolicy: Qt.NoFocus
-                    Accessible.name: rr.downloaded ? qsTr("Added: %1").arg(rr.name) : qsTr("Download %1").arg(rr.name)
-                    onClicked: rr.download()
+            }
+            Text {
+                Layout.fillWidth: true
+                text: card.modelData.title
+                color: Theme.text
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textSm
+                font.weight: Font.Medium
+                elide: Text.ElideRight
+            }
+            Text {
+                Layout.fillWidth: true
+                text: [card.modelData.year > 0 ? String(card.modelData.year) : "",
+                       qsTr("%n release(s)", "", card.modelData.count),
+                       card.modelData.seeds > 0 ? qsTr("up to %1 seeds").arg(card.modelData.seeds) : ""]
+                      .filter(t => t !== "").join(" · ")
+                color: Theme.textDim
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textXs
+                elide: Text.ElideRight
+            }
+        }
+    }
+
+    // The releases of one film, best seeded first, to download or watch
+    component ReleasesDialog: UiDialog {
+        id: rd
+        objectName: "releasesDialog"
+        property var film: ({ releases: [] })
+        function show(f) {
+            film = f
+            open()
+        }
+        preferredWidth: 860
+        title: film.title || ""
+        description: [film.original && film.original !== film.title ? film.original : "",
+                      film.year > 0 ? String(film.year) : "",
+                      qsTr("%n release(s)", "", film.count || 0)].filter(t => t !== "").join(" · ")
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.sp(5)
+
+            Poster {
+                Layout.alignment: Qt.AlignTop
+                Layout.preferredWidth: 150
+                Layout.preferredHeight: 225
+                radius: 8
+                film: rd.film
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(420, releaseList.contentHeight + 2)
+                radius: Theme.radiusCtl + 2
+                color: "transparent"
+                border.width: 1
+                border.color: Theme.border
+                clip: true
+
+                ListView {
+                    id: releaseList
+                    objectName: "releaseList"
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar.vertical: ScrollBar {}
+                    model: [...rd.film.releases].sort((a, b) => b.seeds - a.seeds)
+                    delegate: Item {
+                        id: rel
+                        required property var modelData
+                        required property int index
+                        width: releaseList.width
+                        height: 54
+
+                        Rectangle {
+                            visible: rel.index > 0
+                            width: parent.width
+                            height: 1
+                            color: Theme.border
+                        }
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.sp(4)
+                            anchors.rightMargin: Theme.sp(2)
+                            spacing: Theme.sp(3)
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: rel.modelData.name
+                                    color: rel.modelData.downloaded ? Theme.textDim : Theme.text
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textSm
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: [page.trackerName(rel.modelData.engine),
+                                           rel.modelData.size >= 0 ? Format.size(rel.modelData.size) : "",
+                                           rel.modelData.quality === "2160p" ? "4K" : rel.modelData.quality].filter(t => t !== "").join(" · ")
+                                    color: Theme.textDim
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textXs
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            Text {
+                                Layout.preferredWidth: 72
+                                horizontalAlignment: Text.AlignRight
+                                text: rel.modelData.seeds >= 0 ? "↑ " + rel.modelData.seeds : "—"
+                                color: rel.modelData.seeds > 0 ? Theme.upload : Theme.textFaint
+                                font.family: Theme.fontMono
+                                font.pixelSize: 12
+                            }
+                            ReleaseActions {
+                                row: rel.modelData.row
+                                fileUrl: rel.modelData.fileUrl
+                                name: rel.modelData.name
+                                downloaded: rel.modelData.downloaded
+                                showPage: true
+                            }
+                        }
+                    }
                 }
             }
         }
+        footerItems: [
+            UiButton {
+                variant: "outline"
+                text: qsTr("Close")
+                onClicked: rd.close()
+            }
+        ]
     }
 
     UiMenu {

@@ -13,6 +13,7 @@ set(qmlGuiTestFiles
     testwatchhistory.cpp
     testjacred.cpp
     testupdater.cpp
+    testposters.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})

@@ -33,6 +33,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QTimer>
 #include <QUrl>
 
 #include "base/global.h"
@@ -165,7 +166,15 @@ void Updater::setAutoCheck(const bool on)
 
 void Updater::finish(const QString &status, const QString &error)
 {
-    m_status = (m_quiet && (status == u"error")) ? u"idle"_s : status;
+    // a quiet check that failed says nothing and does not count: the next start tries again
+    if (m_quiet && (status == u"error"))
+    {
+        m_status = u"idle"_s;
+        m_error.clear();
+        emit changed();
+        return;
+    }
+    m_status = status;
     m_error = error;
     m_lastChecked = QDateTime::currentDateTime();
     if (SettingsStorage *storage = SettingsStorage::instance())
@@ -189,7 +198,11 @@ void Updater::check(const bool quiet)
     auto *manager = Net::DownloadManager::instance();
     if (!manager)
     {
-        finish(u"error"_s, tr("The network is not ready."));
+        // at start the network may come up a moment after the window: a quiet check waits for it
+        if (quiet)
+            QTimer::singleShot(10000, this, [this] { check(true); });
+        else
+            finish(u"error"_s, tr("The network is not ready."));
         return;
     }
 

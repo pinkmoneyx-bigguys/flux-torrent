@@ -30,6 +30,7 @@
 
 #include <QCollator>
 
+#include "posters.h"
 #include "base/global.h"
 #include "base/search/searchhandler.h"
 
@@ -155,6 +156,17 @@ void SearchResultsModel::markDownloaded(const int row)
 SearchResultsFilter::SearchResultsFilter(QObject *parent)
     : QSortFilterProxyModel(parent)
 {
+    // results arrive in bursts: group once they settle
+    m_groupTimer = new QTimer(this);
+    m_groupTimer->setSingleShot(true);
+    m_groupTimer->setInterval(120);
+    connect(m_groupTimer, &QTimer::timeout, this, &SearchResultsFilter::regroup);
+    for (const auto signal : {&QAbstractItemModel::rowsInserted, &QAbstractItemModel::rowsRemoved})
+        connect(this, signal, m_groupTimer, qOverload<>(&QTimer::start));
+    connect(this, &QAbstractItemModel::modelReset, m_groupTimer, qOverload<>(&QTimer::start));
+    connect(this, &QAbstractItemModel::layoutChanged, m_groupTimer, qOverload<>(&QTimer::start));
+    connect(this, &QAbstractItemModel::dataChanged, m_groupTimer, qOverload<>(&QTimer::start));
+
     setDynamicSortFilter(true);
     connect(this, &QAbstractItemModel::rowsInserted, this, &SearchResultsFilter::countChanged);
     connect(this, &QAbstractItemModel::rowsRemoved, this, &SearchResultsFilter::countChanged);
@@ -285,4 +297,117 @@ void SearchResultsFilter::applySort()
     }
     setSortRole(role);
     sort(0, m_descending ? Qt::DescendingOrder : Qt::AscendingOrder);
+}
+
+QVariantList SearchResultsFilter::groups() const
+{
+    return m_groups;
+}
+
+void SearchResultsFilter::regroup()
+{
+    const auto *results = qobject_cast<const SearchResultsModel *>(sourceModel());
+    QList<QVariantMap> groups;
+    QHash<QString, qsizetype> indexOf;
+    static const QStringList qualityOrder {u"2160p"_s, u"1080p"_s, u"720p"_s, u"576p"_s, u"480p"_s};
+
+    // Parse every shown release first: a release that names no year joins the film of the same title
+    // that does (the year most of its releases give), instead of making a card of its own
+    struct Parsed
+    {
+        int source;
+        const SearchRow *row;
+        FilmInfo film;
+    };
+    QList<Parsed> parsed;
+    QHash<QString, QHash<int, int>> yearsOfTitle;  // title part of the key → year → releases
+    for (int i = 0; results && (i < rowCount()); ++i)
+    {
+        const int source = mapToSource(index(i, 0)).row();
+        const SearchRow *r = results->rowAt(source);
+        if (!r)
+            continue;
+        Parsed p {source, r, FilmInfo::parse(r->name)};
+        if (p.film.year > 0)
+            ++yearsOfTitle[p.film.key.section(u'|', 0, 0)][p.film.year];
+        parsed.append(p);
+    }
+    for (Parsed &p : parsed)
+    {
+        if (p.film.year > 0)
+            continue;
+        const QString titlePart = p.film.key.section(u'|', 0, 0);
+        const QHash<int, int> years = yearsOfTitle.value(titlePart);
+        int bestYear = 0;
+        int bestCount = 0;
+        for (auto it = years.cbegin(); it != years.cend(); ++it)
+        {
+            if (it.value() > bestCount)
+            {
+                bestYear = it.key();
+                bestCount = it.value();
+            }
+        }
+        if (bestYear > 0)
+        {
+            p.film.year = bestYear;
+            p.film.key = titlePart + u'|' + QString::number(bestYear);
+        }
+    }
+
+    for (const Parsed &p : std::as_const(parsed))
+    {
+        const int source = p.source;
+        const SearchRow *r = p.row;
+        const FilmInfo &film = p.film;
+
+        qsizetype g = indexOf.value(film.key, -1);
+        if (g < 0)
+        {
+            g = groups.size();
+            indexOf.insert(film.key, g);
+            QVariantMap group = film.toMap();
+            group.insert(u"count"_s, 0);
+            group.insert(u"seeds"_s, -1);
+            group.insert(u"minSize"_s, -1);
+            group.insert(u"maxSize"_s, -1);
+            group.insert(u"qualities"_s, QStringList {});
+            group.insert(u"releases"_s, QVariantList {});
+            groups.append(group);
+        }
+        QVariantMap &group = groups[g];
+        group[u"count"_s] = group.value(u"count"_s).toInt() + 1;
+        group[u"seeds"_s] = std::max(group.value(u"seeds"_s).toLongLong(), r->seeds);
+        if (r->size >= 0)
+        {
+            const qint64 lo = group.value(u"minSize"_s).toLongLong();
+            group[u"minSize"_s] = (lo < 0) ? r->size : std::min(lo, r->size);
+            group[u"maxSize"_s] = std::max(group.value(u"maxSize"_s).toLongLong(), r->size);
+        }
+        if (!film.quality.isEmpty())
+        {
+            QStringList qualities = group.value(u"qualities"_s).toStringList();
+            if (!qualities.contains(film.quality))
+            {
+                qualities.append(film.quality);
+                std::sort(qualities.begin(), qualities.end(), [](const QString &a, const QString &b)
+                {
+                    return qualityOrder.indexOf(a) < qualityOrder.indexOf(b);
+                });
+                group[u"qualities"_s] = qualities;
+            }
+        }
+        QVariantList releases = group.value(u"releases"_s).toList();
+        releases.append(QVariantMap {
+            {u"row"_s, source}, {u"name"_s, r->name}, {u"size"_s, r->size}, {u"seeds"_s, r->seeds},
+            {u"leechers"_s, r->leechers}, {u"engine"_s, r->engine}, {u"fileUrl"_s, r->fileUrl},
+            {u"published"_s, r->published}, {u"downloaded"_s, r->downloaded}, {u"quality"_s, film.quality}
+        });
+        group[u"releases"_s] = releases;
+    }
+
+    m_groups.clear();
+    for (const QVariantMap &group : std::as_const(groups))
+        m_groups.append(group);
+    emit groupsChanged();
 }

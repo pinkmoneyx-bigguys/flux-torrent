@@ -687,6 +687,7 @@ Surface {
                                         color: Theme.alpha(Updater.status === "available" ? Theme.download
                                                            : Updater.status === "error" ? Theme.error : Theme.upload, 0.14)
                                         Icon {
+                                            id: updateGlyph
                                             anchors.centerIn: parent
                                             path: Updater.status === "available" ? Icons.download
                                                 : Updater.status === "error" ? Icons.alert
@@ -701,6 +702,8 @@ Surface {
                                                 to: 360
                                                 duration: 900
                                                 loops: Animation.Infinite
+                                                // the next glyph stands upright
+                                                onRunningChanged: if (!running) updateGlyph.rotation = 0
                                             }
                                         }
                                     }
