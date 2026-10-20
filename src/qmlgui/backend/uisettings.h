@@ -56,6 +56,11 @@ public:
     Q_INVOKABLE QVariantMap columnWidths(const QString &table) const;
     Q_INVOKABLE void setColumnWidths(const QString &table, const QVariantMap &widths);
 
+    // Other layout choices ("Flux/Layout/<key>"): sidebar collapsed, details pane height...
+    // The INI file hands values back as strings: the result takes the type of the default.
+    Q_INVOKABLE QVariant layoutValue(const QString &key, const QVariant &defaultValue) const;
+    Q_INVOKABLE void setLayoutValue(const QString &key, const QVariant &value);
+
 signals:
     void styleChanged();
 
@@ -63,4 +68,5 @@ private:
     QString m_style;
     // without a SettingsStorage (tests)
     QHash<QString, QVariantMap> m_columnWidths;
+    QVariantMap m_layout;
 };

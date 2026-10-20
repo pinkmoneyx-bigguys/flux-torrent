@@ -45,41 +45,31 @@ TestCase {
         waitForRendering(main.contentItem)
     }
 
-    function test_searchFillsFreeSpace() {
-        // glass look: the search pill takes all the free width
-        Theme.style = "glass"
-        const s = findChild(main.contentItem, "titleSearch")
-        verify(s, "titleSearch exists")
-        wait(50)
-        const before = s.width
-        verify(before >= 220, "search pill is at least 220 px wide")
-        main.width += 200
-        wait(50)
-        tryCompare(s, "width", before + 200)
-        main.width -= 200
+    // The search pill is centred on the window, at most 420 px, in both looks
+    function test_searchIsCentred() {
+        for (const style of ["default", "glass"]) {
+            Theme.style = style
+            main.width = 1440
+            wait(50)
+            const s = findChild(main.contentItem, "titleSearch")
+            verify(s.visible)
+            compare(s.width, 420, style + ": capped at 420 px")
+            const centre = s.mapToItem(main.contentItem, s.width / 2, 0).x
+            verify(Math.abs(centre - main.width / 2) <= 1, style + ": centred on the window: " + centre)
+        }
         Theme.style = "default"
     }
 
-    function test_searchIsCappedInDefaultLook() {
-        // default look: a command field of at most 520 px over the left edge of the content inset
-        const s = findChild(main.contentItem, "titleSearch")
-        main.width = 1440
-        wait(50)
-        compare(s.width, 520)
-        main.width = 1640
-        wait(50)
-        compare(s.width, 520, "the field does not stretch across a wide window")
-        compare(s.mapToItem(main.contentItem, 0, 0).x, findChild(main.contentItem, "pageArea").mapToItem(main.contentItem, 0, 0).x,
-                "aligned with the left edge of the content inset")
-        main.width = 1440
-    }
-
     function test_searchKeepsMinimumWidthAtMinWindowWidth() {
-        main.width = 1100
-        tryCompare(main, "width", 1100)
+        main.width = main.minimumWidth
+        tryCompare(main, "width", main.minimumWidth)
         wait(50)
         const s = findChild(main.contentItem, "titleSearch")
-        verify(s.width >= 220, "search pill keeps its 220 px minimum: " + s.width)
+        verify(s.visible && s.width >= 160, "search pill keeps its 160 px minimum: " + s.width)
+        const logo = findChild(main.contentItem, "titleLogo")
+        verify(s.mapToItem(bar, 0, 0).x >= logo.width, "the pill does not run into the logo")
+        const actions = findChild(main.contentItem, "titleActions")
+        verify(s.mapToItem(bar, s.width, 0).x <= actions.mapToItem(bar, 0, 0).x, "nor into the actions")
         const right = bar.minimizeButton.parent.mapToItem(bar, bar.minimizeButton.parent.width, 0).x
         verify(right <= bar.width + 0.5, "window buttons stay inside the title bar")
     }
@@ -130,25 +120,46 @@ TestCase {
         compare(main.titleBarArea.width, main.contentItem.width)
     }
 
+    // The session speeds live at the bottom of the sidebar now
     function test_speedsShowSessionRates() {
-        bar.downloadRate = 52.4 * 1024 * 1024
-        bar.uploadRate = 6.1 * 1024 * 1024
-        compare(findChild(bar, "titleDownRate").text, "↓ " + Format.speed(52.4 * 1024 * 1024))
-        compare(findChild(bar, "titleUpRate").text, "↑ " + Format.speed(6.1 * 1024 * 1024))
-        bar.downloadRate = Qt.binding(() => SessionFacade.downloadRate)
-        bar.uploadRate = Qt.binding(() => SessionFacade.uploadRate)
-        compare(findChild(bar, "titleDownRate").text, "↓ " + Format.speed(SessionFacade.downloadRate))
+        const sidebar = findChild(main.contentItem, "sidebar")
+        sidebar.downloadRate = 52.4 * 1024 * 1024
+        sidebar.uploadRate = 6.1 * 1024 * 1024
+        compare(findChild(sidebar, "sidebarDownRate").text, "↓ " + Format.speed(52.4 * 1024 * 1024))
+        compare(findChild(sidebar, "sidebarUpRate").text, "↑ " + Format.speed(6.1 * 1024 * 1024))
+        sidebar.downloadRate = Qt.binding(() => SessionFacade.downloadRate)
+        sidebar.uploadRate = Qt.binding(() => SessionFacade.uploadRate)
+        verify(!findChild(bar, "titleDownRate"), "no speeds in the title bar")
     }
 
-    function test_speedChangeDoesNotShiftSearch() {
-        const s = findChild(main.contentItem, "titleSearch")
-        bar.downloadRate = 0
-        wait(50)
-        const before = s.width
-        bar.downloadRate = 512.3 * 1024 * 1024
-        wait(50)
-        compare(s.width, before, "search pill width does not jump with the speed text")
-        bar.downloadRate = Qt.binding(() => SessionFacade.downloadRate)
+    // A click on the logo folds the sidebar to a rail of icons and back
+    function test_logoFoldsSidebar() {
+        const sidebar = findChild(main.contentItem, "sidebar")
+        const wasCollapsed = main.sidebarCollapsed
+        if (wasCollapsed)
+            main.toggleSidebar()
+        tryCompare(sidebar, "width", sidebar.expandedWidth, 2000)
+        mouseClick(bar.logoButton)
+        compare(main.sidebarCollapsed, true)
+        tryCompare(sidebar, "width", sidebar.railWidth, 2000)
+        verify(!findChild(sidebar, "sidebarStatusFilters").visible, "the status filters fold away")
+        compare(findChild(main.contentItem, "titleLogo").width, sidebar.width, "the logo block follows the rail")
+        mouseClick(bar.logoButton)
+        compare(main.sidebarCollapsed, false)
+        tryCompare(sidebar, "width", sidebar.expandedWidth, 2000)
+    }
+
+    function test_actionButtons() {
+        for (const name of ["titleAddTorrent", "titleAddLink", "titleCreateTorrent", "titleStartAll", "titleStopAll", "titleAltSpeed"]) {
+            const b = findChild(bar, name)
+            verify(b && b.visible, name + " is there")
+            verify(b.Accessible.name !== "", name + " has a name")
+        }
+        mouseClick(findChild(bar, "titleCreateTorrent"))
+        const dialog = findChild(main.contentItem, "createTorrentDialog") ?? findChild(main, "createTorrentDialog")
+        tryCompare(dialog, "opened", true)
+        dialog.close()
+        tryCompare(dialog, "visible", false)
     }
 
     function test_altSpeedButton() {
@@ -157,7 +168,7 @@ TestCase {
         compare(b.Accessible.checked, SessionFacade.altSpeedEnabled)
         bar.altSpeedEnabled = true
         compare(b.Accessible.checked, true)
-        compare(b.iconColor, Theme.warn, "turtle is amber while alternative limits are on")
+        compare(b.checked, true, "turtle is lit while alternative limits are on")
         bar.altSpeedEnabled = false
         compare(b.Accessible.checked, false)
         bar.altSpeedEnabled = Qt.binding(() => SessionFacade.altSpeedEnabled)

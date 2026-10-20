@@ -14,6 +14,12 @@ ApplicationWindow {
 
     // 0 Transfers, 1 Tracker search, 2 RSS feeds, 3 Media library, 4 Settings
     property int currentPage: 0
+    // The sidebar folded to a rail of icons (the logo or Ctrl+B); remembered in the profile
+    property bool sidebarCollapsed: UiSettings.layoutValue("sidebarCollapsed", false)
+    function toggleSidebar() {
+        sidebarCollapsed = !sidebarCollapsed
+        UiSettings.setLayoutValue("sidebarCollapsed", sidebarCollapsed)
+    }
     // The title-bar items registered with the agent as hit-test visible (clickable, not a drag area)
     property var titleBarHitTestItems: []
     readonly property alias windowAgent: agent
@@ -81,6 +87,10 @@ ApplicationWindow {
         onActivated: window.currentPage = 4
     }
     Shortcut {
+        sequence: "Ctrl+B"
+        onActivated: window.toggleSidebar()
+    }
+    Shortcut {
         sequence: "Ctrl+K"
         onActivated: palette.visible ? palette.close() : palette.show()
     }
@@ -94,6 +104,9 @@ ApplicationWindow {
         actions: [
             { group: qsTr("Actions"), id: "addTorrent", label: qsTr("Add torrent…"), icon: Icons.plus, shortcut: "Ctrl O", keywords: "open file torrent" },
             { group: qsTr("Actions"), id: "addLink", label: qsTr("Add magnet link…"), icon: Icons.link, keywords: "magnet url link" },
+            { group: qsTr("Actions"), id: "createTorrent", label: qsTr("Create a torrent…"), icon: Icons.filePlus, keywords: "new make share seed" },
+            { group: qsTr("Actions"), id: "toggleSidebar", label: window.sidebarCollapsed ? qsTr("Expand the sidebar") : qsTr("Collapse the sidebar"),
+              icon: Icons.uiPanel, shortcut: "Ctrl B", keywords: "menu navigation compact" },
             { group: qsTr("Actions"), id: "startAll", label: qsTr("Start all torrents"), icon: Icons.play, keywords: "resume run" },
             { group: qsTr("Actions"), id: "stopAll", label: qsTr("Stop all torrents"), icon: Icons.pause, keywords: "pause" },
             { group: qsTr("Actions"), id: "altSpeed", icon: Icons.turtle, keywords: "turtle speed limit alternative",
@@ -134,6 +147,12 @@ ApplicationWindow {
         case "addLink":
             currentPage = 0
             transfersPage.openAddLink()
+            break
+        case "createTorrent":
+            createTorrentDialog.open()
+            break
+        case "toggleSidebar":
+            toggleSidebar()
             break
         case "startAll":
             TorrentListModel.start(TorrentListModel.allIds())
@@ -184,6 +203,9 @@ ApplicationWindow {
         TitleBar {
             id: titleBar
             onCommandsRequested: palette.show()
+            onSidebarToggleRequested: window.toggleSidebar()
+            onActionRequested: id => window.runCommand(id)
+            sidebarCollapsed: window.sidebarCollapsed
             objectName: "titleBar"
             anchors.fill: parent
             anchors.leftMargin: Theme.glass ? Theme.gap : 0
@@ -207,8 +229,13 @@ ApplicationWindow {
         Sidebar {
             id: sidebar
             objectName: "sidebar"
-            Layout.preferredWidth: 236
+            Layout.preferredWidth: window.sidebarCollapsed ? railWidth : expandedWidth
+            Behavior on Layout.preferredWidth {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
+            }
             Layout.fillHeight: true
+            collapsed: window.sidebarCollapsed
             currentIndex: window.currentPage
             onNavigate: index => window.currentPage = index
         }
@@ -353,6 +380,12 @@ ApplicationWindow {
             TorrentListModel.remove([window.pendingDeleteId], true)
             window.pendingDeleteId = ""
         }
+    }
+
+    CreateTorrentDialog {
+        id: createTorrentDialog
+        onCreatedTorrent: (path, seeding) => windowToast.show(
+            seeding ? qsTr("Created and seeding: %1").arg(path) : qsTr("Torrent created: %1").arg(path), false)
     }
 
     UiDialog {

@@ -93,3 +93,21 @@ void UiSettings::setColumnWidths(const QString &table, const QVariantMap &widths
     else
         m_columnWidths.insert(table, widths);
 }
+
+QVariant UiSettings::layoutValue(const QString &key, const QVariant &defaultValue) const
+{
+    const SettingsStorage *storage = SettingsStorage::instance();
+    QVariant value = storage ? storage->loadValue<QVariant>(u"Flux/Layout/"_s + key, defaultValue)
+                             : m_layout.value(key, defaultValue);
+    if (defaultValue.isValid() && value.canConvert(defaultValue.metaType()))
+        value.convert(defaultValue.metaType());
+    return value;
+}
+
+void UiSettings::setLayoutValue(const QString &key, const QVariant &value)
+{
+    if (SettingsStorage *storage = SettingsStorage::instance())
+        storage->storeValue(u"Flux/Layout/"_s + key, value);
+    else
+        m_layout.insert(key, value);
+}

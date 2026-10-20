@@ -4,10 +4,12 @@ import Flux
 
 // shadcn Tooltip: a small primary-coloured label that fades and grows in after a short delay.
 // Use inside the item it describes: UiTooltip { text: …; shown: hoverHandler.hovered }
+// `placement`: "top" (default), "bottom" (title bar) or "right" (folded sidebar).
 ToolTip {
     id: root
 
     property bool shown: false
+    property string placement: "top"
 
     visible: shown && text !== ""
     delay: 350
@@ -16,8 +18,10 @@ ToolTip {
     bottomPadding: 5
     leftPadding: 10
     rightPadding: 10
-    y: -implicitHeight - 6
-    x: parent ? (parent.width - implicitWidth) / 2 : 0
+    y: placement === "bottom" ? (parent ? parent.height + 6 : 0)
+       : placement === "right" ? (parent ? (parent.height - implicitHeight) / 2 : 0)
+       : -implicitHeight - 6
+    x: placement === "right" ? (parent ? parent.width + 8 : 0) : (parent ? (parent.width - implicitWidth) / 2 : 0)
 
     background: Rectangle {
         radius: Theme.radiusCtl - 2

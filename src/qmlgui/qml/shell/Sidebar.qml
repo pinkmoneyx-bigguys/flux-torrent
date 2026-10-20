@@ -7,18 +7,27 @@ import Flux
 // `currentIndex` and asks for a change with navigate(); the window owns the current page.
 // Default look: flat on the window chrome, shadcn sidebar menu rows. Glass look: a frosted pane.
 // Indices: 0 Transfers, 1 Tracker search, 2 RSS feeds, 3 Media library, 4 Settings.
+// `collapsed` folds it to a rail of icons (names in tooltips); the window animates the width.
 Surface {
     id: root
 
     property int currentIndex: 0
+    property bool collapsed: false
+    // Plain properties bound to the session, so tests can drive them
+    property real downloadRate: SessionFacade.downloadRate
+    property real uploadRate: SessionFacade.uploadRate
     signal navigate(int index)
 
     kind: "chrome"
     implicitWidth: 236
     radius: Theme.radiusPanel
+    clip: true
 
     // Padding around the rows: glass 12, default 8 (shadcn p-2)
     readonly property int padding: Theme.glass ? Theme.gap : Theme.sp(2)
+    // Folded width: the row icon centred, with the same padding as when open
+    readonly property real railWidth: Theme.glass ? 64 : 48
+    readonly property real expandedWidth: 236
 
     Accessible.role: Accessible.PageTabList
     Accessible.name: qsTr("Sections")
@@ -32,7 +41,16 @@ Surface {
         Text {
             visible: !Theme.glass
             Layout.fillWidth: true
-            Layout.preferredHeight: 32
+            Layout.preferredHeight: root.collapsed ? 0 : 32
+            opacity: root.collapsed ? 0 : 1
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
+            Behavior on Layout.preferredHeight {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
+            }
             leftPadding: Theme.sp(2)
             text: qsTr("Library")
             color: Theme.alpha(Theme.text, 0.7)
@@ -54,9 +72,21 @@ Surface {
 
         // Status filters of the Transfers page (shadcn SidebarMenuSub: indented, a border line on the left)
         Item {
+            objectName: "sidebarStatusFilters"
             Layout.fillWidth: true
             Layout.leftMargin: 14
-            implicitHeight: subColumn.implicitHeight + 4
+            Layout.preferredHeight: root.collapsed ? 0 : subColumn.implicitHeight + 4
+            Behavior on Layout.preferredHeight {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
+            }
+            opacity: root.collapsed ? 0 : 1
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
+            visible: Layout.preferredHeight > 0.5
+            clip: true
 
             Rectangle {
                 width: 1
@@ -105,6 +135,48 @@ Surface {
 
         Item {
             Layout.fillHeight: true
+        }
+
+        // Session speeds: download over upload; folded, they go
+        ColumnLayout {
+            objectName: "sidebarSpeeds"
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.sp(2)
+            Layout.bottomMargin: Theme.sp(2)
+            spacing: 2
+            opacity: root.collapsed ? 0 : 1
+            visible: opacity > 0
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
+
+            Text {
+                objectName: "sidebarDownRate"
+                text: "↓ " + Format.speed(root.downloadRate)
+                color: root.downloadRate > 0 ? Theme.download : Theme.textFaint
+                font.family: Theme.fontMono
+                font.pixelSize: Theme.textXs
+                font.features: { "tnum": 1 }
+                Accessible.name: qsTr("Download speed %1").arg(Format.speed(root.downloadRate))
+                Behavior on color {
+                    enabled: !Theme.reducedMotion
+                    ColorAnimation { duration: Theme.durMed }
+                }
+            }
+            Text {
+                objectName: "sidebarUpRate"
+                text: "↑ " + Format.speed(root.uploadRate)
+                color: root.uploadRate > 0 ? Theme.upload : Theme.textFaint
+                font.family: Theme.fontMono
+                font.pixelSize: Theme.textXs
+                font.features: { "tnum": 1 }
+                Accessible.name: qsTr("Upload speed %1").arg(Format.speed(root.uploadRate))
+                Behavior on color {
+                    enabled: !Theme.reducedMotion
+                    ColorAnimation { duration: Theme.durMed }
+                }
+            }
         }
 
         NavItem {
@@ -250,7 +322,7 @@ Surface {
                 id: selected
                 anchors.fill: parent
                 radius: item._radius
-                opacity: item.current && !item.hasSub ? 1 : 0
+                opacity: item.current && (!item.hasSub || root.collapsed) ? 1 : 0
                 visible: opacity > 0
                 color: Theme.selected
                 Behavior on opacity {
@@ -277,6 +349,12 @@ Surface {
             }
         }
 
+        UiTooltip {
+            text: item.text
+            placement: "right"
+            shown: root.collapsed && item.hovered
+        }
+
         contentItem: RowLayout {
             spacing: Theme.glass ? 10 : Theme.sp(2)
 
@@ -289,6 +367,11 @@ Surface {
             Text {
                 objectName: item.objectName + "_label"
                 Layout.fillWidth: true
+                opacity: root.collapsed ? 0 : 1
+                Behavior on opacity {
+                    enabled: !Theme.reducedMotion
+                    NumberAnimation { duration: Theme.durFast }
+                }
                 text: item.text
                 color: item._ink
                 font.family: Theme.fontText
@@ -298,7 +381,7 @@ Surface {
                 verticalAlignment: Text.AlignVCenter
             }
             Text {
-                visible: item.meta !== ""
+                visible: item.meta !== "" && !root.collapsed
                 text: item.meta
                 color: Theme.glass ? Qt.rgba(1, 1, 1, 0.6) : Theme.textDim
                 font.family: Theme.glass ? Theme.fontMono : Theme.fontText
