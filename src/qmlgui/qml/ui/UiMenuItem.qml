@@ -23,6 +23,10 @@ MenuItem {
     background: Rectangle {
         radius: Theme.radiusCtl - 2
         color: root.highlighted ? (root.destructive ? Theme.alpha(Theme.error, 0.15) : Theme.hover) : "transparent"
+        Behavior on color {
+            enabled: !Theme.reducedMotion
+            ColorAnimation { duration: Theme.durFast }
+        }
     }
 
     contentItem: RowLayout {

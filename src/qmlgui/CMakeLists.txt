@@ -55,6 +55,7 @@ set_source_files_properties(qml/ui/UiSwitch.qml PROPERTIES QT_RESOURCE_ALIAS ui/
 set_source_files_properties(qml/ui/UiSelect.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSelect.qml)
 set_source_files_properties(qml/ui/UiSpinner.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSpinner.qml)
 set_source_files_properties(qml/ui/UiToast.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiToast.qml)
+set_source_files_properties(qml/ui/UiTooltip.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiTooltip.qml)
 set_source_files_properties(qml/pages/search/PluginsDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/search/PluginsDialog.qml)
 set_source_files_properties(qml/pages/rss/RulesDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/rss/RulesDialog.qml)
 set_source_files_properties(qml/pages/settings/SettingRow.qml PROPERTIES QT_RESOURCE_ALIAS pages/settings/SettingRow.qml)
@@ -117,6 +118,7 @@ qt_add_qml_module(qbt_qmlgui
         qml/ui/UiSelect.qml
         qml/ui/UiSpinner.qml
         qml/ui/UiToast.qml
+        qml/ui/UiTooltip.qml
         qml/pages/search/PluginsDialog.qml
         qml/pages/rss/RulesDialog.qml
         qml/pages/settings/SettingRow.qml

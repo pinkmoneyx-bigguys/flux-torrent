@@ -462,7 +462,11 @@ Surface {
             anchors.leftMargin: 6
             anchors.rightMargin: 6
             radius: Theme.radiusCtl - 2
-            color: fr.current ? Theme.selected : fr.hovered ? Theme.hover : "transparent"
+            color: fr.current ? Theme.selected : fr.hovered ? Theme.hover : Theme.alpha(Theme.hover, 0)
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
             border.width: fr.visualFocus ? 2 : 0
             border.color: Theme.ring
         }
@@ -540,7 +544,11 @@ Surface {
 
         background: Rectangle {
             radius: Theme.radiusCtl + 2
-            color: card.current ? Theme.muted : card.hovered ? Theme.alpha(Theme.muted, 0.5) : "transparent"
+            color: card.current ? Theme.muted : card.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
             border.width: 1
             border.color: Theme.border
         }

@@ -26,6 +26,14 @@ AbstractButton {
             color: root.checked || root.partial ? Theme.primary : Theme.inputFill
             border.width: 1
             border.color: root.checked || root.partial ? Theme.primary : Theme.input
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
+            Behavior on border.color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
         }
         Rectangle {
             visible: root.visualFocus
@@ -39,8 +47,19 @@ AbstractButton {
     }
     contentItem: Item {
         Icon {
+            readonly property bool on: root.checked || root.partial
             anchors.centerIn: parent
-            visible: root.checked || root.partial
+            visible: opacity > 0
+            opacity: on ? 1 : 0
+            scale: on ? 1 : 0.6
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
+            Behavior on scale {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutBack }
+            }
             path: root.checked ? Icons.check : Icons.minus
             size: 14
             strokeWidth: 2.5

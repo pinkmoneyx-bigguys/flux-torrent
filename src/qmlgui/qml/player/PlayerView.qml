@@ -544,6 +544,10 @@ FocusScope {
         background: Rectangle {
             radius: 18
             color: pb.hovered ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
         }
         contentItem: Item {
             Icon {

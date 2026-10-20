@@ -74,9 +74,9 @@ Surface {
     readonly property real tableWidth: table.width
     function colVisible(key) {
         switch (key) {
-        case "up": return tableWidth >= 980
-        case "eta": return tableWidth >= 1060
-        case "ratio": return tableWidth >= 1120
+        case "up": return tableWidth >= 880
+        case "eta": return tableWidth >= 950
+        case "ratio": return tableWidth >= 1020
         default: return true
         }
     }
@@ -245,6 +245,20 @@ Surface {
                     reuseItems: true
                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
+                    add: Transition {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.durMed }
+                    }
+                    remove: Transition {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { property: "opacity"; to: 0; duration: Theme.durFast }
+                    }
+                    displaced: Transition {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { property: "y"; duration: Theme.durMed; easing.type: Easing.OutCubic }
+                        NumberAnimation { property: "opacity"; to: 1; duration: Theme.durFast }
+                    }
+
                     header: TableHeader {
                         width: list.width
                         z: 2
@@ -368,11 +382,30 @@ Surface {
         TorrentDetailsPane {
             id: details
             objectName: "transfersDetails"
+            readonly property bool open: page.currentId !== ""
+            readonly property real openHeight: Math.max(220, Math.min(320, page.height * 0.36))
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.max(220, Math.min(320, page.height * 0.36))
-            visible: page.currentId !== ""
-            torrentId: page.currentId
+            Layout.preferredHeight: open ? openHeight : 0
+            Behavior on Layout.preferredHeight {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durMed; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
+            }
+            opacity: open ? 1 : 0
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durMed }
+            }
+            visible: open || Layout.preferredHeight > 1
+            clip: true
             onCloseRequested: page.currentId = ""
+        }
+        // the pane keeps the last torrent while it slides shut
+        Connections {
+            target: page
+            function onCurrentIdChanged() {
+                if (page.currentId !== "")
+                    details.torrentId = page.currentId
+            }
         }
     }
 
@@ -418,6 +451,10 @@ Surface {
             Text {
                 text: hc.text
                 color: hc.hovered || hc.sorted ? Theme.text : Theme.textDim
+                Behavior on color {
+                    enabled: !Theme.reducedMotion
+                    ColorAnimation { duration: Theme.durFast }
+                }
                 font.family: Theme.fontText
                 font.pixelSize: Theme.textSm
                 font.weight: Font.Medium
@@ -460,8 +497,8 @@ Surface {
             }
             HeaderCell { text: qsTr("Name"); sortKey: "name"; Layout.fillWidth: true; Layout.minimumWidth: 120 }
             HeaderCell { text: qsTr("Size"); sortKey: "size"; alignRight: true; Layout.preferredWidth: 88 }
-            HeaderCell { text: qsTr("Progress"); sortKey: "progress"; Layout.preferredWidth: 150 }
-            HeaderCell { text: qsTr("Status"); sortKey: "state"; Layout.preferredWidth: 140 }
+            // the status glyph sits in the progress cell; the header text lines up with the bar
+            HeaderCell { text: qsTr("Progress"); sortKey: "progress"; Layout.preferredWidth: 240; Layout.leftMargin: 30 }
             HeaderCell { text: qsTr("Down"); sortKey: "dlSpeed"; alignRight: true; Layout.preferredWidth: 96 }
             HeaderCell { text: qsTr("Up"); sortKey: "upSpeed"; alignRight: true; Layout.preferredWidth: 96; visible: page.colVisible("up") }
             HeaderCell { text: qsTr("ETA"); sortKey: "eta"; alignRight: true; Layout.preferredWidth: 84; visible: page.colVisible("eta") }
@@ -484,6 +521,53 @@ Surface {
         elide: Text.ElideRight
     }
 
+    // The torrent's state as a tinted glyph; its name shows on hover. Checking spins.
+    component StatusGlyph: Rectangle {
+        id: glyph
+        property string torrentState
+        readonly property color tint: TorrentStatus.color(torrentState)
+
+        Layout.alignment: Qt.AlignVCenter
+        implicitWidth: 22
+        implicitHeight: 22
+        radius: 11
+        color: Theme.alpha(tint, 0.14)
+        Behavior on color {
+            enabled: !Theme.reducedMotion
+            ColorAnimation { duration: Theme.durMed }
+        }
+
+        Accessible.role: Accessible.StaticText
+        Accessible.name: TorrentStatus.label(torrentState)
+
+        Icon {
+            id: glyphIcon
+            anchors.centerIn: parent
+            path: TorrentStatus.icon(glyph.torrentState)
+            size: 13
+            strokeWidth: 2.25
+            color: glyph.tint
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durMed }
+            }
+            RotationAnimation on rotation {
+                running: glyph.torrentState === "checking" && glyph.visible && !Theme.reducedMotion
+                from: 0
+                to: 360
+                duration: 1200
+                loops: Animation.Infinite
+                onRunningChanged: if (!running) glyphIcon.rotation = 0
+            }
+        }
+
+        HoverHandler { id: glyphHover }
+        UiTooltip {
+            text: TorrentStatus.label(glyph.torrentState)
+            shown: glyphHover.hovered
+        }
+    }
+
     component TorrentRowDelegate: Rectangle {
         id: rowItem
 
@@ -503,7 +587,11 @@ Surface {
         readonly property bool focused: page.currentId === torrentId
 
         height: 40
-        color: selected ? Theme.muted : hover.hovered ? Theme.alpha(Theme.muted, 0.5) : "transparent"
+        color: selected ? Theme.muted : hover.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
+        Behavior on color {
+            enabled: !Theme.reducedMotion
+            ColorAnimation { duration: Theme.durFast }
+        }
 
         Accessible.role: Accessible.Row
         Accessible.name: name
@@ -573,30 +661,29 @@ Surface {
                 dim: rowItem.size <= 0
                 text: rowItem.size > 0 ? Format.size(rowItem.size) : "—"
             }
+            // Status glyph, then the bar and the percentage
             RowLayout {
-                Layout.preferredWidth: 150
-                Layout.maximumWidth: 150
+                Layout.preferredWidth: 240
+                Layout.maximumWidth: 240
                 Layout.fillHeight: true
                 spacing: Theme.sp(2)
+                StatusGlyph {
+                    objectName: "statusGlyph"
+                    torrentState: rowItem.state
+                }
                 UiProgress {
-                    Layout.preferredWidth: 96
+                    objectName: "rowProgress"
+                    Layout.fillWidth: true
                     value: rowItem.progress
                     color: TorrentStatus.color(rowItem.state)
+                    active: TorrentStatus.isActive(rowItem.state)
                 }
                 CellText {
-                    Layout.fillWidth: true
+                    Layout.preferredWidth: 40
+                    horizontalAlignment: Text.AlignRight
                     text: Math.floor(rowItem.progress * 1000) / 10 + "%"
                     color: Theme.textDim
                     font.pixelSize: Theme.textXs
-                }
-            }
-            Item {
-                Layout.preferredWidth: 140
-                Layout.fillHeight: true
-                UiBadge {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: TorrentStatus.label(rowItem.state)
-                    dotColor: TorrentStatus.color(rowItem.state)
                 }
             }
             CellText {
@@ -638,6 +725,10 @@ Surface {
                     iconPath: Icons.more
                     focusPolicy: Qt.NoFocus
                     opacity: hover.hovered || rowItem.selected ? 1 : 0
+                    Behavior on opacity {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { duration: Theme.durFast }
+                    }
                     Accessible.name: qsTr("Actions for %1").arg(rowItem.name)
                     onClicked: {
                         if (!rowItem.selected)

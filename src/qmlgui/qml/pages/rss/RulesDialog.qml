@@ -128,7 +128,11 @@ UiDialog {
                             anchors.leftMargin: 6
                             anchors.rightMargin: 6
                             radius: Theme.radiusCtl - 2
-                            color: ruleRow.current ? Theme.selected : ruleRow.hovered ? Theme.hover : "transparent"
+                            color: ruleRow.current ? Theme.selected : ruleRow.hovered ? Theme.hover : Theme.alpha(Theme.hover, 0)
+                            Behavior on color {
+                                enabled: !Theme.reducedMotion
+                                ColorAnimation { duration: Theme.durFast }
+                            }
                         }
                         contentItem: RowLayout {
                             spacing: Theme.sp(2)

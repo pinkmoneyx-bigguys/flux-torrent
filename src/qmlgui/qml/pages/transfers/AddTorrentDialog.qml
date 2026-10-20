@@ -107,7 +107,11 @@ UiDialog {
                         required property var modelData
                         width: ListView.view.width
                         height: 34
-                        color: rowHover.hovered ? Theme.alpha(Theme.muted, 0.5) : "transparent"
+                        color: rowHover.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
+                        Behavior on color {
+                            enabled: !Theme.reducedMotion
+                            ColorAnimation { duration: Theme.durFast }
+                        }
                         HoverHandler { id: rowHover }
 
                         RowLayout {

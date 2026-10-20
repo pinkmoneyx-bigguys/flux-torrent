@@ -283,10 +283,24 @@ Surface {
         }
         border.width: 1
         border.color: cover.hot ? Theme.alpha(Theme.text, 0.25) : Theme.border
+        Behavior on border.color {
+            enabled: !Theme.reducedMotion
+            ColorAnimation { duration: Theme.durMed }
+        }
+        // lifts a little under the pointer
+        scale: cover.hot && !Theme.reducedMotion ? 1.025 : 1
+        Behavior on scale {
+            NumberAnimation { duration: Theme.durMed; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
+        }
 
         Icon {
             anchors.centerIn: parent
-            visible: !cover.hot
+            opacity: cover.hot ? 0 : 1
+            visible: opacity > 0
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
             path: cover.season > 0 || cover.episode > 0 ? Icons.media : Icons.film
             size: Math.min(36, cover.height * 0.28)
             strokeWidth: 1.25
@@ -294,7 +308,17 @@ Surface {
         }
         // play affordance on hover
         Rectangle {
-            visible: cover.hot
+            opacity: cover.hot ? 1 : 0
+            visible: opacity > 0
+            scale: cover.hot ? 1 : 0.8
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
+            Behavior on scale {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutBack }
+            }
             anchors.centerIn: parent
             width: 44
             height: 44
@@ -336,6 +360,10 @@ Surface {
                 width: parent.width * cover.progress
                 height: parent.height
                 color: Theme.download
+                Behavior on width {
+                    enabled: !Theme.reducedMotion
+                    NumberAnimation { duration: Theme.durValue; easing.type: Easing.OutCubic }
+                }
             }
         }
     }
@@ -452,7 +480,11 @@ Surface {
         required property real progress
 
         height: 44
-        color: rowHover.hovered ? Theme.alpha(Theme.muted, 0.5) : "transparent"
+        color: rowHover.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
+        Behavior on color {
+            enabled: !Theme.reducedMotion
+            ColorAnimation { duration: Theme.durFast }
+        }
         HoverHandler { id: rowHover }
         TapHandler { onTapped: page.open(mr.key) }
         TapHandler { onDoubleTapped: page.play(mr.key) }

@@ -193,15 +193,16 @@ TestCase {
 
         compare(pg.x, sb.x + sidebar.width + 12, "12 px between the sidebar and the page")
         compare(pg.x + pages.width, root.width - 12, "page right margin")
-        compare(pg.y, sb.y, "page and sidebar share the top edge")
+        // the page may still be rising in from the last switch
+        tryVerify(() => pages.mapToItem(root, 0, 0).y === sb.y, 1000, "page and sidebar share the top edge")
 
         compare(sb.y + sidebar.height, root.height - 12, "sidebar bottom margin: no status bar")
         verify(!findChild(root, "statusPill"), "the status bar is gone")
     }
 
     function test_labelsFitAtMinWidth() {
-        main.width = 1100
-        tryCompare(main, "width", 1100)
+        main.width = main.minimumWidth
+        tryCompare(main, "width", main.minimumWidth)
         wait(50)
         for (const n of navNames) {
             const t = findChild(main.contentItem, n + "_label")
@@ -213,8 +214,8 @@ TestCase {
 
     function test_russianLabelsFitAtMinWidth() {
         verify(FluxTestI18n.setLanguage("ru"), "the Russian translation is built into the app")
-        main.width = 1100
-        tryCompare(main, "width", 1100)
+        main.width = main.minimumWidth
+        tryCompare(main, "width", main.minimumWidth)
         wait(50)
         const expected = ["Передачи", "Поиск по трекерам", "RSS-ленты", "Медиатека", "Настройки"]
         for (let i = 0; i < navNames.length; ++i) {

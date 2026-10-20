@@ -39,6 +39,29 @@ QtObject {
         }
     }
 
+    // Status glyph shown before the progress bar
+    function icon(state) {
+        switch (state) {
+        case "downloading":
+        case "metadata": return Icons.download
+        case "stalledDl": return Icons.hourglass
+        case "seeding":
+        case "stalledUp": return Icons.upload
+        case "queuedDl":
+        case "queuedUp": return Icons.clock
+        case "checking": return Icons.refresh
+        case "stoppedDl": return Icons.pause
+        case "stoppedUp": return Icons.check
+        case "moving": return Icons.moveTo
+        default: return Icons.alert
+        }
+    }
+
+    // Work is under way: the bar shimmers (checking also spins its glyph)
+    function isActive(state) {
+        return state === "downloading" || state === "metadata" || state === "checking" || state === "moving"
+    }
+
     function isStopped(state) {
         return state === "stoppedDl" || state === "stoppedUp"
     }

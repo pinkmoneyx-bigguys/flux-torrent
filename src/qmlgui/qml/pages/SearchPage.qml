@@ -415,6 +415,10 @@ Surface {
             Text {
                 text: hc.text
                 color: hc.hovered || hc.sorted ? Theme.text : Theme.textDim
+                Behavior on color {
+                    enabled: !Theme.reducedMotion
+                    ColorAnimation { duration: Theme.durFast }
+                }
                 font.family: Theme.fontText
                 font.pixelSize: Theme.textSm
                 font.weight: Font.Medium
@@ -494,7 +498,11 @@ Surface {
         }
 
         height: 40
-        color: hover.hovered ? Theme.alpha(Theme.muted, 0.5) : "transparent"
+        color: hover.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
+        Behavior on color {
+            enabled: !Theme.reducedMotion
+            ColorAnimation { duration: Theme.durFast }
+        }
 
         Accessible.role: Accessible.Row
         Accessible.name: name

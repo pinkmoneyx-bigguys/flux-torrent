@@ -41,6 +41,10 @@ RowLayout {
                 color: "transparent"
                 border.width: 2
                 border.color: card.current ? Theme.primary : card.hovered ? Theme.alpha(Theme.text, 0.25) : Theme.muted
+                Behavior on border.color {
+                    enabled: !Theme.reducedMotion
+                    ColorAnimation { duration: Theme.durFast }
+                }
 
                 Item {
                     id: previewBox

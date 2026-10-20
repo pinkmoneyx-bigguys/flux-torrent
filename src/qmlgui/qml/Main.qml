@@ -20,10 +20,11 @@ ApplicationWindow {
     readonly property alias titleBarArea: titleBarArea
     readonly property alias playerView: playerView
 
-    width: 1440
-    height: 920
-    minimumWidth: 1100
-    minimumHeight: 720
+    // Well under the screen, never more than 1200 × 760: a window beside others, not over them
+    width: Math.round(Math.max(minimumWidth, Math.min(1200, Screen.width * 0.62)))
+    height: Math.round(Math.max(minimumHeight, Math.min(760, (Screen.height - 48) * 0.68)))
+    minimumWidth: 960
+    minimumHeight: 620
     // shown by Component.onCompleted once the agent has made the window frameless
     visible: false
     color: Theme.bg
@@ -37,6 +38,9 @@ ApplicationWindow {
         Theme.glassSource = backdrop
 
         agent.setup(window)
+        // centred on the screen it opens on (48 px: room for the taskbar)
+        x = Screen.virtualX + Math.round((Screen.width - width) / 2)
+        y = Screen.virtualY + Math.max(0, Math.round((Screen.height - 48 - height) / 2))
         // dark system surfaces (snap layout flyout, border); Windows 11 22H2+
         if (SystemPrefs.windowsBuild >= 22621)
             agent.setWindowAttribute("dark-mode", true)
@@ -55,7 +59,7 @@ ApplicationWindow {
         visible = true
     }
 
-    // Page switching from the keyboard is instant, like every keyboard action
+    // Page switching from the keyboard
     Shortcut {
         sequence: "Ctrl+1"
         onActivated: window.currentPage = 0
@@ -222,6 +226,17 @@ ApplicationWindow {
                 objectName: "pages"
                 anchors.fill: parent
                 currentIndex: window.currentPage
+                // a page comes in with a short fade and rise
+                transform: Translate { id: pageRise }
+                onCurrentIndexChanged: if (!Theme.reducedMotion) pageEnter.restart()
+                ParallelAnimation {
+                    id: pageEnter
+                    NumberAnimation { target: pages; property: "opacity"; from: 0; to: 1; duration: Theme.durMed; easing.type: Easing.OutCubic }
+                    NumberAnimation {
+                        target: pageRise; property: "y"; from: 8; to: 0; duration: Theme.durSlow
+                        easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve
+                    }
+                }
 
                 TransfersPage {
                     id: transfersPage

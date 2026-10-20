@@ -237,6 +237,8 @@ Item {
                             Layout.preferredWidth: 80
                             value: fileRow.modelData.progress
                             color: fileRow.modelData.priority === 0 ? Theme.textFaint : TorrentStatus.color(pane.info.state ?? "")
+                            active: fileRow.modelData.priority !== 0 && fileRow.modelData.progress < 1
+                                    && TorrentStatus.isActive(pane.info.state ?? "")
                         }
                         DetailCell {
                             Layout.fillWidth: true

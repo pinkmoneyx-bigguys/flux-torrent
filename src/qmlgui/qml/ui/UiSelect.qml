@@ -42,6 +42,10 @@ AbstractButton {
             anchors.fill: parent
             radius: Theme.radiusCtl
             color: Qt.rgba(1, 1, 1, root.hovered || menu.visible ? 0.075 : 0.045)
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
             border.width: 1
             border.color: menu.visible ? Theme.ring : Theme.input
         }
@@ -79,6 +83,11 @@ AbstractButton {
             size: 14
             strokeWidth: 2
             color: Theme.textDim
+            rotation: menu.visible ? 180 : 0
+            Behavior on rotation {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutCubic }
+            }
         }
     }
 

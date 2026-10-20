@@ -164,7 +164,11 @@ Surface {
 
                         background: Rectangle {
                             radius: Theme.radiusCtl
-                            color: navItem.current ? Theme.selected : navItem.hovered ? Theme.hover : "transparent"
+                            color: navItem.current ? Theme.selected : navItem.hovered ? Theme.hover : Theme.alpha(Theme.hover, 0)
+                            Behavior on color {
+                                enabled: !Theme.reducedMotion
+                                ColorAnimation { duration: Theme.durFast }
+                            }
                             border.width: navItem.visualFocus ? 2 : 0
                             border.color: Theme.ring
                         }

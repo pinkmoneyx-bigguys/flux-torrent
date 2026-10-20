@@ -142,7 +142,11 @@ Surface {
 
         background: Rectangle {
             radius: Theme.glass ? 10 : Theme.radiusCtl - 2
-            color: sub.current ? Theme.selected : sub.hovered ? Theme.hover : "transparent"
+            color: sub.current ? Theme.selected : sub.hovered ? Theme.hover : Theme.alpha(Theme.hover, 0)
+            Behavior on color {
+                enabled: !Theme.reducedMotion
+                ColorAnimation { duration: Theme.durFast }
+            }
             border.width: sub.visualFocus ? 2 : 0
             border.color: Theme.glass ? Theme.accent : Theme.ring
         }
@@ -170,8 +174,8 @@ Surface {
         }
     }
 
-    // One row: 38 px glass, 32 px default (shadcn SidebarMenuButton h-8). The highlight of the current
-    // row changes instantly (also from Ctrl+N); only the pointer hover fades.
+    // One row: 38 px glass, 32 px default (shadcn SidebarMenuButton h-8). The current row's highlight
+    // and the pointer hover both fade.
     component NavItem: AbstractButton {
         id: item
 
@@ -246,8 +250,13 @@ Surface {
                 id: selected
                 anchors.fill: parent
                 radius: item._radius
-                visible: item.current && !item.hasSub
+                opacity: item.current && !item.hasSub ? 1 : 0
+                visible: opacity > 0
                 color: Theme.selected
+                Behavior on opacity {
+                    enabled: !Theme.reducedMotion
+                    NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutCubic }
+                }
             }
             // glass: inset top highlight, starting where the rounded corners end
             Rectangle {

@@ -25,6 +25,49 @@ Item {
         color: Theme.muted
     }
 
+    // The current tab's marker: one item gliding between tabs instead of one per tab
+    readonly property Item _currentTab: {
+        for (let i = 0; i < tabs.count; ++i) {
+            const t = tabs.itemAt(i)
+            if (t && t.current)
+                return t
+        }
+        return null
+    }
+    Item {
+        id: marker
+        visible: root._currentTab !== null
+        x: root._currentTab ? row.x + root._currentTab.x : 0
+        y: root._currentTab ? row.y + root._currentTab.y : 0
+        width: root._currentTab ? root._currentTab.width : 0
+        height: root._currentTab ? root._currentTab.height : 0
+        Behavior on x {
+            enabled: !Theme.reducedMotion && marker.width > 0
+            NumberAnimation { duration: Theme.durMed; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
+        }
+        Behavior on width {
+            enabled: !Theme.reducedMotion && marker.width > 0
+            NumberAnimation { duration: Theme.durMed; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: root.variant === "default"
+            radius: Theme.radiusCtl
+            color: Theme.glass ? Qt.rgba(1, 1, 1, 0.1) : "#0A0A0A"
+            border.width: 1
+            border.color: Theme.input
+        }
+        Rectangle {
+            visible: root.variant === "line"
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 2
+            color: Theme.text
+        }
+    }
+
     RowLayout {
         id: row
         anchors.fill: parent
@@ -32,6 +75,7 @@ Item {
         spacing: root.variant === "default" ? 0 : Theme.sp(4)
 
         Repeater {
+            id: tabs
             model: root.model
 
             AbstractButton {
@@ -60,22 +104,6 @@ Item {
 
                 background: Item {
                     Rectangle {
-                        anchors.fill: parent
-                        visible: root.variant === "default" && tab.current
-                        radius: Theme.radiusCtl
-                        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.1) : "#0A0A0A"
-                        border.width: 1
-                        border.color: Theme.input
-                    }
-                    Rectangle {
-                        visible: root.variant === "line" && tab.current
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        height: 2
-                        color: Theme.text
-                    }
-                    Rectangle {
                         visible: tab.visualFocus
                         anchors.fill: parent
                         anchors.margins: -2
@@ -93,6 +121,10 @@ Item {
                         Text {
                             text: tab.text
                             color: tab.current || tab.hovered ? Theme.text : Theme.textDim
+                            Behavior on color {
+                                enabled: !Theme.reducedMotion
+                                ColorAnimation { duration: Theme.durFast }
+                            }
                             font.family: Theme.fontText
                             font.pixelSize: Theme.textSm
                             font.weight: Font.Medium

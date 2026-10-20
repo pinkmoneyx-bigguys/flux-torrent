@@ -88,6 +88,22 @@ TestCase {
         compare(list().model.idAt(0), "a")
     }
 
+    // The state is a glyph before the bar (its name on hover); the bar of a running download shimmers
+    function test_statusGlyphAndShimmer() {
+        const down = rowItem(0)
+        compare(down.torrentId, "a")
+        const glyph = findChild(down, "statusGlyph")
+        verify(glyph, "the row has a status glyph")
+        compare(glyph.Accessible.name, TorrentStatus.label("downloading"))
+        verify(findChild(down, "rowProgress").active, "a running download shimmers")
+        verify(Theme.shimmerUsers > 0, "the shared shimmer clock runs")
+
+        const stopped = rowItem(3)
+        compare(stopped.torrentId, "d")
+        verify(!findChild(stopped, "rowProgress").active, "a stopped one does not")
+        compare(findChild(stopped, "statusGlyph").Accessible.name, TorrentStatus.label("stoppedDl"))
+    }
+
     function test_clickSelects() {
         mouseClick(rowItem(1), 200, 20)
         compare(page.selectedIds(), ["b"])

@@ -92,6 +92,19 @@ QtObject {
     readonly property int durFast: 150
     readonly property int durMed: 240
     readonly property int durSlow: 340
+    // Value changes of bars and gauges: long enough to read as movement, not as a jump
+    readonly property int durValue: 600
+
+    // One shared clock for every progress shimmer, so the sweeps on a list move together. It runs only
+    // while some bar shimmers (UiProgress counts itself in and out), not for the life of the app.
+    property int shimmerUsers: 0
+    property real shimmerPhase: 0
+    readonly property SequentialAnimation _shimmerClock: SequentialAnimation {
+        running: theme.shimmerUsers > 0
+        loops: Animation.Infinite
+        NumberAnimation { target: theme; property: "shimmerPhase"; from: 0; to: 1; duration: 1600; easing.type: Easing.InOutSine }
+        PauseAnimation { duration: 400 }
+    }
 
     // --- Accessibility: Windows settings, plain properties so tests can override them -----------
     property bool reducedMotion: SystemPrefs.reducedMotion
