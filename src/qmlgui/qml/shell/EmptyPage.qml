@@ -2,13 +2,15 @@ import QtQuick
 import QtQuick.Layouts
 import Flux
 
-// A glass page with only a title and a one-line hint: the placeholder for sections not built yet.
-GlassPanel {
+// A page with only a title and a one-line hint: the placeholder for sections not built yet.
+// Default look: plain text centred on the content inset. Glass look: a frosted pane.
+Surface {
     id: root
 
     property string title
     property string hint
 
+    kind: Theme.glass ? "panel" : "chrome"
     radius: Theme.radiusPanel
 
     ColumnLayout {
@@ -21,9 +23,9 @@ GlassPanel {
             text: root.title
             color: Theme.text
             font.family: Theme.fontDisplay
-            font.pixelSize: 22
+            font.pixelSize: Theme.glass ? 22 : 18
             font.weight: Font.DemiBold
-            font.letterSpacing: -0.44
+            font.letterSpacing: Theme.glass ? -0.44 : -0.36
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
             Accessible.role: Accessible.Heading
@@ -34,7 +36,7 @@ GlassPanel {
             text: root.hint
             color: Theme.textDim
             font.family: Theme.fontText
-            font.pixelSize: 14
+            font.pixelSize: Theme.glass ? 14 : Theme.textSm
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
         }

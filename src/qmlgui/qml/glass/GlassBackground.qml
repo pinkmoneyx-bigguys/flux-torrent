@@ -103,6 +103,8 @@ Item {
     }
 
     onWidthChanged: rebuildTimer.restart()
+    // hidden in the default look: regrab when the glass look is switched on
+    onVisibleChanged: if (visible) rebuildTimer.restart()
     onHeightChanged: rebuildTimer.restart()
 
     Connections {

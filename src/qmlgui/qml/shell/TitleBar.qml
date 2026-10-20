@@ -3,9 +3,10 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Flux
 
-// The pills along the top of the frameless window: logo, search (takes all free width), live speeds
-// with the alternative-limits toggle, and the window buttons. Main.qml hands the window buttons and
-// `interactiveItems` to QWindowKit; everything else in the bar drags the window.
+// The top of the frameless window: logo, search (takes all free width), live speeds with the
+// alternative-limits toggle, and the window buttons. Default look: one flat strip on the window chrome,
+// the logo over the sidebar and Windows-style caption buttons. Glass look: separate frosted pills.
+// Main.qml hands the window buttons and `interactiveItems` to QWindowKit; the rest drags the window.
 Item {
     id: root
 
@@ -13,6 +14,8 @@ Item {
     property real downloadRate: SessionFacade.downloadRate
     property real uploadRate: SessionFacade.uploadRate
     property bool altSpeedEnabled: SessionFacade.altSpeedEnabled
+    // Default look: the logo block is as wide as the sidebar under it
+    property real logoWidth: 236
 
     readonly property alias searchField: searchInput
     readonly property alias altSpeedButton: altButton
@@ -28,7 +31,8 @@ Item {
 
     implicitHeight: 44
 
-    // 34x32 capsule for minimize / maximize / close; `danger` turns red on hover (close)
+    // Caption button. Glass: a 34x32 capsule. Default: a flat 46 px wide Windows caption button that
+    // fills the strip height. `danger` turns red on hover (close).
     component WindowButton: AbstractButton {
         id: wb
 
@@ -36,8 +40,8 @@ Item {
         property bool danger: false
         readonly property bool _hot: danger && (hovered || pressed)
 
-        implicitWidth: 34
-        implicitHeight: 32
+        implicitWidth: Theme.glass ? 34 : 46
+        implicitHeight: Theme.glass ? 32 : root.height
         // like native caption buttons: not in the Tab order
         focusPolicy: Qt.NoFocus
         hoverEnabled: true
@@ -47,9 +51,9 @@ Item {
         Accessible.onPressAction: wb.clicked()
 
         background: Rectangle {
-            radius: height / 2
-            color: wb._hot ? Qt.rgba(232 / 255, 72 / 255, 85 / 255, 0.9)
-                           : Qt.rgba(1, 1, 1, wb.pressed ? 0.12 : wb.hovered ? 0.08 : 0)
+            radius: Theme.glass ? height / 2 : 0
+            color: wb._hot ? (Theme.glass ? Qt.rgba(232 / 255, 72 / 255, 85 / 255, 0.9) : "#C42B1C")
+                           : Qt.rgba(1, 1, 1, wb.pressed ? (Theme.glass ? 0.12 : 0.06) : wb.hovered ? (Theme.glass ? 0.08 : 0.08) : 0)
             Behavior on color {
                 enabled: !Theme.reducedMotion
                 ColorAnimation { duration: Theme.durFast }
@@ -60,183 +64,200 @@ Item {
                 anchors.centerIn: parent
                 path: wb.iconPath
                 size: 10
-                strokeWidth: 3.12 // 1.3 px at 10 px, as in the mockup
-                color: wb._hot ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.86)
+                strokeWidth: Theme.glass ? 3.12 : 2.4 // 1.3 px / 1 px at 10 px
+                color: wb._hot ? "#FFFFFF" : Theme.glass ? Qt.rgba(1, 1, 1, 0.86) : Theme.text
             }
         }
     }
 
     RowLayout {
         anchors.fill: parent
-        spacing: Theme.gap
+        spacing: Theme.glass ? Theme.gap : 0
 
         // --- Logo -------------------------------------------------------------------------------
-        GlassPanel {
+        Surface {
             objectName: "titleLogo"
+            kind: "chrome"
             Layout.preferredHeight: 44
-            Layout.preferredWidth: logoRow.implicitWidth + Theme.sp(2) + Theme.sp(4)
+            Layout.preferredWidth: Theme.glass ? logoRow.implicitWidth + Theme.sp(2) + Theme.sp(4) : root.logoWidth
             radius: height / 2
 
             RowLayout {
                 id: logoRow
-                x: Theme.sp(2)
+                x: Theme.glass ? Theme.sp(2) : Theme.sp(4)
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 10
+                spacing: Theme.glass ? 10 : Theme.sp(2)
 
                 Item {
-                    implicitWidth: 30
-                    implicitHeight: 30
+                    implicitWidth: Theme.glass ? 30 : 24
+                    implicitHeight: implicitWidth
 
                     GlowHalo {
                         anchors.fill: parent
+                        visible: Theme.glass
                         color: Theme.accentAlpha(0.55)
                         spread: 10
                     }
                     Rectangle {
                         anchors.fill: parent
-                        radius: width / 2
-                        color: Theme.accent
+                        radius: Theme.glass ? width / 2 : Theme.radiusSmall
+                        color: Theme.primary
                     }
                     Icon {
                         anchors.centerIn: parent
                         path: Icons.logo
-                        size: 16
-                        strokeWidth: 2.6
-                        color: Theme.bg
+                        size: Theme.glass ? 16 : 14
+                        strokeWidth: Theme.glass ? 2.6 : 2.4
+                        color: Theme.primaryText
                     }
                 }
                 Text {
                     text: "Flux"
                     color: Theme.text
                     font.family: Theme.fontDisplay
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.glass ? 13 : Theme.textBase
                     font.weight: Font.DemiBold
-                    font.letterSpacing: -0.26
+                    font.letterSpacing: Theme.glass ? -0.26 : -0.2
                     Accessible.ignored: true
                 }
             }
         }
 
         // --- Search -----------------------------------------------------------------------------
-        GlassPanel {
-            id: searchPill
-            objectName: "titleSearch"
+        // Default look: a centred command field (max 520 px) in the free space after the sidebar
+        Item {
             Layout.fillWidth: true
-            Layout.minimumWidth: 220
+            Layout.minimumWidth: 220 + (Theme.glass ? 0 : Theme.sp(4))
             Layout.preferredHeight: 44
-            radius: height / 2
 
-            // a click anywhere on the pill puts the cursor into the field
-            TapHandler {
-                onTapped: root.focusSearch()
-            }
+            Surface {
+                id: searchPill
+                objectName: "titleSearch"
+                kind: "field"
+                focused: searchInput.activeFocus
+                x: 0
+                width: Theme.glass ? parent.width : Math.max(220, Math.min(520, parent.width - Theme.sp(4)))
+                height: Theme.glass ? 44 : 30
+                anchors.verticalCenter: parent.verticalCenter
+                radius: Theme.glass ? height / 2 : Theme.radiusCtl
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.sp(4)
-                anchors.rightMargin: Theme.sp(2)
-                spacing: 10
-
-                Icon {
-                    path: Icons.search
-                    size: 15
-                    strokeWidth: 1.6
-                    color: Qt.rgba(1, 1, 1, 0.7)
+                // a click anywhere on the pill puts the cursor into the field
+                TapHandler {
+                    onTapped: root.focusSearch()
                 }
-                TextField {
-                    id: searchInput
-                    objectName: "titleSearchField"
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    padding: 0
-                    background: null
-                    color: Theme.text
-                    selectionColor: Theme.accentAlpha(0.35)
-                    selectedTextColor: Theme.text
-                    placeholderText: qsTr("Search torrents, files and commands")
-                    placeholderTextColor: Theme.textFaint
-                    font.family: Theme.fontText
-                    font.pixelSize: 13
-                    verticalAlignment: TextInput.AlignVCenter
-                    Accessible.name: qsTr("Search and commands")
-                    Keys.onEscapePressed: {
-                        text = ""
-                        focus = false
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.glass ? Theme.sp(4) : 10
+                    anchors.rightMargin: Theme.glass ? Theme.sp(2) : 4
+                    spacing: Theme.glass ? 10 : Theme.sp(2)
+
+                    Icon {
+                        path: Icons.search
+                        size: Theme.glass ? 15 : 14
+                        strokeWidth: Theme.glass ? 1.6 : 2
+                        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.7) : Theme.textDim
                     }
-                }
-                Rectangle {
-                    implicitWidth: hint.implicitWidth + 18
-                    implicitHeight: hint.implicitHeight + 8
-                    radius: height / 2
-                    color: Qt.rgba(1, 1, 1, 0.08)
+                    TextField {
+                        id: searchInput
+                        objectName: "titleSearchField"
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        padding: 0
+                        background: null
+                        color: Theme.text
+                        selectionColor: Theme.glass ? Theme.accentAlpha(0.35) : "#3F3F46"
+                        selectedTextColor: Theme.text
+                        placeholderText: qsTr("Search torrents, files and commands")
+                        placeholderTextColor: Theme.glass ? Theme.textFaint : Theme.textDim
+                        font.family: Theme.fontText
+                        font.pixelSize: Theme.textSm
+                        verticalAlignment: TextInput.AlignVCenter
+                        Accessible.name: qsTr("Search and commands")
+                        Keys.onEscapePressed: {
+                            text = ""
+                            focus = false
+                        }
+                    }
+                    // shadcn <Kbd>: muted chip with mono text
+                    Rectangle {
+                        implicitWidth: hint.implicitWidth + (Theme.glass ? 18 : 10)
+                        implicitHeight: Theme.glass ? hint.implicitHeight + 8 : 20
+                        radius: Theme.glass ? height / 2 : 4
+                        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.08) : Theme.muted
 
-                    Text {
-                        id: hint
-                        anchors.centerIn: parent
-                        text: "Ctrl K"
-                        color: Qt.rgba(1, 1, 1, 0.72)
-                        font.family: Theme.fontMono
-                        font.pixelSize: 11
+                        Text {
+                            id: hint
+                            anchors.centerIn: parent
+                            text: "Ctrl K"
+                            color: Theme.glass ? Qt.rgba(1, 1, 1, 0.72) : Theme.textDim
+                            font.family: Theme.glass ? Theme.fontMono : Theme.fontText
+                            font.pixelSize: 11
+                            font.weight: Theme.glass ? Font.Normal : Font.Medium
+                        }
                     }
                 }
             }
         }
 
         // --- Speeds and alternative limits ------------------------------------------------------
-        GlassPanel {
+        Surface {
             objectName: "titleSpeeds"
+            kind: "chrome"
             Layout.preferredHeight: 44
-            Layout.preferredWidth: speedRow.implicitWidth + Theme.sp(4) + 6
+            Layout.preferredWidth: speedRow.implicitWidth + (Theme.glass ? Theme.sp(4) + 6 : Theme.sp(3))
             radius: height / 2
 
             // the widest plausible speed, so the pill (and the search next to it) does not jitter
             TextMetrics {
                 id: speedMetrics
                 font.family: Theme.fontMono
-                font.pixelSize: 13
+                font.pixelSize: Theme.glass ? 13 : Theme.textXs
                 text: "↓ " + Format.speed(999.9 * 1024 * 1024)
             }
 
             RowLayout {
                 id: speedRow
-                x: Theme.sp(4)
+                x: Theme.glass ? Theme.sp(4) : 0
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 14
+                spacing: Theme.glass ? 14 : Theme.sp(3)
 
                 Text {
                     objectName: "titleDownRate"
                     Layout.minimumWidth: speedMetrics.advanceWidth
+                    horizontalAlignment: Theme.glass ? Text.AlignLeft : Text.AlignRight
                     text: "↓ " + Format.speed(root.downloadRate)
-                    color: Theme.accent
+                    color: Theme.glass ? Theme.accent : root.downloadRate > 0 ? Theme.download : Theme.textDim
                     font.family: Theme.fontMono
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.glass ? 13 : Theme.textXs
                     Accessible.name: qsTr("Download speed %1").arg(Format.speed(root.downloadRate))
                 }
                 Text {
                     objectName: "titleUpRate"
                     Layout.minimumWidth: speedMetrics.advanceWidth
+                    horizontalAlignment: Theme.glass ? Text.AlignLeft : Text.AlignRight
                     text: "↑ " + Format.speed(root.uploadRate)
-                    color: Theme.upload
+                    color: Theme.glass ? Theme.upload : root.uploadRate > 0 ? Theme.upload : Theme.textDim
                     font.family: Theme.fontMono
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.glass ? 13 : Theme.textXs
                     Accessible.name: qsTr("Upload speed %1").arg(Format.speed(root.uploadRate))
                 }
                 Item {
-                    implicitWidth: 32
-                    implicitHeight: 32
+                    implicitWidth: Theme.glass ? 32 : 28
+                    implicitHeight: implicitWidth
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: width / 2
+                        radius: Theme.glass ? width / 2 : Theme.radiusCtl
                         visible: root.altSpeedEnabled
-                        color: Qt.rgba(1, 184 / 255, 107 / 255, 0.16)
+                        color: Theme.alpha(Theme.warn, 0.16)
                     }
                     IconButton {
                         id: altButton
                         objectName: "titleAltSpeed"
                         anchors.fill: parent
                         iconPath: Icons.turtle
-                        iconColor: root.altSpeedEnabled ? Theme.warn : Qt.rgba(1, 1, 1, 0.86)
+                        iconColor: root.altSpeedEnabled ? Theme.warn : Theme.glass ? Qt.rgba(1, 1, 1, 0.86) : Theme.textDim
                         Accessible.name: qsTr("Alternative speed limits")
                         Accessible.checkable: true
                         Accessible.checked: root.altSpeedEnabled
@@ -247,16 +268,17 @@ Item {
         }
 
         // --- Window buttons ---------------------------------------------------------------------
-        GlassPanel {
+        Surface {
             objectName: "titleWindowButtons"
+            kind: "chrome"
             Layout.preferredHeight: 44
-            Layout.preferredWidth: windowRow.implicitWidth + 12
+            Layout.preferredWidth: windowRow.implicitWidth + (Theme.glass ? 12 : 0)
             radius: height / 2
 
             Row {
                 id: windowRow
                 anchors.centerIn: parent
-                spacing: 2
+                spacing: Theme.glass ? 2 : 0
 
                 WindowButton {
                     id: minBtn

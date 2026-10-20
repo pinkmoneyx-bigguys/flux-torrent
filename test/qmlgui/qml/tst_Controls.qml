@@ -5,6 +5,8 @@ import Flux
 TestCase {
     id: root
     name: "Controls"
+    // these are the Liquid Glass controls: check them in the glass look
+    Component.onCompleted: Theme.style = "glass"
     width: 640
     height: 520
     visible: true // grabImage captures the window, so the test case must be shown

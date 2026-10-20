@@ -3,25 +3,45 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Flux
 
-// The glass navigation column: the four sections at the top and Settings at the bottom. It only shows
+// The navigation column: the four sections at the top and Settings at the bottom. It only shows
 // `currentIndex` and asks for a change with navigate(); the window owns the current page.
+// Default look: flat on the window chrome, shadcn sidebar menu rows. Glass look: a frosted pane.
 // Indices: 0 Transfers, 1 Tracker search, 2 RSS feeds, 3 Media library, 4 Settings.
-GlassPanel {
+Surface {
     id: root
 
     property int currentIndex: 0
     signal navigate(int index)
 
+    kind: "chrome"
     implicitWidth: 236
     radius: Theme.radiusPanel
+
+    // Padding around the rows: glass 12, default 8 (shadcn p-2)
+    readonly property int padding: Theme.glass ? Theme.gap : Theme.sp(2)
 
     Accessible.role: Accessible.PageTabList
     Accessible.name: qsTr("Sections")
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Theme.gap
-        spacing: Theme.sp(1)
+        anchors.margins: root.padding
+        spacing: Theme.glass ? Theme.sp(1) : 2
+
+        // shadcn SidebarGroupLabel
+        Text {
+            visible: !Theme.glass
+            Layout.fillWidth: true
+            Layout.preferredHeight: 32
+            leftPadding: Theme.sp(2)
+            text: qsTr("Library")
+            color: Theme.alpha(Theme.text, 0.7)
+            font.family: Theme.fontText
+            font.pixelSize: Theme.textXs
+            font.weight: Font.Medium
+            verticalAlignment: Text.AlignVCenter
+            Accessible.ignored: true
+        }
 
         NavItem {
             objectName: "nav_transfers"
@@ -61,8 +81,8 @@ GlassPanel {
         }
     }
 
-    // One 38 px row. The highlight of the current row changes instantly (also from Ctrl+N); only the
-    // pointer hover fades.
+    // One row: 38 px glass, 32 px default (shadcn SidebarMenuButton h-8). The highlight of the current
+    // row changes instantly (also from Ctrl+N); only the pointer hover fades.
     component NavItem: AbstractButton {
         id: item
 
@@ -70,18 +90,20 @@ GlassPanel {
         property string iconPath
         property string meta
         readonly property bool current: root.currentIndex === page
-        readonly property color _ink: current ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.84)
+        readonly property color _ink: Theme.glass ? (current ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.84))
+                                                  : (current ? Theme.text : Theme.alpha(Theme.text, 0.82))
+        readonly property real _radius: Theme.glass ? 14 : Theme.radiusRow
 
         Layout.fillWidth: true
-        implicitHeight: 38
-        leftPadding: Theme.sp(3)
-        rightPadding: Theme.sp(3)
+        implicitHeight: Theme.glass ? 38 : 32
+        leftPadding: Theme.glass ? Theme.sp(3) : Theme.sp(2)
+        rightPadding: Theme.glass ? Theme.sp(3) : Theme.sp(2)
         focusPolicy: Qt.StrongFocus
         hoverEnabled: true
 
         onClicked: root.navigate(page)
 
-        scale: pressed && !Theme.reducedMotion && !_kbd ? 0.97 : 1.0
+        scale: Theme.glass && pressed && !Theme.reducedMotion && !_kbd ? 0.97 : 1.0
         Behavior on scale {
             enabled: !Theme.reducedMotion
             NumberAnimation {
@@ -109,20 +131,20 @@ GlassPanel {
         Accessible.onPressAction: item.clicked()
 
         background: Item {
-            // drop shadow of the raised current row: 0 10px 24px -12px rgba(0,0,0,.7)
+            // glass: drop shadow of the raised current row: 0 10px 24px -12px rgba(0,0,0,.7)
             GlowHalo {
                 anchors.fill: parent
-                visible: item.current
+                visible: Theme.glass && item.current
                 color: Qt.rgba(0, 0, 0, 0.7)
-                radius: 14
+                radius: item._radius
                 spread: 24
                 offsetY: 10
                 shrink: 12
             }
             Rectangle {
                 anchors.fill: parent
-                radius: 14
-                color: Qt.rgba(1, 1, 1, 0.08)
+                radius: item._radius
+                color: Theme.hover
                 opacity: item.hovered && !item.current ? 1 : 0
                 Behavior on opacity {
                     enabled: !Theme.reducedMotion
@@ -132,13 +154,13 @@ GlassPanel {
             Rectangle {
                 id: selected
                 anchors.fill: parent
-                radius: 14
+                radius: item._radius
                 visible: item.current
-                color: Qt.rgba(1, 1, 1, 0.12)
+                color: Theme.selected
             }
-            // inset top highlight, starting where the rounded corners end
+            // glass: inset top highlight, starting where the rounded corners end
             Rectangle {
-                visible: item.current
+                visible: Theme.glass && item.current
                 x: selected.radius - Math.sqrt(Math.max(0, 2 * selected.radius - 1))
                 width: parent.width - 2 * x
                 height: 1
@@ -147,22 +169,22 @@ GlassPanel {
             Rectangle {
                 visible: item.visualFocus
                 anchors.fill: parent
-                anchors.margins: -2
-                radius: 16
+                anchors.margins: Theme.glass ? -2 : 0
+                radius: Theme.glass ? 16 : item._radius
                 color: "transparent"
                 border.width: 2
-                border.color: Theme.accent
+                border.color: Theme.glass ? Theme.accent : Theme.ring
             }
         }
 
         contentItem: RowLayout {
-            spacing: 10
+            spacing: Theme.glass ? 10 : Theme.sp(2)
 
             Icon {
                 path: item.iconPath
                 color: item._ink
                 size: 16
-                strokeWidth: 1.5
+                strokeWidth: Theme.glass ? 1.5 : 1.75
             }
             Text {
                 objectName: item.objectName + "_label"
@@ -170,16 +192,19 @@ GlassPanel {
                 text: item.text
                 color: item._ink
                 font.family: Theme.fontText
-                font.pixelSize: 13
+                font.pixelSize: Theme.textSm
+                font.weight: !Theme.glass && item.current ? Font.Medium : Font.Normal
                 elide: Text.ElideRight
                 verticalAlignment: Text.AlignVCenter
             }
             Text {
                 visible: item.meta !== ""
                 text: item.meta
-                color: Qt.rgba(1, 1, 1, 0.6)
-                font.family: Theme.fontMono
-                font.pixelSize: 12
+                color: Theme.glass ? Qt.rgba(1, 1, 1, 0.6) : Theme.textDim
+                font.family: Theme.glass ? Theme.fontMono : Theme.fontText
+                font.pixelSize: Theme.textXs
+                font.weight: Theme.glass ? Font.Normal : Font.Medium
+                font.features: { "tnum": 1 }
             }
         }
     }

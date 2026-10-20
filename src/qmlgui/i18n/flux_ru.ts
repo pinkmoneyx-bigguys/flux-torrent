@@ -105,11 +105,51 @@
         <source>Application settings will appear here.</source>
         <translation>Здесь появятся настройки приложения.</translation>
     </message>
+    <message>
+        <source>Interface</source>
+        <translation>Интерфейс</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation>Внешний вид</translation>
+    </message>
+    <message>
+        <source>Choose how Flux looks. The change applies right away.</source>
+        <translation>Выберите, как выглядит Flux. Изменение применяется сразу.</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>Тема</translation>
+    </message>
+    <message>
+        <source>Select the look of the window.</source>
+        <translation>Оформление окна.</translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation>Стандартная</translation>
+    </message>
+    <message>
+        <source>Calm neutral surfaces with clear borders. Easy on the eyes for long sessions.</source>
+        <translation>Спокойные нейтральные поверхности с чёткими границами. Не утомляет глаза.</translation>
+    </message>
+    <message>
+        <source>Liquid Glass</source>
+        <translation>Liquid Glass</translation>
+    </message>
+    <message>
+        <source>Frosted glass panes over a soft colour backdrop.</source>
+        <translation>Матовые стеклянные панели поверх мягкого цветного фона.</translation>
+    </message>
 </context>
 <context>
     <name>Sidebar</name>
     <message>
         <source>Sections</source>
+        <translation>Разделы</translation>
+    </message>
+    <message>
+        <source>Library</source>
         <translation>Разделы</translation>
     </message>
     <message>
@@ -131,31 +171,6 @@
     <message>
         <source>Settings</source>
         <translation>Настройки</translation>
-    </message>
-</context>
-<context>
-    <name>StatusPill</name>
-    <message>
-        <source>Connected · port %1</source>
-        <translation>Подключено · порт %1</translation>
-    </message>
-    <message>
-        <source>No connection</source>
-        <translation>Нет соединения</translation>
-    </message>
-    <message numerus="yes">
-        <source>DHT %Ln nodes</source>
-        <extracomment>%Ln is the number of DHT nodes</extracomment>
-        <translation>
-            <numerusform>DHT %Ln узел</numerusform>
-            <numerusform>DHT %Ln узла</numerusform>
-            <numerusform>DHT %Ln узлов</numerusform>
-        </translation>
-    </message>
-    <message>
-        <source>Total ↓ %1 · ↑ %2</source>
-        <extracomment>All-time amounts downloaded (↓) and uploaded (↑)</extracomment>
-        <translation>Всего ↓ %1 · ↑ %2</translation>
     </message>
 </context>
 <context>

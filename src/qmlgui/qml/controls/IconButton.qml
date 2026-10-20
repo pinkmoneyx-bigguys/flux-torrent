@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import Flux
 
-// A round 32x32 icon-only button. It has no visible text, so the user must set Accessible.name
+// A 32x32 icon-only button: round in the glass look, a ghost button (rounded-md) in the default look. It has no visible text, so the user must set Accessible.name
 // (a console warning reminds them).
 AbstractButton {
     id: root
@@ -10,7 +10,7 @@ AbstractButton {
     property string iconPath
     property real iconSize: 16
     property real iconStrokeWidth: 1.5
-    property color iconColor: Qt.rgba(1, 1, 1, 0.76)
+    property color iconColor: Theme.glass ? Qt.rgba(1, 1, 1, 0.76) : Theme.text
 
     implicitWidth: 32
     implicitHeight: 32
@@ -56,8 +56,9 @@ AbstractButton {
         Rectangle {
             id: fill
             anchors.fill: parent
-            radius: height / 2
-            color: Qt.rgba(1, 1, 1, root.pressed ? 0.12 : root.hovered ? 0.08 : 0)
+            radius: Theme.glass ? height / 2 : Theme.radiusCtl
+            color: Theme.glass ? Qt.rgba(1, 1, 1, root.pressed ? 0.12 : root.hovered ? 0.08 : 0)
+                               : (root.pressed || root.hovered ? Theme.hover : Theme.alpha(Theme.hover, 0))
             Behavior on color {
                 enabled: !Theme.reducedMotion
                 ColorAnimation { duration: Theme.durFast }
@@ -66,11 +67,11 @@ AbstractButton {
         Rectangle {
             visible: root.visualFocus
             anchors.fill: parent
-            anchors.margins: -4
-            radius: height / 2
+            anchors.margins: Theme.glass ? -4 : -3
+            radius: Theme.glass ? height / 2 : Theme.radiusCtl + 3
             color: "transparent"
-            border.width: 2
-            border.color: Theme.accent
+            border.width: Theme.glass ? 2 : 3
+            border.color: Theme.glass ? Theme.accent : Theme.alpha(Theme.ring, 0.5)
         }
     }
 

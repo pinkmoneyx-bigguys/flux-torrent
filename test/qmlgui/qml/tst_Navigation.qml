@@ -46,6 +46,23 @@ TestCase {
 
     function cleanup() {
         FluxTestI18n.setLanguage("")
+        UiSettings.style = "default"
+        Theme.style = Qt.binding(() => UiSettings.style)
+    }
+
+    function test_styleCardsSwitchTheLook() {
+        main.currentPage = 4
+        waitForRendering(main.contentItem)
+        const glassCard = findChild(main.contentItem, "styleGlass")
+        const defaultCard = findChild(main.contentItem, "styleDefault")
+        verify(defaultCard.Accessible.checked, "the default look is chosen out of the box")
+        mouseClick(glassCard)
+        compare(UiSettings.style, "glass")
+        verify(Theme.glass, "the window switches to Liquid Glass right away")
+        verify(glassCard.Accessible.checked)
+        mouseClick(defaultCard)
+        compare(UiSettings.style, "default")
+        verify(!Theme.glass)
     }
 
     function nav(i) {
@@ -121,10 +138,41 @@ TestCase {
         const media = nav(3).mapToItem(sidebar, 0, 0)
         const settings = nav(4).mapToItem(sidebar, 0, 0)
         verify(settings.y > media.y + nav(3).height + 100, "a gap separates Settings from the sections")
-        compare(settings.y + nav(4).height, sidebar.height - 12, "Settings is the last row, 12 px above the bottom")
+        compare(settings.y + nav(4).height, sidebar.height - sidebar.padding, "Settings is the last row")
     }
 
-    function test_windowLayout() {
+    function test_windowLayoutDefault() {
+        const root = main.contentItem
+        const sidebar = findChild(root, "sidebar")
+        const titleBar = findChild(root, "titleBar")
+        const pageArea = findChild(root, "pageArea")
+        const pages = findChild(root, "pages")
+        const sb = sidebar.mapToItem(root, 0, 0)
+        const tb = titleBar.mapToItem(root, 0, 0)
+        const pa = pageArea.mapToItem(root, 0, 0)
+
+        compare(tb.x, 0, "the title strip spans the window")
+        compare(tb.y, 0)
+        compare(titleBar.width, root.width)
+        compare(titleBar.height, 44, "title bar height")
+
+        compare(sidebar.width, 236, "sidebar width")
+        compare(sb.x, 0, "the sidebar sits flat on the chrome")
+        compare(sb.y, titleBar.height)
+        compare(sb.y + sidebar.height, root.height - 8)
+
+        compare(pa.x, sb.x + sidebar.width, "the inset starts where the sidebar ends")
+        compare(pa.y, sb.y)
+        compare(pa.x + pageArea.width, root.width - 8, "8 px inset margin on the right")
+        compare(pa.y + pageArea.height, root.height - 8, "8 px inset margin at the bottom: no status bar")
+        compare(pageArea.radius, 12)
+        compare(pages.width, pageArea.width, "the pages fill the inset")
+        verify(!findChild(root, "statusPill"), "the status bar is gone")
+    }
+
+    function test_windowLayoutGlass() {
+        Theme.style = "glass"
+        waitForRendering(main.contentItem)
         const root = main.contentItem
         const sidebar = findChild(root, "sidebar")
         const titleBar = findChild(root, "titleBar")

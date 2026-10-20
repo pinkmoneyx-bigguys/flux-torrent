@@ -46,13 +46,32 @@ TestCase {
     }
 
     function test_searchFillsFreeSpace() {
+        // glass look: the search pill takes all the free width
+        Theme.style = "glass"
         const s = findChild(main.contentItem, "titleSearch")
         verify(s, "titleSearch exists")
+        wait(50)
         const before = s.width
         verify(before >= 220, "search pill is at least 220 px wide")
         main.width += 200
         wait(50)
         tryCompare(s, "width", before + 200)
+        main.width -= 200
+        Theme.style = "default"
+    }
+
+    function test_searchIsCappedInDefaultLook() {
+        // default look: a command field of at most 520 px over the left edge of the content inset
+        const s = findChild(main.contentItem, "titleSearch")
+        main.width = 1440
+        wait(50)
+        compare(s.width, 520)
+        main.width = 1640
+        wait(50)
+        compare(s.width, 520, "the field does not stretch across a wide window")
+        compare(s.mapToItem(main.contentItem, 0, 0).x, findChild(main.contentItem, "pageArea").mapToItem(main.contentItem, 0, 0).x,
+                "aligned with the left edge of the content inset")
+        main.width = 1440
     }
 
     function test_searchKeepsMinimumWidthAtMinWindowWidth() {

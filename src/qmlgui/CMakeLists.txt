@@ -22,6 +22,8 @@ set_source_files_properties(qml/controls/GlassCheckBox.qml PROPERTIES QT_RESOURC
 set_source_files_properties(qml/controls/SegmentedControl.qml PROPERTIES QT_RESOURCE_ALIAS controls/SegmentedControl.qml)
 set_source_files_properties(qml/controls/FluxProgressBar.qml PROPERTIES QT_RESOURCE_ALIAS controls/FluxProgressBar.qml)
 set_source_files_properties(qml/controls/Toast.qml PROPERTIES QT_RESOURCE_ALIAS controls/Toast.qml)
+set_source_files_properties(qml/controls/Surface.qml PROPERTIES QT_RESOURCE_ALIAS controls/Surface.qml)
+set_source_files_properties(qml/controls/PageHeader.qml PROPERTIES QT_RESOURCE_ALIAS controls/PageHeader.qml)
 set_source_files_properties(qml/glass/GlassBackground.qml PROPERTIES QT_RESOURCE_ALIAS glass/GlassBackground.qml)
 set_source_files_properties(qml/glass/GlassPanel.qml PROPERTIES QT_RESOURCE_ALIAS glass/GlassPanel.qml)
 set_source_files_properties(qml/shell/TitleBar.qml PROPERTIES QT_RESOURCE_ALIAS shell/TitleBar.qml)
@@ -56,6 +58,8 @@ qt_add_qml_module(qbt_qmlgui
         qml/controls/SegmentedControl.qml
         qml/controls/FluxProgressBar.qml
         qml/controls/Toast.qml
+        qml/controls/Surface.qml
+        qml/controls/PageHeader.qml
         qml/glass/GlassBackground.qml
         qml/glass/GlassPanel.qml
         qml/shell/TitleBar.qml
@@ -71,6 +75,9 @@ qt_add_qml_module(qbt_qmlgui
         fonts/Onest-Variable.ttf
         fonts/Unbounded-Variable.ttf
         fonts/JetBrainsMono-Variable.ttf
+        fonts/Geist-Variable.ttf
+        fonts/GeistMono-Variable.ttf
+        fonts/OFL-Geist.txt
         fonts/OFL.txt
     SOURCES
         fluxshell.h
@@ -81,6 +88,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/sessionfacade.cpp
         backend/systemprefs.h
         backend/systemprefs.cpp
+        backend/uisettings.h
+        backend/uisettings.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h

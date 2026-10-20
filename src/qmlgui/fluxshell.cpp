@@ -70,6 +70,10 @@ bool FluxShell::show()
     if (!m_engine->rootObjects().isEmpty())
         return true;
 
+    // Development aid for window captures: FLUX_START_PAGE=<index> opens the main window on that page
+    if (const int page = qEnvironmentVariableIntValue("FLUX_START_PAGE"); (page > 0) && (m_type == u"Main"))
+        m_engine->setInitialProperties({{u"currentPage"_s, page}});
+
     m_engine->loadFromModule(m_module, m_type);
     if (m_engine->rootObjects().isEmpty())
     {

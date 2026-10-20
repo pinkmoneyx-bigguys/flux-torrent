@@ -5,10 +5,47 @@ import Flux
 TestCase {
     name: "Theme"
 
+    function init() {
+        Theme.style = "glass"
+    }
+
+    function cleanup() {
+        Theme.style = "default"
+        UiSettings.style = "default"
+    }
+
+    function test_defaultLookIsTheMainOne() {
+        compare(UiSettings.style, "default")
+    }
+
     function test_tokens() {
         compare(Theme.sp(3), 12)
         compare(Theme.radiusPanel, 24)
         compare(String(Theme.bg), "#08070d")
+    }
+
+    function test_defaultTokens() {
+        Theme.style = "default"
+        verify(!Theme.glass)
+        compare(Theme.radiusPanel, 12)
+        compare(Theme.radiusRow, 8)
+        compare(Theme.radiusCtl, 8)
+        verify(Qt.colorEqual(Theme.bg, "#171717"), "chrome is shadcn sidebar")
+        verify(Qt.colorEqual(Theme.background, "#0A0A0A"), "content is shadcn background")
+        verify(Qt.colorEqual(Theme.text, "#FAFAFA"))
+        verify(Qt.colorEqual(Theme.textDim, "#A1A1A1"))
+        fuzzyCompare(Theme.border.a, 0.10, 0.01)
+        compare(Theme.fontText, "Geist")
+        compare(Theme.fontMono, "Geist Mono")
+    }
+
+    function test_styleFollowsUiSettings() {
+        Theme.style = Qt.binding(() => UiSettings.style)
+        UiSettings.style = "glass"
+        verify(Theme.glass)
+        UiSettings.style = "something else"
+        compare(UiSettings.style, "default", "unknown looks fall back to the default one")
+        verify(!Theme.glass)
     }
 
     function test_accentAlpha() {

@@ -4,8 +4,10 @@ import QtQuick.Layouts
 import QWindowKit
 import Flux
 
-// The Flux window: frameless (QWindowKit keeps native snap, shadow and rounded corners), with the glass
-// title bar, sidebar and page stack laid out 12 px from the edges and from each other.
+// The Flux window: frameless (QWindowKit keeps native snap, shadow and rounded corners), with the title
+// bar, sidebar and page stack. Default look: title strip and sidebar flat on the window chrome, pages on
+// an inset card 8 px from the right and bottom edges. Glass look: everything 12 px from the edges and
+// from each other over the coloured backdrop.
 // No Mica: the opaque in-app backdrop would cover it, and without it Windows 10 and 11 look the same.
 ApplicationWindow {
     id: window
@@ -80,6 +82,7 @@ ApplicationWindow {
 
     GlassBackground {
         id: backdrop
+        visible: Theme.glass
     }
 
     // The drag area: the full window width from the top edge down to the bottom of the pills
@@ -88,15 +91,16 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: Theme.gap + titleBar.implicitHeight
+        height: (Theme.glass ? Theme.gap : 0) + titleBar.implicitHeight
 
         TitleBar {
             id: titleBar
             objectName: "titleBar"
             anchors.fill: parent
-            anchors.leftMargin: Theme.gap
-            anchors.rightMargin: Theme.gap
-            anchors.topMargin: Theme.gap
+            anchors.leftMargin: Theme.glass ? Theme.gap : 0
+            anchors.rightMargin: Theme.glass ? Theme.gap : 0
+            anchors.topMargin: Theme.glass ? Theme.gap : 0
+            logoWidth: sidebar.width
         }
     }
 
@@ -105,8 +109,11 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.top: titleBarArea.bottom
         anchors.bottom: parent.bottom
-        anchors.margins: Theme.gap
-        spacing: Theme.gap
+        anchors.leftMargin: Theme.glass ? Theme.gap : 0
+        anchors.topMargin: Theme.glass ? Theme.gap : 0
+        anchors.rightMargin: Theme.glass ? Theme.gap : Theme.sp(2)
+        anchors.bottomMargin: Theme.glass ? Theme.gap : Theme.sp(2)
+        spacing: Theme.glass ? Theme.gap : 0
 
         Sidebar {
             id: sidebar
@@ -117,18 +124,26 @@ ApplicationWindow {
             onNavigate: index => window.currentPage = index
         }
 
-        StackLayout {
-            id: pages
-            objectName: "pages"
+        // shadcn SidebarInset; nothing in the glass look, where each page brings its own panes
+        Surface {
+            id: pageArea
+            objectName: "pageArea"
+            kind: "inset"
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: window.currentPage
 
-            TransfersPage {}
-            SearchPage {}
-            RssPage {}
-            MediaPage {}
-            SettingsPage {}
+            StackLayout {
+                id: pages
+                objectName: "pages"
+                anchors.fill: parent
+                currentIndex: window.currentPage
+
+                TransfersPage {}
+                SearchPage {}
+                RssPage {}
+                MediaPage {}
+                SettingsPage {}
+            }
         }
     }
 }
