@@ -141,29 +141,54 @@ TestCase {
     }
 
     // Dragging a header edge resizes the column; Name gives way; double-click restores the default
+    // Drag a boundary with the pointer fixed in page coordinates (the grip moves with the boundary)
+    function dragGrip(grip, dx) {
+        const at = grip.mapToItem(page, grip.width / 2, grip.height / 2)
+        mousePress(page, at.x, at.y)
+        const steps = 6
+        for (let i = 1; i <= steps; ++i)
+            mouseMove(page, at.x + dx * i / steps, at.y)
+        mouseRelease(page, at.x + dx, at.y)
+    }
+
+    // A boundary follows the pointer like a splitter: the column on its left grows, the one on its
+    // right gives the same up, and nothing else moves
     function test_resizeColumns() {
         page.widths = Object.assign({}, page.defaultWidths)
         waitForRendering(page)
-        const grip = findChild(page, "resizer_size")
+        const grip = findChild(page, "resizer_size")  // between Size and Progress
         verify(grip && grip.visible)
-        const before = page.cw("size")
-        mouseDrag(grip, grip.width / 2, grip.height / 2, 40, 0)
-        tryVerify(() => Math.abs(page.cw("size") - (before + 40)) <= 2, 1000, "size grew by the drag: " + page.cw("size"))
+        const x0 = grip.mapToItem(page, grip.width / 2, 0).x
+        const size0 = page.cw("size"), progress0 = page.cw("progress"), name0 = page.nameWidth()
+
+        dragGrip(grip, 40)
+        tryVerify(() => Math.abs(page.cw("size") - (size0 + 40)) <= 1, 1000, "Size grew by the drag: " + page.cw("size"))
+        compare(page.cw("progress"), progress0 - 40, "Progress gave the same up")
+        compare(page.nameWidth(), name0, "Name did not move")
+        waitForRendering(page)
+        const x1 = findChild(page, "resizer_size").mapToItem(page, grip.width / 2, 0).x
+        verify(Math.abs(x1 - (x0 + 40)) <= 1, "the boundary went right with the pointer: " + x0 + " → " + x1)
         compare(UiSettings.columnWidths("transfers").size, page.cw("size"), "the width is remembered")
 
+        // limits: the right column keeps its minimum
+        dragGrip(findChild(page, "resizer_size"), 1000)
+        wait(50)
+        compare(page.cw("progress"), page.minWidths.progress, "Progress stops at its minimum")
+
+        // double-click: both sides back to their defaults
+        const g = findChild(page, "resizer_size")
+        mouseDoubleClickSequence(g, g.width / 2, g.height / 2)
+        compare(page.cw("size"), page.defaultWidths.size)
+        compare(page.cw("progress"), page.defaultWidths.progress)
+
+        // Name's boundary: right widens Name and narrows Size
+        const sizeBefore = page.cw("size")
+        dragGrip(findChild(page, "resizer_name"), 20)
+        tryVerify(() => page.cw("size") === sizeBefore - 20, 1000, "Size gave way: " + page.cw("size"))
+
+        // the old direct call still holds its limits
         page.resizeColumn("size", 5)
         compare(page.cw("size"), page.minWidths.size, "never narrower than its minimum")
-        page.resizeColumn("size", 100000)
-        verify(page.nameWidth() >= page.nameMin - 1, "Name keeps its minimum")
-
-        mouseDoubleClickSequence(grip, grip.width / 2, grip.height / 2)
-        compare(page.cw("size"), page.defaultWidths.size, "double-click restores the default")
-
-        // Name's edge moves the boundary with Size: dragging right narrows Size
-        const nameGrip = findChild(page, "resizer_name")
-        const sizeBefore = page.cw("size")
-        mouseDrag(nameGrip, nameGrip.width / 2, nameGrip.height / 2, 20, 0)
-        tryVerify(() => page.cw("size") < sizeBefore, 1000, "Size gave way: " + page.cw("size"))
         page.widths = Object.assign({}, page.defaultWidths)
     }
 

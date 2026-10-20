@@ -120,6 +120,33 @@ Surface {
         widths = next
         saveColumns()
     }
+
+    // A boundary dragged like a splitter: it follows the pointer, the column on its left grows by
+    // `delta` and the one on its right gives the same up, so nothing else moves. Name (left of the
+    // first boundary) has no width of its own: there only the right column changes. Both keep their
+    // minimum, and Name its nameMin.
+    function moveBoundary(left, right, startLeft, startRight, startName, delta) {
+        const next = Object.assign({}, widths)
+        if (left === "name") {
+            // right: Name grows and the right column narrows; left: Name gives up what it has above nameMin
+            const d = Math.max(-(startName - nameMin), Math.min(startRight - minWidths[right], delta))
+            next[right] = Math.round(startRight - d)
+        } else {
+            const d = Math.max(minWidths[left] - startLeft, Math.min(startRight - minWidths[right], delta))
+            next[left] = Math.round(startLeft + d)
+            next[right] = Math.round(startRight - d)
+        }
+        widths = next
+    }
+    // Both sides of a boundary back to their default widths
+    function resetBoundary(left, right) {
+        const next = Object.assign({}, widths)
+        if (left !== "name")
+            next[left] = defaultWidths[left]
+        next[right] = defaultWidths[right]
+        widths = next
+        saveColumns()
+    }
     function saveColumns() {
         const known = {}
         for (const key in defaultWidths)
@@ -537,10 +564,8 @@ Surface {
         property bool alignRight: false
         readonly property bool sorted: sortKey !== "" && filter.sortKey === sortKey
         property real fixedWidth: -1
-        // The column this cell heads, and the one its right edge resizes: its own, or for Name (which
-        // takes the rest) the next one, which then gives way as the edge moves right
+        // the column this cell heads (its width key)
         property string column
-        property string resizes: column
 
         Layout.preferredWidth: fixedWidth
         Layout.minimumWidth: fixedWidth >= 0 ? fixedWidth : 0
@@ -592,11 +617,13 @@ Surface {
     // table. Double-click: the default width.
     component ColumnResizer: MouseArea {
         id: grip
-        property string column
-        // dragging right narrows the column (it sits to the right of the grip)
-        property bool invert: false
+        // the columns either side of this boundary
+        property string leftColumn
+        property string rightColumn
         property real _startX
-        property real _startWidth
+        property real _startLeft
+        property real _startRight
+        property real _startName
 
         width: 12
         height: parent.height
@@ -606,21 +633,23 @@ Surface {
 
         onPressed: mouse => {
             _startX = mapToItem(page, mouse.x, 0).x
-            _startWidth = page.cw(column)
+            _startLeft = leftColumn === "name" ? 0 : page.cw(leftColumn)
+            _startRight = page.cw(rightColumn)
+            _startName = page.nameWidth()
             page.activeGrip = grip
         }
         onPositionChanged: mouse => {
             if (!pressed)
                 return
             const delta = mapToItem(page, mouse.x, 0).x - _startX
-            page.resizeColumn(column, _startWidth + (invert ? -delta : delta))
+            page.moveBoundary(leftColumn, rightColumn, _startLeft, _startRight, _startName, delta)
         }
         onReleased: {
             page.activeGrip = null
             page.saveColumns()
         }
         onCanceled: page.activeGrip = null
-        onDoubleClicked: page.resetColumn(column)
+        onDoubleClicked: page.resetBoundary(leftColumn, rightColumn)
 
         Rectangle {
             anchors.centerIn: parent
@@ -665,7 +694,7 @@ Surface {
             // starts over the name, past the kind tile
             HeaderCell {
                 id: nameHead
-                text: qsTr("Name"); sortKey: "name"; column: "name"; resizes: "size"
+                text: qsTr("Name"); sortKey: "name"; column: "name"
                 Layout.fillWidth: true; Layout.minimumWidth: 20; Layout.preferredWidth: 20; Layout.leftMargin: 44
             }
             HeaderCell { id: sizeHead; text: qsTr("Size"); sortKey: "size"; column: "size"; alignRight: true; fixedWidth: page.cw("size") - 12 }
@@ -690,8 +719,9 @@ Surface {
             Item { Layout.preferredWidth: 36 }
         }
 
-        // A divider on every column boundary, over the cells (a grip inside a cell would be covered
-        // by the next one): drag it to resize, double-click for the default width
+        // A divider between every two shown columns (none after the last: nothing is right of it), over
+        // the cells (a grip inside a cell would be covered by the next one). It is named after the
+        // column on its left: "resizer_size" sits between Size and Progress.
         Item {
             anchors.fill: parent
             anchors.leftMargin: Theme.sp(6)
@@ -699,15 +729,21 @@ Surface {
             z: 5
 
             Repeater {
-                model: [nameHead, sizeHead, progressHead, speedHead, etaHead, swarmHead, ratioHead]
+                model: {
+                    const shown = [nameHead, sizeHead, progressHead, speedHead, etaHead, swarmHead, ratioHead]
+                        .filter(h => h.visible)
+                    const pairs = []
+                    for (let i = 0; i + 1 < shown.length; ++i)
+                        pairs.push({ left: shown[i], right: shown[i + 1] })
+                    return pairs
+                }
                 ColumnResizer {
                     required property var modelData
-                    objectName: "resizer_" + modelData.column
-                    visible: modelData.visible
-                    // the boundary: the cell's right edge plus the gap after right-aligned text
-                    x: modelData.x + modelData.width + (modelData.alignRight ? 12 : 0) - width / 2
-                    column: modelData.resizes
-                    invert: modelData.resizes !== modelData.column
+                    objectName: "resizer_" + modelData.left.column
+                    // the boundary: the left cell's right edge plus the gap after right-aligned text
+                    x: modelData.left.x + modelData.left.width + (modelData.left.alignRight ? 12 : 0) - width / 2
+                    leftColumn: modelData.left.column
+                    rightColumn: modelData.right.column
                 }
             }
         }
