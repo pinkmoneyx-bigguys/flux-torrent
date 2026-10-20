@@ -35,6 +35,7 @@
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QProcess>
 
 #include "base/bittorrent/addtorrentparams.h"
@@ -552,6 +553,14 @@ QString TorrentListModel::addFile(const QUrl &fileUrl)
     if (!descriptor)
         return descriptor.error();
     return session->addTorrent(descriptor.value()) ? QString() : tr("This torrent is already in the list.");
+}
+
+QVariantMap TorrentListModel::demoAddState() const
+{
+    QFile file {qEnvironmentVariable("FLUX_DEMO_ADD")};
+    if (file.fileName().isEmpty() || !file.open(QIODevice::ReadOnly))
+        return {};
+    return QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
 }
 
 QString TorrentListModel::addLink(const QString &link)

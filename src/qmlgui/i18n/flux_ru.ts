@@ -2,6 +2,148 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU" sourcelanguage="en">
 <context>
+    <name>AddTorrentDialog</name>
+    <message>
+        <source>Can&apos;t open this torrent</source>
+        <translation>Не удалось открыть торрент</translation>
+    </message>
+    <message>
+        <source>Add torrent</source>
+        <translation>Добавить торрент</translation>
+    </message>
+    <message>
+        <source>Fetching the file list from peers… You can add it now and choose files later.</source>
+        <translation>Получаем список файлов от пиров… Можно добавить сейчас и выбрать файлы позже.</translation>
+    </message>
+    <message>
+        <source>Magnet link · %1</source>
+        <translation>Magnet-ссылка · %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%1 · %n file(s)</source>
+        <translation>
+            <numerusform>%1 · %n файл</numerusform>
+            <numerusform>%1 · %n файла</numerusform>
+            <numerusform>%1 · %n файлов</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>All files</source>
+        <translation>Все файлы</translation>
+    </message>
+    <message>
+        <source>%1 of %2 files · %3</source>
+        <translation>%1 из %2 файлов · %3</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>Файлы</translation>
+    </message>
+    <message>
+        <source>Asking peers for the file list…</source>
+        <translation>Запрашиваем список файлов у пиров…</translation>
+    </message>
+    <message>
+        <source>The file list is not known yet. All files will be downloaded; you can change that in the details later.</source>
+        <translation>Список файлов пока неизвестен. Загрузятся все файлы; изменить это можно потом в деталях.</translation>
+    </message>
+    <message>
+        <source>Save to</source>
+        <translation>Сохранить в</translation>
+    </message>
+    <message>
+        <source>Choose folder</source>
+        <translation>Выбрать папку</translation>
+    </message>
+    <message>
+        <source>Not enough space: %1 free, %2 needed</source>
+        <translation>Не хватает места: свободно %1, нужно %2</translation>
+    </message>
+    <message>
+        <source>%1 free on this drive</source>
+        <translation>Свободно на диске: %1</translation>
+    </message>
+    <message>
+        <source>Category</source>
+        <translation>Категория</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Нет</translation>
+    </message>
+    <message>
+        <source>Start right away</source>
+        <translation>Запустить сразу</translation>
+    </message>
+    <message>
+        <source>Download in order</source>
+        <translation>Загружать по порядку</translation>
+    </message>
+    <message>
+        <source>Helps to watch a video while it downloads.</source>
+        <translation>Помогает смотреть видео во время загрузки.</translation>
+    </message>
+    <message>
+        <source>First and last pieces first</source>
+        <translation>Сначала первые и последние части</translation>
+    </message>
+    <message>
+        <source>Skip hash check</source>
+        <translation>Пропустить проверку хеша</translation>
+    </message>
+    <message>
+        <source>Only when the files are already complete on disk.</source>
+        <translation>Только если файлы уже полностью на диске.</translation>
+    </message>
+    <message>
+        <source>Content layout</source>
+        <translation>Структура содержимого</translation>
+    </message>
+    <message>
+        <source>As in the torrent</source>
+        <translation>Как в торренте</translation>
+    </message>
+    <message>
+        <source>Always a subfolder</source>
+        <translation>Всегда подпапка</translation>
+    </message>
+    <message>
+        <source>Never a subfolder</source>
+        <translation>Без подпапки</translation>
+    </message>
+    <message>
+        <source>This torrent is already in the list.</source>
+        <translation>Этот торрент уже в списке.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+</context>
+<context>
+    <name>AddTorrentDraft</name>
+    <message>
+        <source>Nothing to add.</source>
+        <translation>Нечего добавлять.</translation>
+    </message>
+    <message>
+        <source>This torrent is already in the list.</source>
+        <translation>Этот торрент уже в списке.</translation>
+    </message>
+    <message>
+        <source>Choose at least one file.</source>
+        <translation>Выберите хотя бы один файл.</translation>
+    </message>
+    <message>
+        <source>Choose a folder.</source>
+        <translation>Выберите папку.</translation>
+    </message>
+    <message>
+        <source>The session is not running.</source>
+        <translation>Сеанс не запущен.</translation>
+    </message>
+</context>
+<context>
     <name>AppSettings</name>
     <message>
         <source>Unknown setting.</source>
@@ -1869,6 +2011,18 @@
     <message>
         <source>All files (*)</source>
         <translation>Все файлы (*)</translation>
+    </message>
+    <message numerus="yes">
+        <source>Added %n torrent(s)</source>
+        <translation>
+            <numerusform>Добавлен %n торрент</numerusform>
+            <numerusform>Добавлено %n торрента</numerusform>
+            <numerusform>Добавлено %n торрентов</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Added “%1”</source>
+        <translation>Добавлен «%1»</translation>
     </message>
 </context>
 <context>

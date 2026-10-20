@@ -381,12 +381,7 @@ Surface {
         anchors.fill: parent
         keys: ["text/uri-list"]
         onDropped: drop => {
-            for (const url of drop.urls) {
-                const error = String(url).toLowerCase().endsWith(".torrent")
-                            ? TorrentListModel.addFile(url) : TorrentListModel.addLink(String(url))
-                if (error !== "")
-                    console.warn(error)
-            }
+            page.addSources(drop.urls)
             drop.accept()
         }
     }
@@ -747,10 +742,13 @@ Surface {
             linkInput.field.forceActiveFocus()
         }
 
+        // the link opens in the Add torrent dialog, which fetches its file list
         function submit() {
-            error = TorrentListModel.addLink(linkInput.text)
-            if (error === "")
-                close()
+            const link = linkInput.text.trim()
+            if (link === "")
+                return
+            close()
+            addDialog.show(link)
         }
 
         UiInput {
@@ -789,12 +787,39 @@ Surface {
         title: qsTr("Add torrent files")
         fileMode: FileDialog.OpenFiles
         nameFilters: [qsTr("Torrent files (*.torrent)"), qsTr("All files (*)")]
-        onAccepted: {
-            for (const url of selectedFiles) {
-                const error = TorrentListModel.addFile(url)
-                if (error !== "")
-                    console.warn(error)
+        onAccepted: page.addSources(selectedFiles)
+    }
+
+    // One torrent opens the Add torrent dialog; several are added at once with the defaults
+    function addSources(urls) {
+        const list = Array.from(urls).map(u => String(u))
+        if (list.length === 1) {
+            addDialog.show(list[0])
+            return
+        }
+        let added = 0
+        for (const url of list) {
+            const error = url.toLowerCase().endsWith(".torrent") ? TorrentListModel.addFile(url) : TorrentListModel.addLink(url)
+            if (error === "")
+                ++added
+        }
+        toast.show(qsTr("Added %n torrent(s)", "", added), added === 0)
+    }
+
+    AddTorrentDialog {
+        id: addDialog
+        Component.onCompleted: {
+            const demo = TorrentListModel.demoAddState()
+            if (demo.name !== undefined) {
+                draft.loadDemo(demo)
+                open()
             }
         }
+        onTorrentAdded: name => toast.show(qsTr("Added “%1”").arg(name), false)
+    }
+
+    UiToast {
+        id: toast
+        objectName: "transfersToast"
     }
 }

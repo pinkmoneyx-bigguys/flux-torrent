@@ -164,6 +164,8 @@ public:
     // Adds a .torrent file or a magnet link / info hash; returns "" on success or the error text
     Q_INVOKABLE QString addFile(const QUrl &fileUrl);
     Q_INVOKABLE QString addLink(const QString &link);
+    // Development aid for window captures: the AddTorrentDraft.loadDemo state in FLUX_DEMO_ADD=<json>, or {}
+    Q_INVOKABLE QVariantMap demoAddState() const;
 
 signals:
     void countsChanged();
