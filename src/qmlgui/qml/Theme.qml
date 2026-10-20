@@ -45,6 +45,8 @@ QtObject {
     readonly property color upload: glass ? "#B9A6FF" : "#4ADE80"  // green-400: seeding
     readonly property color warn: glass ? "#FFB86B" : "#FBBF24"
     readonly property color error: glass ? "#FF7A8A" : "#FF6467"
+    // a share ratio past 1: the torrent has given back more than it took
+    readonly property color goodRatio: glass ? "#B9A6FF" : "#A78BFA"
 
     // The current accent with its alpha channel replaced by `a` (0..1)
     function accentAlpha(a) {

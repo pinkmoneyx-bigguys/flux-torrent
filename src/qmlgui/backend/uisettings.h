@@ -28,8 +28,10 @@
 
 #pragma once
 
+#include <QHash>
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 #include <QtQmlIntegration/qqmlintegration.h>
 
 // Appearance choices of the Flux UI, kept in the profile (Flux.ini, "Flux/Appearance/...").
@@ -50,9 +52,15 @@ public:
     QString style() const;
     void setStyle(const QString &style);
 
+    // Column widths a table remembers, {columnKey: pixels} ("Flux/Layout/<table>Columns"); {} when never set
+    Q_INVOKABLE QVariantMap columnWidths(const QString &table) const;
+    Q_INVOKABLE void setColumnWidths(const QString &table, const QVariantMap &widths);
+
 signals:
     void styleChanged();
 
 private:
     QString m_style;
+    // without a SettingsStorage (tests)
+    QHash<QString, QVariantMap> m_columnWidths;
 };

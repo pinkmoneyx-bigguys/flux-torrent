@@ -2691,18 +2691,6 @@
         <translation>Прогресс</translation>
     </message>
     <message>
-        <source>Status</source>
-        <translation>Состояние</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Загрузка</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Отдача</translation>
-    </message>
-    <message>
         <source>ETA</source>
         <translation>Осталось</translation>
     </message>
@@ -2725,6 +2713,18 @@
     <message>
         <source>Watch</source>
         <translation>Смотреть</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Скорость</translation>
+    </message>
+    <message>
+        <source>Seeds / peers</source>
+        <translation>Сиды / пиры</translation>
+    </message>
+    <message>
+        <source>Seeds: %1 of %2 · peers: %3 of %4</source>
+        <translation>Сиды: %1 из %2 · пиры: %3 из %4</translation>
     </message>
     <message>
         <source>Open folder</source>

@@ -70,15 +70,83 @@ Surface {
     }
 
     // --- Columns --------------------------------------------------------------------------------
-    // Fixed widths; Name takes the rest. Less important columns drop out on narrow windows.
+    // Each column has a width the user can drag (kept in the profile); Name takes the rest. When Name
+    // would get narrower than nameMin, the optional columns drop out, last in `optionalColumns` first.
     readonly property real tableWidth: table.width
-    function colVisible(key) {
-        switch (key) {
-        case "up": return tableWidth >= 880
-        case "eta": return tableWidth >= 950
-        case "ratio": return tableWidth >= 1020
-        default: return true
+    readonly property var defaultWidths: ({ size: 88, progress: 190, speed: 116, eta: 84, swarm: 92, ratio: 72 })
+    readonly property var minWidths: ({ size: 56, progress: 110, speed: 88, eta: 48, swarm: 64, ratio: 48 })
+    readonly property var optionalColumns: ["swarm", "eta", "ratio"]
+    readonly property real nameMin: 200
+    // checkbox, row menu and the row's side margins
+    readonly property real chromeWidth: 28 + 36 + 12 + 4
+    property var widths: Object.assign({}, defaultWidths, UiSettings.columnWidths("transfers"))
+
+    function cw(key) {
+        return widths[key] ?? defaultWidths[key]
+    }
+    readonly property var shownColumns: {
+        let used = chromeWidth + nameMin + cw("size") + cw("progress") + cw("speed")
+        const shown = {}
+        for (const key of optionalColumns) {
+            if (used + cw(key) > tableWidth)
+                break
+            shown[key] = true
+            used += cw(key)
         }
+        return shown
+    }
+    function colVisible(key) {
+        return optionalColumns.indexOf(key) < 0 || shownColumns[key] === true
+    }
+    // Width Name gets now
+    function nameWidth() {
+        let used = chromeWidth + cw("size") + cw("progress") + cw("speed")
+        for (const key of optionalColumns)
+            used += colVisible(key) ? cw(key) : 0
+        return tableWidth - used
+    }
+    // Sets a column's width, held between its minimum and what Name can give up
+    function resizeColumn(key, width) {
+        const room = cw(key) + Math.max(0, nameWidth() - nameMin)
+        const next = Object.assign({}, widths)
+        next[key] = Math.round(Math.max(minWidths[key], Math.min(room, width)))
+        widths = next
+    }
+    function resetColumn(key) {
+        const next = Object.assign({}, widths)
+        next[key] = defaultWidths[key]
+        widths = next
+        saveColumns()
+    }
+    function saveColumns() {
+        const known = {}
+        for (const key in defaultWidths)
+            known[key] = cw(key)
+        UiSettings.setColumnWidths("transfers", known)
+    }
+
+    // What a torrent holds, guessed from its name: the glyph and tint of the tile before it
+    readonly property var kinds: ({
+        video: { icon: Icons.film, color: "#F472B6" },
+        audio: { icon: Icons.audio, color: "#FB923C" },
+        disc: { icon: Icons.disc, color: "#A78BFA" },
+        archive: { icon: Icons.data, color: "#2DD4BF" },
+        app: { icon: Icons.app, color: "#34D399" },
+        other: { icon: Icons.file, color: "#60A5FA" }
+    })
+    function kindOf(name) {
+        const n = name.toLowerCase()
+        if (/\.(mkv|mp4|avi|mov|webm|m4v|ts|wmv)$/.test(n) || /(2160p|1080p|720p|480p|\b4k\b|hevc|x26[45]|bluray|web-?dl|webrip|s\d\de\d\d)/.test(n))
+            return "video"
+        if (/\.(flac|mp3|ogg|opus|m4a|wav|aac)$/.test(n) || /\b(flac|mp3|discography|ost)\b/.test(n))
+            return "audio"
+        if (/\.(iso|img|dmg)$/.test(n) || /\b(iso|dvd)\b/.test(n))
+            return "disc"
+        if (/\.(zip|rar|7z|tar|gz|bz2|xz|zst|pbf|bz)$/.test(n) || /\b(dump|archive|backup)\b/.test(n))
+            return "archive"
+        if (/\.(exe|msi|appimage|deb|rpm|apk)$/.test(n))
+            return "app"
+        return "other"
     }
 
     TorrentFilterModel {
@@ -420,7 +488,9 @@ Surface {
     }
 
     // --- Pieces ---------------------------------------------------------------------------------
-    // The header and row share one cell layout: same widths and spacing, so columns line up
+    // The header and row share one cell layout. Every column but Name has an exact width (fixedWidth:
+    // minimum = preferred = maximum), and Name fills from the same small base in every row, so nothing
+    // shifts with the text in it. Figures use the mono face: digits keep their places as they change.
     component Cells: RowLayout {
         spacing: 0
         anchors.fill: parent
@@ -433,7 +503,15 @@ Surface {
         property string sortKey
         property bool alignRight: false
         readonly property bool sorted: sortKey !== "" && filter.sortKey === sortKey
+        property real fixedWidth: -1
+        // The column this cell heads, and the one its right edge resizes: its own, or for Name (which
+        // takes the rest) the next one, which then gives way as the edge moves right
+        property string column
+        property string resizes: column
 
+        Layout.preferredWidth: fixedWidth
+        Layout.minimumWidth: fixedWidth >= 0 ? fixedWidth : 0
+        Layout.maximumWidth: fixedWidth >= 0 ? fixedWidth : Number.POSITIVE_INFINITY
         Layout.fillHeight: true
         Layout.rightMargin: alignRight ? 12 : 0
         enabled: sortKey !== ""
@@ -444,37 +522,100 @@ Surface {
         Accessible.role: Accessible.ColumnHeader
         Accessible.name: text
 
+        ColumnResizer {
+            objectName: "resizer_" + hc.column
+            visible: hc.resizes !== ""
+            // inside this cell (the next one would cover anything past its edge), flush with the boundary
+            x: hc.width + hc.Layout.rightMargin - width
+            column: hc.resizes
+            invert: hc.resizes !== hc.column
+        }
+
         background: null
         contentItem: RowLayout {
             spacing: 4
             layoutDirection: hc.alignRight ? Qt.RightToLeft : Qt.LeftToRight
             Text {
+                Layout.maximumWidth: hc.width - (hc.sorted ? 16 : 0)
                 text: hc.text
-                color: hc.hovered || hc.sorted ? Theme.text : Theme.textDim
+                color: hc.hovered || hc.sorted ? Theme.text : Theme.textFaint
                 Behavior on color {
                     enabled: !Theme.reducedMotion
                     ColorAnimation { duration: Theme.durFast }
                 }
                 font.family: Theme.fontText
-                font.pixelSize: Theme.textSm
+                font.pixelSize: 11
                 font.weight: Font.Medium
+                font.letterSpacing: 0.6
+                font.capitalization: Font.AllUppercase
+                horizontalAlignment: hc.alignRight ? Text.AlignRight : Text.AlignLeft
+                wrapMode: Text.WordWrap
+                maximumLineCount: 2
+                lineHeight: 0.95
                 elide: Text.ElideRight
-                Layout.fillWidth: !hc.alignRight
             }
             Icon {
                 visible: hc.sorted
                 path: filter.descending ? Icons.chevronDown : Icons.chevronUp
-                size: 14
-                strokeWidth: 2
+                size: 12
+                strokeWidth: 2.25
                 color: Theme.text
             }
-            Item { Layout.fillWidth: hc.alignRight }
+            Item { Layout.fillWidth: true }
+        }
+    }
+
+    // An 8 px grip on a column boundary: drag to resize, double-click for the default width
+    component ColumnResizer: MouseArea {
+        id: grip
+        property string column
+        // dragging right narrows the column (it sits to the right of the grip)
+        property bool invert: false
+        property real _startX
+        property real _startWidth
+
+        width: 8
+        height: parent.height
+        z: 2
+        hoverEnabled: true
+        cursorShape: Qt.SplitHCursor
+        preventStealing: true
+
+        onPressed: mouse => {
+            _startX = mapToItem(page, mouse.x, 0).x
+            _startWidth = page.cw(column)
+        }
+        onPositionChanged: mouse => {
+            if (!pressed)
+                return
+            const delta = mapToItem(page, mouse.x, 0).x - _startX
+            page.resizeColumn(column, _startWidth + (invert ? -delta : delta))
+        }
+        onReleased: page.saveColumns()
+        onDoubleClicked: page.resetColumn(column)
+
+        Rectangle {
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: grip.pressed ? 2 : 1
+            height: grip.pressed ? parent.height : parent.height * 0.5
+            radius: 1
+            color: grip.pressed ? Theme.ring : Theme.border
+            opacity: grip.pressed || grip.containsMouse ? 1 : 0
+            Behavior on opacity {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
+            Behavior on height {
+                enabled: !Theme.reducedMotion
+                NumberAnimation { duration: Theme.durFast }
+            }
         }
     }
 
     component TableHeader: Rectangle {
-        height: 40
-        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : "#141414"
+        height: 44
+        color: Theme.glass ? Qt.rgba(1, 1, 1, 0.04) : "#111111"
 
         Rectangle {
             anchors.bottom: parent.bottom
@@ -495,76 +636,134 @@ Surface {
                     onClicked: page.selectedCount > 0 ? page.clearSelection() : page.selectAll()
                 }
             }
-            HeaderCell { text: qsTr("Name"); sortKey: "name"; Layout.fillWidth: true; Layout.minimumWidth: 120 }
-            HeaderCell { text: qsTr("Size"); sortKey: "size"; alignRight: true; Layout.preferredWidth: 88 }
-            // the status glyph sits in the progress cell; the header text lines up with the bar
-            HeaderCell { text: qsTr("Progress"); sortKey: "progress"; Layout.preferredWidth: 240; Layout.leftMargin: 30 }
-            HeaderCell { text: qsTr("Down"); sortKey: "dlSpeed"; alignRight: true; Layout.preferredWidth: 96 }
-            HeaderCell { text: qsTr("Up"); sortKey: "upSpeed"; alignRight: true; Layout.preferredWidth: 96; visible: page.colVisible("up") }
-            HeaderCell { text: qsTr("ETA"); sortKey: "eta"; alignRight: true; Layout.preferredWidth: 84; visible: page.colVisible("eta") }
-            HeaderCell { text: qsTr("Ratio"); sortKey: "ratio"; alignRight: true; Layout.preferredWidth: 64; visible: page.colVisible("ratio") }
+            // starts over the name, past the kind tile
+            HeaderCell {
+                text: qsTr("Name"); sortKey: "name"; column: "name"; resizes: "size"
+                Layout.fillWidth: true; Layout.minimumWidth: 20; Layout.preferredWidth: 20; Layout.leftMargin: 44
+            }
+            HeaderCell { text: qsTr("Size"); sortKey: "size"; column: "size"; alignRight: true; fixedWidth: page.cw("size") - 12 }
+            HeaderCell { text: qsTr("Progress"); sortKey: "progress"; column: "progress"; fixedWidth: page.cw("progress") - 16; Layout.leftMargin: 16 }
+            HeaderCell { text: qsTr("Speed"); sortKey: "dlSpeed"; column: "speed"; alignRight: true; fixedWidth: page.cw("speed") - 12 }
+            HeaderCell {
+                text: qsTr("ETA"); sortKey: "eta"; column: "eta"; alignRight: true
+                fixedWidth: page.cw("eta") - 12; visible: page.colVisible("eta")
+            }
+            HeaderCell {
+                objectName: "header_swarm"
+                text: qsTr("Seeds / peers"); sortKey: "seeds"; column: "swarm"; alignRight: true
+                fixedWidth: page.cw("swarm") - 12; visible: page.colVisible("swarm")
+            }
+            HeaderCell {
+                text: qsTr("Ratio"); sortKey: "ratio"; column: "ratio"; alignRight: true
+                fixedWidth: page.cw("ratio") - 12; visible: page.colVisible("ratio")
+            }
             Item { Layout.preferredWidth: 36 }
         }
     }
 
+    // A one-line cell; `mono` for figures
     component CellText: Text {
         property bool alignRight: false
         property bool dim: false
+        property bool mono: false
+        property real fixedWidth: -1
+
+        Layout.preferredWidth: fixedWidth
+        Layout.minimumWidth: fixedWidth >= 0 ? fixedWidth : 0
+        Layout.maximumWidth: fixedWidth >= 0 ? fixedWidth : Number.POSITIVE_INFINITY
         Layout.fillHeight: true
         Layout.rightMargin: alignRight ? 12 : 0
         color: dim ? Theme.textFaint : Theme.text
-        font.family: Theme.fontText
-        font.pixelSize: Theme.textSm
+        font.family: mono ? Theme.fontMono : Theme.fontText
+        font.pixelSize: mono ? 12 : Theme.textSm
         font.features: { "tnum": 1 }
         horizontalAlignment: alignRight ? Text.AlignRight : Text.AlignLeft
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }
 
-    // The torrent's state as a tinted glyph; its name shows on hover. Checking spins.
-    component StatusGlyph: Rectangle {
-        id: glyph
-        property string torrentState
-        readonly property color tint: TorrentStatus.color(torrentState)
-
-        Layout.alignment: Qt.AlignVCenter
-        implicitWidth: 22
-        implicitHeight: 22
-        radius: 11
-        color: Theme.alpha(tint, 0.14)
+    // A small figure line inside a two-line cell
+    component FigureLine: Text {
+        Layout.fillWidth: true
+        font.family: Theme.fontMono
+        font.pixelSize: 12
+        font.features: { "tnum": 1 }
+        horizontalAlignment: Text.AlignRight
+        elide: Text.ElideLeft
         Behavior on color {
             enabled: !Theme.reducedMotion
             ColorAnimation { duration: Theme.durMed }
         }
+    }
 
-        Accessible.role: Accessible.StaticText
-        Accessible.name: TorrentStatus.label(torrentState)
+    // What the torrent holds, as a tinted tile
+    component KindTile: Rectangle {
+        id: tile
+        property string kind: "other"
+        readonly property var spec: page.kinds[kind] ?? page.kinds.other
+        readonly property color tint: spec.color
+
+        Layout.alignment: Qt.AlignVCenter
+        implicitWidth: 32
+        implicitHeight: 32
+        radius: 9
+        color: Theme.alpha(tint, 0.14)
+        border.width: 1
+        border.color: Theme.alpha(tint, 0.24)
 
         Icon {
-            id: glyphIcon
             anchors.centerIn: parent
-            path: TorrentStatus.icon(glyph.torrentState)
-            size: 13
-            strokeWidth: 2.25
-            color: glyph.tint
+            path: tile.spec.icon
+            size: 16
+            strokeWidth: 1.75
+            color: tile.tint
+        }
+    }
+
+    // A small outline action under the name ("Watch")
+    component RowChip: AbstractButton {
+        id: chip
+        property string iconPath
+
+        implicitHeight: 18
+        implicitWidth: chipRow.implicitWidth + 12
+        hoverEnabled: true
+        focusPolicy: Qt.NoFocus
+
+        Accessible.role: Accessible.Button
+        Accessible.name: text
+
+        background: Rectangle {
+            radius: 5
+            color: chip.hovered ? Theme.alpha(Theme.text, 0.12) : Theme.alpha(Theme.text, 0.06)
+            border.width: 1
+            border.color: Theme.border
             Behavior on color {
                 enabled: !Theme.reducedMotion
-                ColorAnimation { duration: Theme.durMed }
-            }
-            RotationAnimation on rotation {
-                running: glyph.torrentState === "checking" && glyph.visible && !Theme.reducedMotion
-                from: 0
-                to: 360
-                duration: 1200
-                loops: Animation.Infinite
-                onRunningChanged: if (!running) glyphIcon.rotation = 0
+                ColorAnimation { duration: Theme.durFast }
             }
         }
-
-        HoverHandler { id: glyphHover }
-        UiTooltip {
-            text: TorrentStatus.label(glyph.torrentState)
-            shown: glyphHover.hovered
+        contentItem: Item {
+            Row {
+                id: chipRow
+                anchors.centerIn: parent
+                spacing: 4
+                Icon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: chip.iconPath !== ""
+                    path: chip.iconPath
+                    size: 9
+                    strokeWidth: 2.5
+                    color: Theme.text
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: chip.text
+                    color: Theme.text
+                    font.family: Theme.fontText
+                    font.pixelSize: 11
+                }
+            }
         }
     }
 
@@ -575,18 +774,26 @@ Surface {
         required property string torrentId
         required property string name
         required property string state
+        required property string error
         required property real size
         required property real progress
         required property real dlSpeed
         required property real upSpeed
         required property real eta
         required property real ratio
+        required property int seeds
+        required property int seedsTotal
+        required property int peers
+        required property int peersTotal
         required property string category
 
         readonly property bool selected: page.isSelected(torrentId)
         readonly property bool focused: page.currentId === torrentId
+        readonly property color stateColor: TorrentStatus.color(state)
+        // a video in it can be watched now (streamed while it downloads)
+        readonly property string watchKey: MediaLibraryModel.bestVideoOf(torrentId)
 
-        height: 40
+        height: 54
         color: selected ? Theme.muted : hover.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
         Behavior on color {
             enabled: !Theme.reducedMotion
@@ -648,73 +855,159 @@ Surface {
                     onClicked: page.toggle(rowItem.torrentId)
                 }
             }
-            CellText {
+
+            // Kind tile, the name, and under it the state (or the error) with actions
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.minimumWidth: 120
+                Layout.minimumWidth: 64
+                Layout.preferredWidth: 64
+                Layout.fillHeight: true
                 Layout.rightMargin: 12
-                text: rowItem.name
-                font.weight: Font.Medium
+                spacing: 12
+
+                KindTile {
+                    objectName: "kindTile"
+                    kind: page.kindOf(rowItem.name)
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 20
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 3
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: rowItem.name
+                        color: Theme.text
+                        font.family: Theme.fontText
+                        font.pixelSize: Theme.textSm
+                        font.weight: Font.Medium
+                        elide: Text.ElideRight
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+                        Text {
+                            objectName: "rowStatus"
+                            // gives way (elides) before the chip does
+                            Layout.minimumWidth: 0
+                            Layout.preferredWidth: implicitWidth
+                            text: (rowItem.state === "missing" || rowItem.state === "error") && rowItem.error !== ""
+                                  ? rowItem.error : TorrentStatus.label(rowItem.state)
+                            color: rowItem.stateColor
+                            Behavior on color {
+                                enabled: !Theme.reducedMotion
+                                ColorAnimation { duration: Theme.durMed }
+                            }
+                            font.family: Theme.fontText
+                            font.pixelSize: Theme.textXs
+                            elide: Text.ElideRight
+                        }
+                        RowChip {
+                            id: watchChip
+                            objectName: "watchChip"
+                            visible: rowItem.watchKey !== ""
+                            Layout.minimumWidth: implicitWidth
+                            iconPath: Icons.play
+                            text: qsTr("Watch")
+                            onClicked: page.playRequested(rowItem.watchKey)
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                }
             }
+
             CellText {
-                Layout.preferredWidth: 88
+                fixedWidth: page.cw("size") - 12
                 alignRight: true
+                mono: true
                 dim: rowItem.size <= 0
                 text: rowItem.size > 0 ? Format.size(rowItem.size) : "—"
             }
-            // Status glyph, then the bar and the percentage
+
+            // The bar and the percentage
             RowLayout {
-                Layout.preferredWidth: 240
-                Layout.maximumWidth: 240
+                Layout.preferredWidth: page.cw("progress") - 16
+                Layout.minimumWidth: page.cw("progress") - 16
+                Layout.maximumWidth: page.cw("progress") - 16
+                Layout.leftMargin: 16
                 Layout.fillHeight: true
-                spacing: Theme.sp(2)
-                StatusGlyph {
-                    objectName: "statusGlyph"
-                    torrentState: rowItem.state
-                }
+                spacing: 10
                 UiProgress {
                     objectName: "rowProgress"
                     Layout.fillWidth: true
                     value: rowItem.progress
-                    color: TorrentStatus.color(rowItem.state)
+                    color: rowItem.stateColor
                     active: TorrentStatus.isActive(rowItem.state)
                 }
                 CellText {
-                    Layout.preferredWidth: 40
+                    fixedWidth: 36
                     horizontalAlignment: Text.AlignRight
-                    text: Math.floor(rowItem.progress * 1000) / 10 + "%"
+                    mono: true
+                    text: Math.floor(rowItem.progress * 100) + "%"
                     color: Theme.textDim
-                    font.pixelSize: Theme.textXs
                 }
             }
-            CellText {
-                Layout.preferredWidth: 96
-                alignRight: true
-                dim: rowItem.dlSpeed === 0
-                text: Format.speed(rowItem.dlSpeed)
+
+            // ↓ download over ↑ upload
+            ColumnLayout {
+                objectName: "cell_speed"
+                Layout.preferredWidth: page.cw("speed") - 12
+                Layout.minimumWidth: page.cw("speed") - 12
+                Layout.maximumWidth: page.cw("speed") - 12
+                Layout.rightMargin: 12
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 2
+                FigureLine {
+                    text: "↓ " + (rowItem.dlSpeed > 0 ? Format.speed(rowItem.dlSpeed) : "—")
+                    color: rowItem.dlSpeed > 0 ? Theme.download : Theme.textFaint
+                }
+                FigureLine {
+                    text: "↑ " + (rowItem.upSpeed > 0 ? Format.speed(rowItem.upSpeed) : "—")
+                    color: rowItem.upSpeed > 0 ? Theme.upload : Theme.textFaint
+                }
             }
-            CellText {
-                visible: page.colVisible("up")
-                Layout.preferredWidth: 96
-                alignRight: true
-                dim: rowItem.upSpeed === 0
-                text: Format.speed(rowItem.upSpeed)
-            }
+
             CellText {
                 visible: page.colVisible("eta")
-                Layout.preferredWidth: 84
+                fixedWidth: page.cw("eta") - 12
                 alignRight: true
+                mono: true
                 // only a running download has an estimate; ∞ when it is running without one
                 readonly property bool running: rowItem.state === "downloading" || rowItem.state === "stalledDl"
                                                 || rowItem.state === "metadata"
                 dim: !running || rowItem.eta >= 8640000
                 text: running ? Format.eta(rowItem.eta) : "—"
             }
+
+            // connected seeds / peers; the whole swarm on hover
+            CellText {
+                id: swarmCell
+                objectName: "cell_swarm"
+                visible: page.colVisible("swarm")
+                fixedWidth: page.cw("swarm") - 12
+                alignRight: true
+                mono: true
+                dim: rowItem.seeds === 0 && rowItem.peers === 0
+                text: rowItem.seeds + " / " + rowItem.peers
+
+                HoverHandler { id: swarmHover }
+                UiTooltip {
+                    text: qsTr("Seeds: %1 of %2 · peers: %3 of %4")
+                          .arg(rowItem.seeds).arg(rowItem.seedsTotal).arg(rowItem.peers).arg(rowItem.peersTotal)
+                    shown: swarmHover.hovered
+                }
+            }
+
             CellText {
                 visible: page.colVisible("ratio")
-                Layout.preferredWidth: 64
+                fixedWidth: page.cw("ratio") - 12
                 alignRight: true
+                mono: true
+                color: rowItem.ratio >= 1 ? Theme.goodRatio : Theme.text
                 text: Format.ratio(rowItem.ratio)
             }
+
             Item {
                 Layout.preferredWidth: 36
                 Layout.fillHeight: true

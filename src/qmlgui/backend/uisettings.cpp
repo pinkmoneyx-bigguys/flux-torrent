@@ -39,6 +39,11 @@ namespace
     {
         return (style == u"glass") ? style : u"default"_s;
     }
+
+    QString columnsKey(const QString &table)
+    {
+        return u"Flux/Layout/%1Columns"_s.arg(table);
+    }
 }
 
 UiSettings::UiSettings(QObject *parent)
@@ -63,4 +68,28 @@ void UiSettings::setStyle(const QString &style)
     if (SettingsStorage *storage = SettingsStorage::instance())
         storage->storeValue(STYLE_KEY, m_style);
     emit styleChanged();
+}
+
+QVariantMap UiSettings::columnWidths(const QString &table) const
+{
+    const SettingsStorage *storage = SettingsStorage::instance();
+    const QVariantMap stored = storage ? storage->loadValue<QVariantMap>(columnsKey(table)) : m_columnWidths.value(table);
+    // the INI file hands numbers back as strings
+    QVariantMap widths;
+    for (auto it = stored.cbegin(); it != stored.cend(); ++it)
+    {
+        bool ok = false;
+        const double width = it.value().toDouble(&ok);
+        if (ok && (width > 0))
+            widths.insert(it.key(), width);
+    }
+    return widths;
+}
+
+void UiSettings::setColumnWidths(const QString &table, const QVariantMap &widths)
+{
+    if (SettingsStorage *storage = SettingsStorage::instance())
+        storage->storeValue(columnsKey(table), widths);
+    else
+        m_columnWidths.insert(table, widths);
 }

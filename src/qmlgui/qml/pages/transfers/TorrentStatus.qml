@@ -29,10 +29,11 @@ QtObject {
         case "metadata":
         case "moving": return Theme.download
         case "seeding":
-        case "stalledUp":
-        case "stoppedUp": return Theme.upload
+        case "stalledUp": return Theme.upload
+        case "stoppedUp": return Theme.textDim
         case "checking":
-        case "stalledDl": return Theme.warn
+        case "stalledDl":
+        case "stoppedDl": return Theme.warn
         case "missing":
         case "error": return Theme.error
         default: return Theme.textFaint

@@ -13,7 +13,8 @@ TestCase {
     visible: true
 
     readonly property var rows: [
-        { id: "a", name: "ubuntu-25.10-desktop-amd64.iso", state: "downloading", size: 6000, progress: 0.5, dlSpeed: 900, category: "Linux" },
+        { id: "a", name: "ubuntu-25.10-desktop-amd64.iso", state: "downloading", size: 6000, progress: 0.5, dlSpeed: 900, category: "Linux",
+          seeds: 12, seedsTotal: 340, peers: 3, peersTotal: 25 },
         { id: "b", name: "Big Buck Bunny 4K", state: "seeding", size: 9000, progress: 1, upSpeed: 300, category: "Movies" },
         { id: "c", name: "Sintel 1080p", state: "stoppedUp", size: 1000, progress: 1, category: "Movies" },
         { id: "d", name: "debian netinst", state: "stoppedDl", size: 500, progress: 0.2 },
@@ -33,6 +34,15 @@ TestCase {
         const lv = list()
         lv.positionViewAtIndex(i, ListView.Contain)
         return lv.itemAtIndex(i)
+    }
+
+    function rowById(id) {
+        for (let i = 0; i < list().count; ++i) {
+            const r = rowItem(i)
+            if (r && r.torrentId === id)
+                return r
+        }
+        return null
     }
 
     function init() {
@@ -88,20 +98,73 @@ TestCase {
         compare(list().model.idAt(0), "a")
     }
 
-    // The state is a glyph before the bar (its name on hover); the bar of a running download shimmers
-    function test_statusGlyphAndShimmer() {
-        const down = rowItem(0)
-        compare(down.torrentId, "a")
-        const glyph = findChild(down, "statusGlyph")
-        verify(glyph, "the row has a status glyph")
-        compare(glyph.Accessible.name, TorrentStatus.label("downloading"))
+    // Under the name: the state in its colour (an error shows its message); the kind of content is a
+    // tile before the name; a running download's bar shimmers
+    function test_statusLineKindAndShimmer() {
+        const down = rowById("a")
+        compare(findChild(down, "rowStatus").text, TorrentStatus.label("downloading"))
+        compare(findChild(down, "kindTile").kind, "disc", "an .iso is a disc image")
         verify(findChild(down, "rowProgress").active, "a running download shimmers")
         verify(Theme.shimmerUsers > 0, "the shared shimmer clock runs")
 
-        const stopped = rowItem(3)
-        compare(stopped.torrentId, "d")
-        verify(!findChild(stopped, "rowProgress").active, "a stopped one does not")
-        compare(findChild(stopped, "statusGlyph").Accessible.name, TorrentStatus.label("stoppedDl"))
+        verify(!findChild(rowById("d"), "rowProgress").active, "a stopped one does not")
+
+        const broken = rowById("e")
+        compare(findChild(broken, "rowStatus").text, "Files are missing", "an error shows its message")
+        compare(findChild(broken, "kindTile").kind, "archive")
+        compare(page.kindOf("Sintel (2010) 2160p HEVC"), "video")
+        compare(page.kindOf("NASA Apollo 11 FLAC"), "audio")
+    }
+
+    // Speed: download over upload; seeds / peers connected, the swarm in the tooltip
+    function test_speedAndSwarm() {
+        page.widths = Object.assign({}, page.defaultWidths)
+        waitForRendering(page)
+        const row = rowById("a")
+        verify(findChild(page, "header_swarm").visible)
+        compare(findChild(row, "cell_swarm").text, "12 / 3")
+        const speed = findChild(row, "cell_speed")
+        verify(speed.children[0].text.indexOf("↓") === 0 && speed.children[0].text.indexOf("—") < 0, speed.children[0].text)
+        compare(speed.children[1].text, "↑ —", "no upload yet")
+    }
+
+    // Every row puts its columns at the same x, whatever its name
+    function test_columnsLineUp() {
+        const xs = []
+        for (let i = 0; i < 5; ++i) {
+            const r = rowItem(i)
+            const cell = findChild(r, "cell_speed")
+            xs.push(cell.mapToItem(page, 0, 0).x)
+        }
+        for (const x of xs)
+            compare(x, xs[0], "the speed column lines up: " + xs)
+    }
+
+    // Dragging a header edge resizes the column; Name gives way; double-click restores the default
+    function test_resizeColumns() {
+        page.widths = Object.assign({}, page.defaultWidths)
+        waitForRendering(page)
+        const grip = findChild(page, "resizer_size")
+        verify(grip && grip.visible)
+        const before = page.cw("size")
+        mouseDrag(grip, grip.width / 2, grip.height / 2, 40, 0)
+        tryVerify(() => Math.abs(page.cw("size") - (before + 40)) <= 2, 1000, "size grew by the drag: " + page.cw("size"))
+        compare(UiSettings.columnWidths("transfers").size, page.cw("size"), "the width is remembered")
+
+        page.resizeColumn("size", 5)
+        compare(page.cw("size"), page.minWidths.size, "never narrower than its minimum")
+        page.resizeColumn("size", 100000)
+        verify(page.nameWidth() >= page.nameMin - 1, "Name keeps its minimum")
+
+        mouseDoubleClickSequence(grip, grip.width / 2, grip.height / 2)
+        compare(page.cw("size"), page.defaultWidths.size, "double-click restores the default")
+
+        // Name's edge moves the boundary with Size: dragging right narrows Size
+        const nameGrip = findChild(page, "resizer_name")
+        const sizeBefore = page.cw("size")
+        mouseDrag(nameGrip, nameGrip.width / 2, nameGrip.height / 2, 20, 0)
+        tryVerify(() => page.cw("size") < sizeBefore, 1000, "Size gave way: " + page.cw("size"))
+        page.widths = Object.assign({}, page.defaultWidths)
     }
 
     function test_clickSelects() {
