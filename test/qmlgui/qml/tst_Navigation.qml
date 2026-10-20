@@ -50,21 +50,6 @@ TestCase {
         Theme.style = Qt.binding(() => UiSettings.style)
     }
 
-    function test_styleCardsSwitchTheLook() {
-        main.currentPage = 4
-        waitForRendering(main.contentItem)
-        const glassCard = findChild(main.contentItem, "styleGlass")
-        const defaultCard = findChild(main.contentItem, "styleDefault")
-        verify(defaultCard.Accessible.checked, "the default look is chosen out of the box")
-        mouseClick(glassCard)
-        compare(UiSettings.style, "glass")
-        verify(Theme.glass, "the window switches to Liquid Glass right away")
-        verify(glassCard.Accessible.checked)
-        mouseClick(defaultCard)
-        compare(UiSettings.style, "default")
-        verify(!Theme.glass)
-    }
-
     function nav(i) {
         return findChild(main.contentItem, navNames[i])
     }

@@ -11,16 +11,16 @@ Surface {
 
     property string title: qsTr("Settings")
     property string hint: qsTr("Application settings will appear here.")
-    property string section: "interface"
+    property string section: "downloads"
 
     readonly property var sections: [
-        { key: "interface", label: qsTr("Interface"), icon: Icons.uiPanel },
         { key: "downloads", label: qsTr("Downloads"), icon: Icons.download },
         { key: "speed", label: qsTr("Speed"), icon: Icons.speed },
         { key: "connection", label: qsTr("Connection"), icon: Icons.network },
         { key: "bittorrent", label: qsTr("BitTorrent"), icon: Icons.bittorrent },
         { key: "streaming", label: qsTr("Streaming"), icon: Icons.play },
-        { key: "advanced", label: qsTr("Advanced"), icon: Icons.settings }
+        { key: "advanced", label: qsTr("Advanced"), icon: Icons.settings },
+        { key: "about", label: qsTr("About Flux"), icon: Icons.info }
     ]
 
     function sectionLabel(key) {
@@ -219,19 +219,6 @@ Surface {
                     width: Math.min(form.width - 2 * Theme.sp(6), 760)
                     spacing: Theme.sp(8)
 
-                    // ===== Interface =====
-                    ColumnLayout {
-                        visible: root.section === "interface"
-                        Layout.fillWidth: true
-                        spacing: Theme.sp(4)
-
-                        SectionTitle {
-                            title: qsTr("Appearance")
-                            text: qsTr("Choose how Flux looks. The change applies right away.")
-                        }
-                        ThemePicker {}
-                    }
-
                     // ===== Downloads =====
                     ColumnLayout {
                         visible: root.section === "downloads"
@@ -290,6 +277,29 @@ Surface {
                             SettingRow {
                                 key: "addToQueueTop"
                                 label: qsTr("Put new torrents first in the queue")
+                            }
+                        }
+                        SettingsGroup {
+                            title: qsTr("Double-click in Transfers")
+                            SettingRow {
+                                key: "dblClickFinished"
+                                type: "select"
+                                label: qsTr("On a finished torrent")
+                                options: [
+                                    { key: "open", label: qsTr("Open the folder") },
+                                    { key: "toggle", label: qsTr("Start or stop") },
+                                    { key: "none", label: qsTr("Nothing") }
+                                ]
+                            }
+                            SettingRow {
+                                key: "dblClickRunning"
+                                type: "select"
+                                label: qsTr("On a downloading torrent")
+                                options: [
+                                    { key: "toggle", label: qsTr("Start or stop") },
+                                    { key: "open", label: qsTr("Open the folder") },
+                                    { key: "none", label: qsTr("Nothing") }
+                                ]
                             }
                         }
                     }
@@ -592,6 +602,315 @@ Surface {
                                 label: qsTr("Hardware decoding")
                                 description: qsTr("Decodes video on the graphics card. Turn off if the picture breaks up.")
                             }
+                        }
+                    }
+
+                    // ===== About =====
+                    ColumnLayout {
+                        objectName: "aboutSection"
+                        visible: root.section === "about"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
+
+                        // who and which version
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.sp(4)
+
+                            Rectangle {
+                                Layout.alignment: Qt.AlignTop
+                                implicitWidth: 56
+                                implicitHeight: 56
+                                radius: 14
+                                color: Theme.primary
+                                Icon {
+                                    anchors.centerIn: parent
+                                    path: Icons.logo
+                                    size: 28
+                                    strokeWidth: 2.4
+                                    color: Theme.primaryText
+                                }
+                            }
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 3
+                                Text {
+                                    text: AppInfo.name
+                                    color: Theme.text
+                                    font.family: Theme.fontText
+                                    font.pixelSize: 20
+                                    font.weight: Font.DemiBold
+                                }
+                                Text {
+                                    objectName: "aboutVersion"
+                                    text: qsTr("Version %1").arg(AppInfo.version)
+                                          + (AppInfo.commit !== "" ? " · " + AppInfo.commit : "")
+                                    color: Theme.textDim
+                                    font.family: Theme.fontMono
+                                    font.pixelSize: Theme.textSm
+                                }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: qsTr("A torrent client for Windows built on qBittorrent %1, with a player that streams while it downloads.").arg(AppInfo.baseVersion)
+                                    color: Theme.textDim
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textSm
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+                        }
+
+                        // updates
+                        SettingsGroup {
+                            title: qsTr("Updates")
+                            description: AppInfo.repository !== ""
+                                         ? qsTr("New versions are published as releases on GitHub.")
+                                         : qsTr("This build does not say where its releases are published.")
+
+                            Item {
+                                width: parent.width
+                                implicitHeight: updateRow.implicitHeight + 2 * Theme.sp(4)
+
+                                RowLayout {
+                                    id: updateRow
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.leftMargin: Theme.sp(4)
+                                    anchors.rightMargin: Theme.sp(4)
+                                    spacing: Theme.sp(3)
+
+                                    Rectangle {
+                                        implicitWidth: 32
+                                        implicitHeight: 32
+                                        radius: 8
+                                        color: Theme.alpha(Updater.status === "available" ? Theme.download
+                                                           : Updater.status === "error" ? Theme.error : Theme.upload, 0.14)
+                                        Icon {
+                                            anchors.centerIn: parent
+                                            path: Updater.status === "available" ? Icons.download
+                                                : Updater.status === "error" ? Icons.alert
+                                                : Updater.status === "checking" ? Icons.refresh : Icons.check
+                                            size: 16
+                                            strokeWidth: 2
+                                            color: Updater.status === "available" ? Theme.download
+                                                 : Updater.status === "error" ? Theme.error : Theme.upload
+                                            RotationAnimation on rotation {
+                                                running: Updater.status === "checking" && !Theme.reducedMotion
+                                                from: 0
+                                                to: 360
+                                                duration: 900
+                                                loops: Animation.Infinite
+                                            }
+                                        }
+                                    }
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 2
+                                        Text {
+                                            objectName: "updateStatus"
+                                            Layout.fillWidth: true
+                                            text: {
+                                                switch (Updater.status) {
+                                                case "checking": return qsTr("Checking for updates…")
+                                                case "available": return qsTr("Version %1 is available").arg(Updater.latestVersion.replace(/^v/i, ""))
+                                                case "upToDate": return qsTr("You have the latest version")
+                                                case "error": return qsTr("Could not check for updates")
+                                                default: return qsTr("Updates have not been checked yet")
+                                                }
+                                            }
+                                            color: Theme.text
+                                            font.family: Theme.fontText
+                                            font.pixelSize: Theme.textSm
+                                            font.weight: Font.Medium
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: Updater.status === "error" ? Updater.error
+                                                : Updater.status === "available" && Updater.downloadName !== ""
+                                                  ? qsTr("%1 · %2").arg(Updater.downloadName).arg(Format.size(Updater.downloadSize))
+                                                : Updater.lastChecked.getTime && !isNaN(Updater.lastChecked.getTime())
+                                                  ? qsTr("Checked %1").arg(Updater.lastChecked.toLocaleString(Qt.locale(), Locale.ShortFormat))
+                                                  : ""
+                                            visible: text !== ""
+                                            color: Updater.status === "error" ? Theme.error : Theme.textDim
+                                            font.family: Theme.fontText
+                                            font.pixelSize: Theme.textXs
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    UiButton {
+                                        visible: Updater.status === "available"
+                                        iconPath: Icons.download
+                                        text: qsTr("Download")
+                                        onClicked: Updater.openDownload()
+                                    }
+                                    UiButton {
+                                        objectName: "checkUpdates"
+                                        variant: "outline"
+                                        enabled: Updater.status !== "checking" && AppInfo.repository !== ""
+                                        text: qsTr("Check now")
+                                        onClicked: Updater.check()
+                                    }
+                                }
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width
+                                    height: 1
+                                    color: Theme.border
+                                }
+                            }
+
+                            // what is new in it
+                            Item {
+                                visible: Updater.status === "available" && Updater.notes !== ""
+                                width: parent.width
+                                implicitHeight: visible ? notesText.implicitHeight + 2 * Theme.sp(4) : 0
+                                Text {
+                                    id: notesText
+                                    x: Theme.sp(4)
+                                    y: Theme.sp(4)
+                                    width: parent.width - 2 * Theme.sp(4)
+                                    text: Updater.notes
+                                    textFormat: Text.MarkdownText
+                                    color: Theme.textDim
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textSm
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: 12
+                                    elide: Text.ElideRight
+                                }
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width
+                                    height: 1
+                                    color: Theme.border
+                                }
+                            }
+
+                            SettingRow {
+                                key: "autoUpdateCheck"
+                                external: true
+                                externalValue: Updater.autoCheck
+                                onExternalCommit: value => Updater.autoCheck = value
+                                label: qsTr("Check for updates automatically")
+                                description: qsTr("Once a day, when Flux starts.")
+                            }
+                        }
+
+                        // links
+                        SettingsGroup {
+                            visible: AppInfo.repository !== ""
+                            title: qsTr("Project")
+                            Flow {
+                                x: Theme.sp(4)
+                                width: parent.width - 2 * Theme.sp(4)
+                                topPadding: Theme.sp(4)
+                                bottomPadding: Theme.sp(4)
+                                spacing: Theme.sp(2)
+                                UiButton {
+                                    variant: "outline"
+                                    iconPath: Icons.externalLink
+                                    text: qsTr("GitHub")
+                                    onClicked: AppInfo.openUrl(AppInfo.repositoryUrl)
+                                }
+                                UiButton {
+                                    variant: "outline"
+                                    iconPath: Icons.download
+                                    text: qsTr("All releases")
+                                    onClicked: AppInfo.openUrl(AppInfo.releasesUrl)
+                                }
+                                UiButton {
+                                    variant: "outline"
+                                    iconPath: Icons.alert
+                                    text: qsTr("Report a problem")
+                                    onClicked: AppInfo.openUrl(AppInfo.issuesUrl)
+                                }
+                            }
+                        }
+
+                        // what it is made of
+                        SettingsGroup {
+                            title: qsTr("Components")
+                            Repeater {
+                                model: [
+                                    { label: "qBittorrent", value: AppInfo.baseVersion },
+                                    { label: "libtorrent", value: AppInfo.libtorrentVersion },
+                                    { label: "Qt", value: AppInfo.qtVersion },
+                                    { label: "Boost", value: AppInfo.boostVersion },
+                                    { label: "OpenSSL", value: AppInfo.opensslVersion },
+                                    { label: "zlib", value: AppInfo.zlibVersion }
+                                ]
+                                Item {
+                                    required property var modelData
+                                    required property int index
+                                    width: parent.width
+                                    implicitHeight: 40
+                                    Text {
+                                        x: Theme.sp(4)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.label
+                                        color: Theme.text
+                                        font.family: Theme.fontText
+                                        font.pixelSize: Theme.textSm
+                                    }
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: Theme.sp(4)
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.value || "—"
+                                        color: Theme.textDim
+                                        font.family: Theme.fontMono
+                                        font.pixelSize: Theme.textSm
+                                    }
+                                    Rectangle {
+                                        visible: index < 5
+                                        anchors.bottom: parent.bottom
+                                        width: parent.width
+                                        height: 1
+                                        color: Theme.border
+                                    }
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Theme.sp(2)
+                            UiButton {
+                                variant: "outline"
+                                iconPath: Icons.file
+                                text: qsTr("Copy version info")
+                                onClicked: {
+                                    AppInfo.copyDiagnostics()
+                                    copiedNote.visible = true
+                                }
+                            }
+                            UiButton {
+                                visible: AppInfo.profilePath !== ""
+                                variant: "outline"
+                                iconPath: Icons.folder
+                                text: qsTr("Open the profile folder")
+                                onClicked: AppInfo.openProfileFolder()
+                            }
+                            Text {
+                                id: copiedNote
+                                visible: false
+                                text: qsTr("Copied")
+                                color: Theme.textDim
+                                font.family: Theme.fontText
+                                font.pixelSize: Theme.textSm
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: qsTr("Flux is free software built on qBittorrent and distributed under the GNU General Public License, version 2 or later. It comes with no warranty.")
+                            color: Theme.textFaint
+                            font.family: Theme.fontText
+                            font.pixelSize: Theme.textXs
+                            wrapMode: Text.Wrap
                         }
                     }
 

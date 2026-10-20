@@ -60,6 +60,8 @@ namespace
             {u"addStopped"_s, false},
             {u"addToQueueTop"_s, false},
             {u"contentLayout"_s, u"original"_s},
+            {u"dblClickRunning"_s, u"toggle"_s},
+            {u"dblClickFinished"_s, u"open"_s},
             // Speed (KiB/s, 0 = unlimited)
             {u"dlLimit"_s, 0},
             {u"upLimit"_s, 0},
@@ -137,6 +139,8 @@ namespace
             {u"proxyType"_s, {{u"none"_s, int(Net::ProxyType::None)}, {u"http"_s, int(Net::ProxyType::HTTP)},
                               {u"socks5"_s, int(Net::ProxyType::SOCKS5)}, {u"socks4"_s, int(Net::ProxyType::SOCKS4)}}},
             {u"encryption"_s, {{u"prefer"_s, 0}, {u"require"_s, 1}, {u"disable"_s, 2}}},
+            {u"dblClickRunning"_s, {{u"toggle"_s, 0}, {u"open"_s, 1}, {u"none"_s, 3}}},
+            {u"dblClickFinished"_s, {{u"open"_s, 1}, {u"toggle"_s, 0}, {u"none"_s, 3}}},
             {u"shareAction"_s, {{u"stop"_s, int(BitTorrent::ShareLimitAction::Stop)}, {u"remove"_s, int(BitTorrent::ShareLimitAction::Remove)},
                                 {u"removeContent"_s, int(BitTorrent::ShareLimitAction::RemoveWithContent)},
                                 {u"superSeed"_s, int(BitTorrent::ShareLimitAction::EnableSuperSeeding)}}}
@@ -598,6 +602,12 @@ void AppSettings::registerLive()
                 s->setGlobalMaxSeedingMinutes(m_lastSeedMinutes);
             return {};
         }});
+    // double-click on a torrent, as qBittorrent keeps it
+    Preferences *prefs = Preferences::instance();
+    enumEntry(u"dblClickRunning"_s, [prefs] { return prefs->getActionOnDblClOnTorrentDl(); },
+        [prefs](int v) { prefs->setActionOnDblClOnTorrentDl(v); });
+    enumEntry(u"dblClickFinished"_s, [prefs] { return prefs->getActionOnDblClOnTorrentFn(); },
+        [prefs](int v) { prefs->setActionOnDblClOnTorrentFn(v); });
     enumEntry(u"shareAction"_s, [s] { return int(s->shareLimitAction()); },
         [s](int v) { s->setShareLimitAction(static_cast<BitTorrent::ShareLimitAction>(v)); });
     boolEntry(u"addTrackersEnabled"_s, [s] { return s->isAddTrackersEnabled(); }, [s](bool b) { s->setAddTrackersEnabled(b); });

@@ -28,6 +28,14 @@
 
 #include "torrentlistmodel.h"
 
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <shlobj.h>
+#endif
+
 #include <algorithm>
 
 #include <QClipboard>
@@ -39,6 +47,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QThread>
 #include <QRandomGenerator>
 #include <QSet>
 #include <QTimer>
@@ -50,6 +59,7 @@
 #include "base/bittorrent/torrentdescriptor.h"
 #include "base/global.h"
 #include "base/path.h"
+#include "base/preferences.h"
 #include "base/tagset.h"
 
 using BitTorrent::Torrent;
@@ -562,22 +572,90 @@ int TorrentListModel::copyMagnets(const QStringList &ids)
     return static_cast<int>(links.size());
 }
 
+namespace
+{
+    // Explorer with the item selected (qBittorrent's Utils::Gui::openFolderSelect), off the GUI thread
+    void openFolderSelect(const Path &path)
+    {
+        if (!path.exists())
+        {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(path.parentPath().data()));
+            return;
+        }
+#ifdef Q_OS_WIN
+        auto *thread = QThread::create([path]
+        {
+            if (SUCCEEDED(::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
+            {
+                const std::wstring pathW = path.toString().toStdWString();
+                if (PIDLIST_ABSOLUTE pidl = ::ILCreateFromPathW(pathW.c_str()))
+                {
+                    ::SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
+                    ::ILFree(pidl);
+                }
+                ::CoUninitialize();
+            }
+        });
+        QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+        thread->start();
+#else
+        QDesktopServices::openUrl(QUrl::fromLocalFile(path.parentPath().data()));
+#endif
+    }
+
+    // qBittorrent's "open destination folder": a single file is selected in its folder, a folder opens
+    void openDestination(const BitTorrent::Torrent *torrent)
+    {
+        const Path content = torrent->contentPath();
+        const Path target = content.isEmpty() ? torrent->savePath() : content;
+        if (torrent->filesCount() == 1)
+            openFolderSelect(target);
+        else
+            QDesktopServices::openUrl(QUrl::fromLocalFile((target.exists() ? target : torrent->savePath()).data()));
+    }
+
+    // qBittorrent's double-click actions (gui/optionsdialog.h)
+    enum DoubleClickAction
+    {
+        ToggleStop = 0,
+        OpenDestination = 1,
+        PreviewFile = 2,
+        NoAction = 3,
+        ShowOptions = 4
+    };
+}
+
 void TorrentListModel::openFolder(const QString &id)
+{
+    const QList<Torrent *> torrents = torrentsOf({id});
+    if (!torrents.isEmpty())
+        openDestination(torrents.first());
+}
+
+void TorrentListModel::activate(const QString &id)
 {
     const QList<Torrent *> torrents = torrentsOf({id});
     if (torrents.isEmpty())
         return;
 
-    const Torrent *torrent = torrents.first();
-    const Path content = torrent->contentPath();
-    if (content.exists() && !QFileInfo(content.data()).isDir())
+    Torrent *torrent = torrents.first();
+    const Preferences *prefs = Preferences::instance();
+    const int action = torrent->isFinished() ? prefs->getActionOnDblClOnTorrentFn() : prefs->getActionOnDblClOnTorrentDl();
+    switch (action)
     {
-        // Explorer opens the folder with the file selected
-        QProcess::startDetached(u"explorer.exe"_s, {u"/select,"_s + content.toString()});
-        return;
+    case ToggleStop:
+        if (torrent->isStopped())
+            torrent->start();
+        else
+            torrent->stop();
+        break;
+    case OpenDestination:
+    case PreviewFile:   // no preview dialog in Flux: the folder, as qBittorrent does without a previewable file
+        openDestination(torrent);
+        break;
+    default:
+        break;
     }
-    const Path folder = content.exists() ? content : torrent->savePath();
-    QDesktopServices::openUrl(QUrl::fromLocalFile(folder.data()));
 }
 
 QString TorrentListModel::addFile(const QUrl &fileUrl)

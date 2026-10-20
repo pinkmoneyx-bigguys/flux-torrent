@@ -3,7 +3,7 @@ import QtTest
 import Flux
 
 // The Settings page over AppSettings in memory (no session in tests): section navigation, switches,
-// numbers with validation, selects, rows that appear with their switch, and the theme cards.
+// numbers with validation, selects, rows that appear with their switch, and About.
 TestCase {
     id: tc
     name: "Settings"
@@ -18,7 +18,7 @@ TestCase {
     }
 
     function init() {
-        page.section = "interface"
+        page.section = "downloads"
         waitForRendering(page)
     }
 
@@ -27,11 +27,30 @@ TestCase {
     }
 
     function test_sectionsNavigate() {
-        verify(findChild(page, "styleDefault").visible, "Interface shows the theme cards")
+        verify(!findChild(page, "settingsNav_interface"), "no Interface section: only the default look is offered")
+        verify(!findChild(page, "styleDefault"), "no theme cards")
         mouseClick(findChild(page, "settingsNav_speed"))
         compare(page.section, "speed")
         verify(setting("dlLimit").visible)
-        verify(!findChild(page, "styleDefault").visible)
+    }
+
+    // About: the version, the update check and the components
+    function test_about() {
+        mouseClick(findChild(page, "settingsNav_about"))
+        compare(page.section, "about")
+        const about = findChild(page, "aboutSection")
+        verify(about.visible)
+        verify(findChild(about, "aboutVersion").text.indexOf(AppInfo.version) >= 0, "the version is shown")
+        verify(AppInfo.version !== "" && AppInfo.baseVersion !== "")
+        verify(findChild(about, "updateStatus").text !== "")
+        verify(findChild(about, "checkUpdates").visible)
+    }
+
+    // Double-click actions are qBittorrent's own settings
+    function test_doubleClickSettings() {
+        compare(AppSettings.value("dblClickFinished"), "open", "a finished torrent opens its folder by default")
+        compare(AppSettings.value("dblClickRunning"), "toggle", "a running one starts or stops")
+        verify(setting("dblClickFinished").visible)
     }
 
     function test_switchApplies() {

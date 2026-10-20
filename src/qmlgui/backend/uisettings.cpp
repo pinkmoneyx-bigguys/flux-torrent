@@ -35,9 +35,10 @@ namespace
 {
     const QString STYLE_KEY = u"Flux/Appearance/Style"_s;
 
-    QString normalizedStyle(const QString &style)
+    // Only the default look is offered now; a profile that chose Liquid Glass gets the default look
+    QString normalizedStyle(const QString &)
     {
-        return (style == u"glass") ? style : u"default"_s;
+        return u"default"_s;
     }
 
     QString columnsKey(const QString &table)

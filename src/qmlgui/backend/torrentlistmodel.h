@@ -169,6 +169,9 @@ public:
     // Copies the magnet links of `ids` (one per line) to the clipboard; returns how many were copied
     Q_INVOKABLE int copyMagnets(const QStringList &ids);
     Q_INVOKABLE void openFolder(const QString &id);
+    // A double-click, as qBittorrent does it (Preferences "DblClOnTorFn" / "DblClOnTorDl"): by default a
+    // finished torrent opens where it is (its file selected when it has one), a running one starts or stops
+    Q_INVOKABLE void activate(const QString &id);
     // Adds a .torrent file or a magnet link / info hash; returns "" on success or the error text
     Q_INVOKABLE QString addFile(const QUrl &fileUrl);
     Q_INVOKABLE QString addLink(const QString &link);

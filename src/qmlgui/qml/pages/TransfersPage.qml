@@ -914,7 +914,8 @@ Surface {
                 else
                     page.selectOnly(rowItem.torrentId)
             }
-            onDoubleClicked: TorrentListModel.openFolder(rowItem.torrentId)
+            // as qBittorrent: a finished torrent opens its folder, a running one starts or stops
+            onDoubleClicked: TorrentListModel.activate(rowItem.torrentId)
         }
 
         // keyboard focus marker: a 2 px bar on the left of the focused row

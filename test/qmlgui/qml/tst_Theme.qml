@@ -39,12 +39,11 @@ TestCase {
         compare(Theme.fontMono, "Geist Mono")
     }
 
-    function test_styleFollowsUiSettings() {
+    // Only the default look is offered: a saved Liquid Glass choice reads as the default look
+    function test_onlyTheDefaultLook() {
         Theme.style = Qt.binding(() => UiSettings.style)
         UiSettings.style = "glass"
-        verify(Theme.glass)
-        UiSettings.style = "something else"
-        compare(UiSettings.style, "default", "unknown looks fall back to the default one")
+        compare(UiSettings.style, "default")
         verify(!Theme.glass)
     }
 

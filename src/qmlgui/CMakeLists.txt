@@ -63,7 +63,6 @@ set_source_files_properties(qml/pages/search/PluginsDialog.qml PROPERTIES QT_RES
 set_source_files_properties(qml/pages/rss/RulesDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/rss/RulesDialog.qml)
 set_source_files_properties(qml/pages/settings/SettingRow.qml PROPERTIES QT_RESOURCE_ALIAS pages/settings/SettingRow.qml)
 set_source_files_properties(qml/pages/settings/SettingsGroup.qml PROPERTIES QT_RESOURCE_ALIAS pages/settings/SettingsGroup.qml)
-set_source_files_properties(qml/pages/settings/ThemePicker.qml PROPERTIES QT_RESOURCE_ALIAS pages/settings/ThemePicker.qml)
 
 # Singletons must be flagged before qt_add_qml_module sees the files
 set_source_files_properties(qml/Theme.qml qml/Icons.qml qml/pages/transfers/TorrentStatus.qml
@@ -129,7 +128,6 @@ qt_add_qml_module(qbt_qmlgui
         qml/pages/rss/RulesDialog.qml
         qml/pages/settings/SettingRow.qml
         qml/pages/settings/SettingsGroup.qml
-        qml/pages/settings/ThemePicker.qml
     RESOURCES
         fonts/Onest-Variable.ttf
         fonts/Unbounded-Variable.ttf
@@ -147,12 +145,16 @@ qt_add_qml_module(qbt_qmlgui
         backend/sessionfacade.cpp
         backend/systemprefs.h
         backend/systemprefs.cpp
+        backend/appinfo.h
+        backend/appinfo.cpp
         backend/jacredsearch.h
         backend/jacredsearch.cpp
         backend/torrentmaker.h
         backend/torrentmaker.cpp
         backend/uisettings.h
         backend/uisettings.cpp
+        backend/updater.h
+        backend/updater.cpp
         backend/torrentlistmodel.h
         backend/torrentlistmodel.cpp
         backend/torrentfiltermodel.h
@@ -212,6 +214,18 @@ target_link_libraries(qbt_qmlgui
     PRIVATE
         qbt_base
 )
+
+# Flux's own version (releases are tagged v<version>) and the GitHub repository its releases are published
+# in: About links to it and the updater checks its latest release
+set(FLUX_VERSION "0.1.0" CACHE STRING "Flux version")
+set(FLUX_GITHUB_REPO "pinkmoneyx-bigguys/Flux" CACHE STRING "GitHub repository of Flux releases (owner/name)")
+execute_process(COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE fluxBuildCommit OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+target_compile_definitions(qbt_qmlgui PRIVATE
+    FLUX_VERSION="${FLUX_VERSION}"
+    FLUX_GITHUB_REPO="${FLUX_GITHUB_REPO}"
+    FLUX_BUILD_COMMIT="${fluxBuildCommit}")
 
 # qmltyperegistrations includes QML_ELEMENT headers by file name only
 target_include_directories(qbt_qmlgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/backend" "${CMAKE_CURRENT_SOURCE_DIR}/streaming"

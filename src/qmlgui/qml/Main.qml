@@ -63,6 +63,8 @@ ApplicationWindow {
         titleBarHitTestItems = registered
 
         visible = true
+        // a quiet look for a newer release (at most once a day, when the user lets it)
+        Qt.callLater(Updater.checkIfDue)
     }
 
     // Page switching from the keyboard
@@ -112,8 +114,6 @@ ApplicationWindow {
             { group: qsTr("Actions"), id: "altSpeed", icon: Icons.turtle, keywords: "turtle speed limit alternative",
               label: SessionFacade.altSpeedEnabled ? qsTr("Turn off alternative speed limits") : qsTr("Turn on alternative speed limits") },
             { group: qsTr("Actions"), id: "refreshRss", label: qsTr("Refresh RSS feeds"), icon: Icons.refresh, keywords: "rss feeds update" },
-            { group: qsTr("Actions"), id: "theme", icon: Icons.uiPanel, keywords: "theme look appearance glass default",
-              label: Theme.glass ? qsTr("Switch to the default look") : qsTr("Switch to Liquid Glass") },
             { group: qsTr("Go to"), id: "page", arg: 0, label: qsTr("Transfers"), icon: Icons.download, shortcut: "Ctrl 1" },
             { group: qsTr("Go to"), id: "status", arg: "downloading", label: qsTr("Transfers: downloading"), icon: Icons.down },
             { group: qsTr("Go to"), id: "status", arg: "seeding", label: qsTr("Transfers: seeding"), icon: Icons.up },
@@ -121,8 +121,10 @@ ApplicationWindow {
             { group: qsTr("Go to"), id: "page", arg: 1, label: qsTr("Tracker search"), icon: Icons.search, shortcut: "Ctrl 2" },
             { group: qsTr("Go to"), id: "page", arg: 2, label: qsTr("RSS feeds"), icon: Icons.rss, shortcut: "Ctrl 3" },
             { group: qsTr("Go to"), id: "page", arg: 3, label: qsTr("Media library"), icon: Icons.media, shortcut: "Ctrl 4" },
-            { group: qsTr("Go to"), id: "settings", arg: "interface", label: qsTr("Settings"), icon: Icons.settings, shortcut: "Ctrl ,",
-              keywords: "preferences options interface theme" },
+            { group: qsTr("Go to"), id: "settings", arg: "downloads", label: qsTr("Settings"), icon: Icons.settings, shortcut: "Ctrl ,",
+              keywords: "preferences options" },
+            { group: qsTr("Go to"), id: "settings", arg: "about", label: qsTr("About Flux"), icon: Icons.info, keywords: "version update github" },
+            { group: qsTr("Actions"), id: "checkUpdates", label: qsTr("Check for updates"), icon: Icons.refresh, keywords: "version release new" },
             { group: qsTr("Go to"), id: "settings", arg: "downloads", label: qsTr("Settings: downloads"), icon: Icons.settings, keywords: "folder save path" },
             { group: qsTr("Go to"), id: "settings", arg: "speed", label: qsTr("Settings: speed"), icon: Icons.settings, keywords: "limit schedule" },
             { group: qsTr("Go to"), id: "settings", arg: "connection", label: qsTr("Settings: connection"), icon: Icons.settings, keywords: "port proxy upnp" },
@@ -166,9 +168,6 @@ ApplicationWindow {
         case "refreshRss":
             RssManager.refresh("")
             break
-        case "theme":
-            UiSettings.style = Theme.glass ? "default" : "glass"
-            break
         case "page":
             currentPage = arg
             break
@@ -179,6 +178,11 @@ ApplicationWindow {
         case "settings":
             settingsPage.section = arg
             currentPage = 4
+            break
+        case "checkUpdates":
+            settingsPage.section = "about"
+            currentPage = 4
+            Updater.check()
             break
         case "searchTrackers":
             currentPage = 1
@@ -402,11 +406,19 @@ ApplicationWindow {
             TorrentListModel.remove([pendingDeleteId], true) // an earlier one goes now
         pendingDeleteId = torrentId
         const name = TorrentListModel.get(torrentId).name ?? ""
+        toastPurpose = "undoDelete"
         windowToast.show(qsTr("“%1” will be deleted with its files").arg(name), false, qsTr("Undo"))
     }
+    // what the toast's action button is for: "undoDelete" or "update"
+    property string toastPurpose: ""
     Connections {
         target: windowToast
         function onActionTriggered() {
+            if (window.toastPurpose === "update") {
+                settingsPage.section = "about"
+                window.currentPage = 4
+                return
+            }
             window.pendingDeleteId = ""
         }
         function onDismissed() {
@@ -414,6 +426,17 @@ ApplicationWindow {
                 return
             TorrentListModel.remove([window.pendingDeleteId], true)
             window.pendingDeleteId = ""
+        }
+    }
+
+    // A newer Flux on GitHub: say so once (unless an undo is waiting on the toast)
+    Connections {
+        target: Updater
+        function onUpdateAvailable(version) {
+            if (window.pendingDeleteId !== "")
+                return
+            window.toastPurpose = "update"
+            windowToast.show(qsTr("Flux %1 is available").arg(version.replace(/^v/i, "")), false, qsTr("Details"))
         }
     }
 
