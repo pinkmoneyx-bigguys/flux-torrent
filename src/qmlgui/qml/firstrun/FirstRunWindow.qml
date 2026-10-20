@@ -30,7 +30,7 @@ Window {
     readonly property int _margin: Theme.sp(6)
     readonly property int _pad: Theme.sp(7)
 
-    title: "Flux"
+    title: "Flux Torrent"
     color: Theme.bg
     visible: true
     // a dialog: fixed size, as tall as its content

@@ -207,19 +207,36 @@ Item {
                     shown: logoBtn.hovered
                 }
             }
-            Text {
-                text: "Flux"
+            // "Flux Torrent": the name in a firm weight, "Torrent" thin beside it
+            Row {
+                objectName: "titleBrand"
+                spacing: Math.round(brandName.font.pixelSize * 0.3)
                 opacity: root.sidebarCollapsed ? 0 : 1
                 Behavior on opacity {
                     enabled: !Theme.reducedMotion
                     NumberAnimation { duration: Theme.durFast }
                 }
-                color: Theme.text
-                font.family: Theme.fontDisplay
-                font.pixelSize: Theme.glass ? 13 : Theme.textBase
-                font.weight: Font.DemiBold
-                font.letterSpacing: Theme.glass ? -0.26 : -0.2
-                Accessible.ignored: true
+                Accessible.role: Accessible.StaticText
+                Accessible.name: "Flux Torrent"
+
+                Text {
+                    id: brandName
+                    text: "Flux"
+                    color: Theme.text
+                    font.family: Theme.fontDisplay
+                    font.pixelSize: Theme.glass ? 13 : Theme.textBase
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: Theme.glass ? -0.26 : -0.2
+                }
+                Text {
+                    anchors.baseline: brandName.baseline
+                    text: "Torrent"
+                    color: Theme.alpha(Theme.text, 0.82)
+                    font.family: Theme.fontDisplay
+                    font.pixelSize: brandName.font.pixelSize
+                    font.weight: Font.Light
+                    font.letterSpacing: 0.1
+                }
             }
         }
     }

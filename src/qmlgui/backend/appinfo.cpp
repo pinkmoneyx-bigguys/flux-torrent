@@ -56,7 +56,7 @@ AppInfo::AppInfo(QObject *parent)
 
 QString AppInfo::name()
 {
-    return u"Flux"_s;
+    return u"Flux Torrent"_s;
 }
 
 QString AppInfo::version()

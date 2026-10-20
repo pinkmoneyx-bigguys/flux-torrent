@@ -217,10 +217,7 @@ target_link_libraries(qbt_qmlgui
         qbt_base
 )
 
-# Flux's own version (releases are tagged v<version>) and the GitHub repository its releases are published
-# in: About links to it and the updater checks its latest release
-set(FLUX_VERSION "0.1.0" CACHE STRING "Flux version")
-set(FLUX_GITHUB_REPO "pinkmoneyx-bigguys/Flux" CACHE STRING "GitHub repository of Flux releases (owner/name)")
+# FLUX_VERSION and FLUX_GITHUB_REPO come from src/CMakeLists.txt
 execute_process(COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     OUTPUT_VARIABLE fluxBuildCommit OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)

@@ -634,12 +634,26 @@ Surface {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 3
-                                Text {
-                                    text: AppInfo.name
-                                    color: Theme.text
-                                    font.family: Theme.fontText
-                                    font.pixelSize: 20
-                                    font.weight: Font.DemiBold
+                                Row {
+                                    spacing: 6
+                                    Accessible.role: Accessible.Heading
+                                    Accessible.name: AppInfo.name
+                                    Text {
+                                        id: aboutBrand
+                                        text: "Flux"
+                                        color: Theme.text
+                                        font.family: Theme.fontText
+                                        font.pixelSize: 20
+                                        font.weight: Font.DemiBold
+                                    }
+                                    Text {
+                                        anchors.baseline: aboutBrand.baseline
+                                        text: "Torrent"
+                                        color: Theme.alpha(Theme.text, 0.82)
+                                        font.family: Theme.fontText
+                                        font.pixelSize: 20
+                                        font.weight: Font.Light
+                                    }
                                 }
                                 Text {
                                     objectName: "aboutVersion"

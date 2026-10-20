@@ -9,9 +9,9 @@ param(
 
 $root = $Flux.RepoRoot
 if ($Version -eq '') {
-    $cmake = Get-Content (Join-Path $root 'src\qmlgui\CMakeLists.txt') -Raw
+    $cmake = Get-Content (Join-Path $root 'src\CMakeLists.txt') -Raw
     if ($cmake -match 'set\(FLUX_VERSION "([^"]+)"') { $Version = $Matches[1] }
-    else { throw 'FLUX_VERSION not found in src\qmlgui\CMakeLists.txt' }
+    else { throw 'FLUX_VERSION not found in src\CMakeLists.txt' }
 }
 
 $deploy = if ($DeployDir -ne '') { $DeployDir } else { Join-Path $root 'deploy' }

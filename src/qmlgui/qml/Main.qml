@@ -34,7 +34,7 @@ ApplicationWindow {
     // shown by Component.onCompleted once the agent has made the window frameless
     visible: false
     color: Theme.bg
-    title: "Flux"
+    title: "Flux Torrent"
 
     WindowAgent {
         id: agent

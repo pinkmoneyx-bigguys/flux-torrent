@@ -463,7 +463,8 @@ Surface {
         }
     }
 
-    // A film poster from Posters, or a tinted placeholder with a film glyph until (or unless) one is found
+    // A film poster from Posters. Until (or unless) one is found: a tinted cover with the Flux mark in the
+    // middle and, when there is room, the film's title and year under it.
     component Poster: Rectangle {
         id: poster
         property var film: ({})
@@ -491,13 +492,58 @@ Surface {
                 Posters.request(film.key, film.title, film.original, film.year, film.series)
         }
 
-        Icon {
+        ColumnLayout {
+            objectName: "posterPlaceholder"
             anchors.centerIn: parent
+            width: parent.width - 2 * Math.max(4, parent.width * 0.1)
             visible: image.status !== Image.Ready
-            path: Icons.film
-            size: Math.min(28, poster.width * 0.35)
-            strokeWidth: 1.4
-            color: Qt.rgba(1, 1, 1, 0.3)
+            spacing: Math.max(4, poster.width * 0.05)
+
+            // the Flux mark on a soft tile
+            Rectangle {
+                readonly property real side: poster.width < 60 ? Math.min(poster.width * 0.62, 22) : Math.min(48, poster.width * 0.26)
+                Layout.alignment: Qt.AlignHCenter
+                implicitWidth: side
+                implicitHeight: side
+                radius: side * 0.25
+                color: Qt.rgba(1, 1, 1, 0.14)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.12)
+                Icon {
+                    anchors.centerIn: parent
+                    path: Icons.logo
+                    size: parent.side * 0.62
+                    strokeWidth: 2.4
+                    color: Qt.rgba(1, 1, 1, 0.82)
+                }
+            }
+            Text {
+                visible: poster.width >= 100
+                Layout.fillWidth: true
+                Layout.topMargin: 2
+                text: poster.film.title || ""
+                color: Qt.rgba(1, 1, 1, 0.88)
+                font.family: Theme.fontText
+                font.pixelSize: Math.round(Math.min(15, Math.max(12, poster.width * 0.075)))
+                font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                maximumLineCount: 3
+                elide: Text.ElideRight
+            }
+            Text {
+                visible: poster.width >= 100
+                Layout.fillWidth: true
+                text: [poster.film.original && poster.film.original !== poster.film.title ? poster.film.original : "",
+                       poster.film.year > 0 ? String(poster.film.year) : ""].filter(t => t !== "").join(" · ")
+                color: Qt.rgba(1, 1, 1, 0.55)
+                font.family: Theme.fontText
+                font.pixelSize: 11
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
+            }
         }
         Image {
             id: image
