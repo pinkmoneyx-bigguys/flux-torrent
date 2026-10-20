@@ -211,6 +211,34 @@ TestCase {
         page.currentId = ""
     }
 
+    // A long error under the name elides inside the name column, never over the size
+    function test_longStatusElides() {
+        const longError = "Files are missing: E:/Maps/planet-latest.osm.pbf and a lot more of a very long path that goes on and on"
+        TorrentListModel.setRows([{ id: "x", name: "planet.osm.pbf", state: "missing", size: 70000, progress: 0.3, error: longError }])
+        waitForRendering(page)
+        const row = rowById("x")
+        const status = findChild(row, "rowStatus")
+        compare(status.text, longError)
+        verify(status.truncated, "it is cut short")
+        const statusRight = status.mapToItem(page, status.width, 0).x
+        const nameRight = findChild(row, "kindTile").parent.mapToItem(page, findChild(row, "kindTile").parent.width, 0).x
+        verify(statusRight <= nameRight + 0.5, "inside the name column: " + statusRight + " <= " + nameRight)
+    }
+
+    // The graph's shift follows the clock from the very frame new samples land
+    function test_graphShiftInStepWithSamples() {
+        page.currentId = "a"
+        const pane = findChild(page, "transfersDetails")
+        tryVerify(() => pane.visible)
+        pane.tab = "speed"
+        const graph = findChild(pane, "detailsSpeedGraph")
+        tryVerify(() => graph.visible, 1000)
+        TorrentListModel.sampleHistory()
+        verify(graph.phase < 0.2, "a fresh sample starts the shift over at once: " + graph.phase)
+        pane.tab = "general"
+        page.currentId = ""
+    }
+
     function test_clickSelects() {
         mouseClick(rowItem(1), 200, 20)
         compare(page.selectedIds(), ["b"])

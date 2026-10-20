@@ -3,9 +3,9 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Flux
 
-// The top of the frameless window: the logo (a click folds the sidebar), the search pill centred on the
-// window (it opens the command palette), the main actions, and the window buttons. Default look: one flat
-// strip on the window chrome with Windows-style caption buttons. Glass look: separate frosted pills.
+// The top of the frameless window: the logo (a click folds the sidebar), the main actions and the window
+// buttons. Default look: one flat strip on the window chrome with Windows-style caption buttons. Glass
+// look: separate frosted pills. (Search and commands: Ctrl+K opens the command palette.)
 // Main.qml hands the window buttons and `interactiveItems` to QWindowKit; the rest drags the window.
 Item {
     id: root
@@ -16,25 +16,18 @@ Item {
     property real logoWidth: 236
     property bool sidebarCollapsed: false
 
-    readonly property alias searchField: searchInput
     readonly property alias altSpeedButton: altButton
     readonly property alias logoButton: logoBtn
     readonly property alias minimizeButton: minBtn
     readonly property alias maximizeButton: maxBtn
     readonly property alias closeButton: closeBtn
     // Clickable parts that must not drag the window; the last three are also the agent's system buttons
-    readonly property list<Item> interactiveItems: [logoBtn, searchPill, addBtn, linkBtn, createBtn, startBtn, stopBtn,
+    readonly property list<Item> interactiveItems: [logoBtn, addBtn, linkBtn, createBtn, startBtn, stopBtn,
                                                     altButton, minBtn, maxBtn, closeBtn]
 
-    // The search pill opens the command palette (Main shows it)
-    signal commandsRequested()
     signal sidebarToggleRequested()
     // "addTorrent", "addLink", "createTorrent", "startAll", "stopAll", "altSpeed" (Main.runCommand)
     signal actionRequested(string id)
-    function focusSearch() {
-        commandsRequested()
-    }
-
     implicitHeight: 44
 
     // Caption button. Glass: a 34x32 capsule. Default: a flat 46 px wide Windows caption button that
@@ -328,91 +321,6 @@ Item {
                     iconPath: Icons.close
                     danger: true
                     onClicked: root.Window.window.close()
-                }
-            }
-        }
-    }
-
-    // --- Search (centred on the window) --------------------------------------------------------
-    // As wide as 420 px allows between the logo and the actions; centred on the window when it fits
-    Surface {
-        id: searchPill
-        objectName: "titleSearch"
-        kind: "field"
-        focused: searchInput.activeFocus
-
-        readonly property real leftLimit: logoBlock.width + Theme.sp(3)
-        readonly property real rightLimit: rightBlock.x - Theme.sp(3)
-        readonly property real room: rightLimit - leftLimit
-        visible: room >= 160
-        width: Math.max(160, Math.min(420, room))
-        height: Theme.glass ? 44 : 30
-        x: Math.max(leftLimit, Math.min(rightLimit - width, (root.width - width) / 2))
-        anchors.verticalCenter: parent.verticalCenter
-        radius: Theme.glass ? height / 2 : Theme.radiusCtl
-
-        // a click anywhere on the pill opens the command palette; it sits above the field,
-        // which would otherwise take the press for text selection
-        MouseArea {
-            objectName: "titleSearchTrigger"
-            anchors.fill: parent
-            z: 10
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.focusSearch()
-        }
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: Theme.glass ? Theme.sp(4) : 10
-            anchors.rightMargin: Theme.glass ? Theme.sp(2) : 4
-            spacing: Theme.glass ? 10 : Theme.sp(2)
-
-            Icon {
-                path: Icons.search
-                size: Theme.glass ? 15 : 14
-                strokeWidth: Theme.glass ? 1.6 : 2
-                color: Theme.glass ? Qt.rgba(1, 1, 1, 0.7) : Theme.textDim
-            }
-            TextField {
-                id: searchInput
-                objectName: "titleSearchField"
-                // a trigger: typing happens in the command palette
-                readOnly: true
-                activeFocusOnPress: false
-                focusPolicy: Qt.NoFocus
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                padding: 0
-                background: null
-                color: Theme.text
-                selectionColor: Theme.glass ? Theme.accentAlpha(0.35) : "#3F3F46"
-                selectedTextColor: Theme.text
-                placeholderText: qsTr("Search torrents, files and commands")
-                placeholderTextColor: Theme.glass ? Theme.textFaint : Theme.textDim
-                font.family: Theme.fontText
-                font.pixelSize: Theme.textSm
-                verticalAlignment: TextInput.AlignVCenter
-                Accessible.name: qsTr("Search and commands")
-                Keys.onEscapePressed: {
-                    text = ""
-                    focus = false
-                }
-            }
-            // shadcn <Kbd>: muted chip with mono text
-            Rectangle {
-                implicitWidth: hint.implicitWidth + (Theme.glass ? 18 : 10)
-                implicitHeight: Theme.glass ? hint.implicitHeight + 8 : 20
-                radius: Theme.glass ? height / 2 : 4
-                color: Theme.glass ? Qt.rgba(1, 1, 1, 0.08) : Theme.muted
-
-                Text {
-                    id: hint
-                    anchors.centerIn: parent
-                    text: "Ctrl K"
-                    color: Theme.glass ? Qt.rgba(1, 1, 1, 0.72) : Theme.textDim
-                    font.family: Theme.glass ? Theme.fontMono : Theme.fontText
-                    font.pixelSize: 11
-                    font.weight: Theme.glass ? Font.Normal : Font.Medium
                 }
             }
         }

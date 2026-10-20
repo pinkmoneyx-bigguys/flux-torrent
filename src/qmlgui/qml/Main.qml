@@ -202,7 +202,6 @@ ApplicationWindow {
 
         TitleBar {
             id: titleBar
-            onCommandsRequested: palette.show()
             onSidebarToggleRequested: window.toggleSidebar()
             onActionRequested: id => window.runCommand(id)
             sidebarCollapsed: window.sidebarCollapsed

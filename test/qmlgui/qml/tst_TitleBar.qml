@@ -45,31 +45,16 @@ TestCase {
         waitForRendering(main.contentItem)
     }
 
-    // The search pill is centred on the window, at most 420 px, in both looks
-    function test_searchIsCentred() {
-        for (const style of ["default", "glass"]) {
-            Theme.style = style
-            main.width = 1440
-            wait(50)
-            const s = findChild(main.contentItem, "titleSearch")
-            verify(s.visible)
-            compare(s.width, 420, style + ": capped at 420 px")
-            const centre = s.mapToItem(main.contentItem, s.width / 2, 0).x
-            verify(Math.abs(centre - main.width / 2) <= 1, style + ": centred on the window: " + centre)
-        }
-        Theme.style = "default"
-    }
-
-    function test_searchKeepsMinimumWidthAtMinWindowWidth() {
+    // No search in the bar (Ctrl+K opens the command palette); at the narrowest window the actions
+    // and the window buttons still fit after the logo
+    function test_noSearchAndActionsFit() {
+        verify(!findChild(main.contentItem, "titleSearch"), "no search pill")
         main.width = main.minimumWidth
         tryCompare(main, "width", main.minimumWidth)
         wait(50)
-        const s = findChild(main.contentItem, "titleSearch")
-        verify(s.visible && s.width >= 160, "search pill keeps its 160 px minimum: " + s.width)
         const logo = findChild(main.contentItem, "titleLogo")
-        verify(s.mapToItem(bar, 0, 0).x >= logo.width, "the pill does not run into the logo")
         const actions = findChild(main.contentItem, "titleActions")
-        verify(s.mapToItem(bar, s.width, 0).x <= actions.mapToItem(bar, 0, 0).x, "nor into the actions")
+        verify(actions.mapToItem(bar, 0, 0).x >= logo.width, "the actions do not run into the logo")
         const right = bar.minimizeButton.parent.mapToItem(bar, bar.minimizeButton.parent.width, 0).x
         verify(right <= bar.width + 0.5, "window buttons stay inside the title bar")
     }
@@ -106,7 +91,7 @@ TestCase {
                 visit(item.children[i])
         }
         visit(bar)
-        verify(checked >= 5, "found the search field, the alt-speed button and three window buttons: " + checked)
+        verify(checked >= 5, "found the logo, the actions and three window buttons: " + checked)
     }
 
     function test_titleBarAndSystemButtons() {
@@ -202,14 +187,5 @@ TestCase {
         tryVerify(() => findChild(palette.contentItem, "commandInput").activeFocus, 1000, "typing goes into the palette")
         keyClick(Qt.Key_Escape)
         tryCompare(palette, "visible", false)
-        mouseClick(findChild(main.contentItem, "titleSearch"))
-        tryCompare(palette, "opened", true, 1000, "a click on the search pill opens it too")
-        palette.close()
-        tryCompare(palette, "visible", false)
-    }
-
-    function test_searchPlaceholderAndName() {
-        verify(bar.searchField.placeholderText !== "")
-        verify(bar.searchField.Accessible.name !== "")
     }
 }

@@ -190,45 +190,22 @@ Surface {
         anchors.fill: parent
         spacing: 0
 
+        // One bar: the title, the filter, and on the right the row count or the selection's actions.
+        // (Adding torrents lives in the title bar.)
         PageHeader {
             Layout.fillWidth: true
             title: page.title
             subtitle: TransfersState.status === "all" ? "" : TransfersState.label(TransfersState.status)
 
-            UiButton {
-                objectName: "addLinkButton"
-                variant: "outline"
-                iconPath: Icons.link
-                text: qsTr("Add link")
-                onClicked: addLinkDialog.open()
-            }
-            UiButton {
-                objectName: "addTorrentButton"
-                iconPath: Icons.plus
-                text: qsTr("Add torrent")
-                onClicked: fileDialog.open()
-            }
-        }
-
-        // Toolbar: filter on the left, selection actions or the row count on the right
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.leftMargin: Theme.sp(6)
-            Layout.rightMargin: Theme.sp(6)
-            Layout.topMargin: Theme.sp(4)
-            Layout.bottomMargin: Theme.sp(3)
-            spacing: Theme.sp(2)
-
-            UiInput {
+            leading: UiInput {
                 id: searchInput
                 objectName: "transfersSearch"
-                Layout.preferredWidth: 280
+                Layout.preferredWidth: Math.min(280, Math.max(160, page.width * 0.24))
+                implicitHeight: 32
                 iconPath: Icons.filter
                 placeholderText: qsTr("Filter torrents…")
                 field.Keys.onDownPressed: list.forceActiveFocus()
             }
-
-            Item { Layout.fillWidth: true }
 
             Text {
                 visible: page.selectedCount === 0
@@ -287,6 +264,7 @@ Surface {
             Layout.fillHeight: true
             Layout.leftMargin: Theme.sp(6)
             Layout.rightMargin: Theme.sp(6)
+            Layout.topMargin: Theme.sp(4)
             Layout.bottomMargin: details.visible ? 0 : Theme.sp(6)
             radius: Theme.radiusCtl + 2
             color: "transparent"
@@ -938,9 +916,9 @@ Surface {
                         spacing: 8
                         Text {
                             objectName: "rowStatus"
-                            // gives way (elides) before the chip does
-                            Layout.minimumWidth: 0
-                            Layout.preferredWidth: implicitWidth
+                            // as wide as its text, or what is left before the chip, eliding then
+                            Layout.fillWidth: true
+                            Layout.maximumWidth: implicitWidth
                             text: (rowItem.state === "missing" || rowItem.state === "error") && rowItem.error !== ""
                                   ? rowItem.error : TorrentStatus.label(rowItem.state)
                             color: rowItem.stateColor

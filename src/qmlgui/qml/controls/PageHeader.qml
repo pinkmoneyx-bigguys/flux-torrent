@@ -2,14 +2,15 @@ import QtQuick
 import QtQuick.Layouts
 import Flux
 
-// The 48 px bar at the top of a page (shadcn SiteHeader): the title on the left, actions on the right
-// (children go into the action row), a 1 px border underneath.
+// The 48 px bar at the top of a page (shadcn SiteHeader): the title on the left, then `leading` items
+// (a filter field), actions on the right (children go into the action row), a 1 px border underneath.
 Item {
     id: root
 
     property string title
     property string subtitle
     default property alias actions: actionRow.data
+    property alias leading: leadingRow.data
 
     implicitHeight: 48
 
@@ -42,6 +43,11 @@ Item {
             color: Theme.textDim
             font.family: Theme.fontText
             font.pixelSize: Theme.textSm
+        }
+        RowLayout {
+            id: leadingRow
+            Layout.leftMargin: children.length > 0 ? Theme.sp(3) : 0
+            spacing: Theme.sp(2)
         }
         Item {
             Layout.fillWidth: true

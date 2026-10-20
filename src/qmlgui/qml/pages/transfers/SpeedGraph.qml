@@ -45,16 +45,28 @@ Item {
         return 10 * base * unit
     }
 
+    function currentPhase() {
+        return Theme.reducedMotion ? 1
+             : Math.max(0, Math.min(1, (Date.now() - TorrentListModel.historySampledAt) / interval))
+    }
+
     function reload() {
         const h = TorrentListModel.speedHistory(torrentId)
-        down = h.down.slice(-(span + 1))
-        up = h.up.slice(-(span + 1))
+        // the shift and the new curves change in the same frame: the old shift on the new curves
+        // would show every point one step too far left for a frame
+        phase = currentPhase()
+        down = h.down.slice(-(span + 2))
+        up = h.up.slice(-(span + 2))
         let m = 0
         for (const v of down)
             m = Math.max(m, v)
         for (const v of up)
             m = Math.max(m, v)
-        peak = niceCeil(Math.max(m * 1.12, 16 * 1024))
+        // the scale grows at once when a rate needs it, and shrinks only when it is far too tall,
+        // so it does not breathe with every sample
+        const wanted = niceCeil(Math.max(m * 1.12, 16 * 1024))
+        if (wanted > peak || wanted < peak * 0.45)
+            peak = wanted
     }
 
     Connections {
@@ -68,19 +80,28 @@ Item {
 
     FrameAnimation {
         running: graph.visible
-        onTriggered: graph.phase = Theme.reducedMotion ? 1
-                     : Math.max(0, Math.min(1, (Date.now() - TorrentListModel.historySampledAt) / graph.interval))
+        onTriggered: graph.phase = graph.currentPhase()
     }
 
-    // x of sample i of n: the newest sits one step past the right edge when it arrives
+    // x of sample i of n: the newest sits two steps past the right edge when it arrives. A new sample
+    // reshapes the curve between the two before it; that piece is still out of view then.
     function xAt(i, n) {
-        return plot.width + step - (n - 1 - i) * step
+        return plot.width + 2 * step - (n - 1 - i) * step
     }
     function yAt(v) {
         return plot.height - Math.min(1, v / Math.max(1, shownPeak)) * (plot.height - 2)
     }
-    // A Catmull-Rom curve through the samples as SVG cubic segments; `closed` drops it to the bottom
-    function curve(values, closed) {
+    // A Catmull-Rom curve through the samples as SVG cubic segments
+    readonly property string downCurve: curve(down)
+    readonly property string upCurve: curve(up)
+    // the same, dropped to the bottom and closed, for the fill
+    function closedCurve(d, values) {
+        const n = values.length
+        if (n < 2)
+            return ""
+        return d + " L " + xAt(n - 1, n).toFixed(2) + " " + plot.height + " L " + xAt(0, n).toFixed(2) + " " + plot.height + " Z"
+    }
+    function curve(values) {
         const n = values.length
         if (n < 2)
             return ""
@@ -96,8 +117,6 @@ Item {
             d += " C " + c1x.toFixed(2) + " " + c1y.toFixed(2) + " " + c2x.toFixed(2) + " " + c2y.toFixed(2)
                  + " " + p2.x.toFixed(2) + " " + p2.y.toFixed(2)
         }
-        if (closed)
-            d += " L " + pts[n - 1].x.toFixed(2) + " " + plot.height + " L " + pts[0].x.toFixed(2) + " " + plot.height + " Z"
         return d
     }
 
@@ -192,7 +211,7 @@ Item {
                         GradientStop { position: 0; color: Theme.alpha(Theme.upload, 0.28) }
                         GradientStop { position: 1; color: Theme.alpha(Theme.upload, 0) }
                     }
-                    PathSvg { path: graph.curve(graph.up, true) }
+                    PathSvg { path: graph.closedCurve(graph.upCurve, graph.up) }
                 }
                 ShapePath {
                     strokeColor: "transparent"
@@ -201,7 +220,7 @@ Item {
                         GradientStop { position: 0; color: Theme.alpha(Theme.download, 0.32) }
                         GradientStop { position: 1; color: Theme.alpha(Theme.download, 0) }
                     }
-                    PathSvg { path: graph.curve(graph.down, true) }
+                    PathSvg { path: graph.closedCurve(graph.downCurve, graph.down) }
                 }
                 ShapePath {
                     strokeColor: Theme.upload
@@ -209,7 +228,7 @@ Item {
                     fillColor: "transparent"
                     joinStyle: ShapePath.RoundJoin
                     capStyle: ShapePath.RoundCap
-                    PathSvg { path: graph.curve(graph.up, false) }
+                    PathSvg { path: graph.upCurve }
                 }
                 ShapePath {
                     strokeColor: Theme.download
@@ -217,7 +236,7 @@ Item {
                     fillColor: "transparent"
                     joinStyle: ShapePath.RoundJoin
                     capStyle: ShapePath.RoundCap
-                    PathSvg { path: graph.curve(graph.down, false) }
+                    PathSvg { path: graph.downCurve }
                 }
             }
         }
