@@ -25,8 +25,10 @@ Item {
     // Clickable parts that must not drag the window; the last three are also the agent's system buttons
     readonly property list<Item> interactiveItems: [searchPill, altButton, minBtn, maxBtn, closeBtn]
 
+    // The search pill opens the command palette (Main shows it)
+    signal commandsRequested()
     function focusSearch() {
-        searchInput.forceActiveFocus(Qt.ShortcutFocusReason)
+        commandsRequested()
     }
 
     implicitHeight: 44
@@ -141,9 +143,14 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 radius: Theme.glass ? height / 2 : Theme.radiusCtl
 
-                // a click anywhere on the pill puts the cursor into the field
-                TapHandler {
-                    onTapped: root.focusSearch()
+                // a click anywhere on the pill opens the command palette; it sits above the field,
+                // which would otherwise take the press for text selection
+                MouseArea {
+                    objectName: "titleSearchTrigger"
+                    anchors.fill: parent
+                    z: 10
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.focusSearch()
                 }
 
                 RowLayout {
@@ -161,6 +168,10 @@ Item {
                     TextField {
                         id: searchInput
                         objectName: "titleSearchField"
+                        // a trigger: typing happens in the command palette
+                        readOnly: true
+                        activeFocusOnPress: false
+                        focusPolicy: Qt.NoFocus
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         padding: 0

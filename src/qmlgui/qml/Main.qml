@@ -77,7 +77,90 @@ ApplicationWindow {
     }
     Shortcut {
         sequence: "Ctrl+K"
-        onActivated: titleBar.focusSearch()
+        onActivated: palette.visible ? palette.close() : palette.show()
+    }
+    Shortcut {
+        sequence: "Ctrl+O"
+        onActivated: window.runCommand("addTorrent")
+    }
+
+    CommandPalette {
+        id: palette
+        actions: [
+            { group: qsTr("Actions"), id: "addTorrent", label: qsTr("Add torrent…"), icon: Icons.plus, shortcut: "Ctrl O", keywords: "open file torrent" },
+            { group: qsTr("Actions"), id: "addLink", label: qsTr("Add magnet link…"), icon: Icons.link, keywords: "magnet url link" },
+            { group: qsTr("Actions"), id: "startAll", label: qsTr("Start all torrents"), icon: Icons.play, keywords: "resume run" },
+            { group: qsTr("Actions"), id: "stopAll", label: qsTr("Stop all torrents"), icon: Icons.pause, keywords: "pause" },
+            { group: qsTr("Actions"), id: "altSpeed", icon: Icons.turtle, keywords: "turtle speed limit alternative",
+              label: SessionFacade.altSpeedEnabled ? qsTr("Turn off alternative speed limits") : qsTr("Turn on alternative speed limits") },
+            { group: qsTr("Actions"), id: "refreshRss", label: qsTr("Refresh RSS feeds"), icon: Icons.refresh, keywords: "rss feeds update" },
+            { group: qsTr("Actions"), id: "theme", icon: Icons.uiPanel, keywords: "theme look appearance glass default",
+              label: Theme.glass ? qsTr("Switch to the default look") : qsTr("Switch to Liquid Glass") },
+            { group: qsTr("Go to"), id: "page", arg: 0, label: qsTr("Transfers"), icon: Icons.download, shortcut: "Ctrl 1" },
+            { group: qsTr("Go to"), id: "status", arg: "downloading", label: qsTr("Transfers: downloading"), icon: Icons.down },
+            { group: qsTr("Go to"), id: "status", arg: "seeding", label: qsTr("Transfers: seeding"), icon: Icons.up },
+            { group: qsTr("Go to"), id: "status", arg: "completed", label: qsTr("Transfers: completed"), icon: Icons.check },
+            { group: qsTr("Go to"), id: "page", arg: 1, label: qsTr("Tracker search"), icon: Icons.search, shortcut: "Ctrl 2" },
+            { group: qsTr("Go to"), id: "page", arg: 2, label: qsTr("RSS feeds"), icon: Icons.rss, shortcut: "Ctrl 3" },
+            { group: qsTr("Go to"), id: "page", arg: 3, label: qsTr("Media library"), icon: Icons.media, shortcut: "Ctrl 4" },
+            { group: qsTr("Go to"), id: "settings", arg: "interface", label: qsTr("Settings"), icon: Icons.settings, shortcut: "Ctrl ,",
+              keywords: "preferences options interface theme" },
+            { group: qsTr("Go to"), id: "settings", arg: "downloads", label: qsTr("Settings: downloads"), icon: Icons.settings, keywords: "folder save path" },
+            { group: qsTr("Go to"), id: "settings", arg: "speed", label: qsTr("Settings: speed"), icon: Icons.settings, keywords: "limit schedule" },
+            { group: qsTr("Go to"), id: "settings", arg: "connection", label: qsTr("Settings: connection"), icon: Icons.settings, keywords: "port proxy upnp" },
+            { group: qsTr("Go to"), id: "settings", arg: "bittorrent", label: qsTr("Settings: BitTorrent"), icon: Icons.settings, keywords: "dht queue ratio seeding" },
+            { group: qsTr("Go to"), id: "settings", arg: "advanced", label: qsTr("Settings: advanced"), icon: Icons.settings, keywords: "libtorrent disk network" }
+        ]
+        onTriggered: (id, arg) => window.runCommand(id, arg)
+    }
+
+    // Carries out a command palette entry (also Ctrl+O)
+    function runCommand(id, arg) {
+        switch (id) {
+        case "torrent":
+            currentPage = 0
+            TransfersState.status = "all"
+            TransfersState.focusId = arg
+            break
+        case "addTorrent":
+            currentPage = 0
+            transfersPage.openAddFile()
+            break
+        case "addLink":
+            currentPage = 0
+            transfersPage.openAddLink()
+            break
+        case "startAll":
+            TorrentListModel.start(TorrentListModel.allIds())
+            break
+        case "stopAll":
+            TorrentListModel.stop(TorrentListModel.allIds())
+            break
+        case "altSpeed":
+            SessionFacade.altSpeedEnabled = !SessionFacade.altSpeedEnabled
+            break
+        case "refreshRss":
+            RssManager.refresh("")
+            break
+        case "theme":
+            UiSettings.style = Theme.glass ? "default" : "glass"
+            break
+        case "page":
+            currentPage = arg
+            break
+        case "status":
+            TransfersState.status = arg
+            currentPage = 0
+            break
+        case "settings":
+            settingsPage.section = arg
+            currentPage = 4
+            break
+        case "searchTrackers":
+            currentPage = 1
+            searchPage.searchFor(arg)
+            break
+        }
     }
 
     GlassBackground {
@@ -95,6 +178,7 @@ ApplicationWindow {
 
         TitleBar {
             id: titleBar
+            onCommandsRequested: palette.show()
             objectName: "titleBar"
             anchors.fill: parent
             anchors.leftMargin: Theme.glass ? Theme.gap : 0
@@ -138,11 +222,11 @@ ApplicationWindow {
                 anchors.fill: parent
                 currentIndex: window.currentPage
 
-                TransfersPage {}
-                SearchPage {}
+                TransfersPage { id: transfersPage }
+                SearchPage { id: searchPage }
                 RssPage {}
                 MediaPage {}
-                SettingsPage {}
+                SettingsPage { id: settingsPage }
             }
         }
     }

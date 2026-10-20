@@ -359,6 +359,45 @@
     </message>
 </context>
 <context>
+    <name>CommandPalette</name>
+    <message>
+        <source>Torrents</source>
+        <translation>Торренты</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Поиск</translation>
+    </message>
+    <message>
+        <source>Search trackers for “%1”</source>
+        <translation>Искать на трекерах «%1»</translation>
+    </message>
+    <message>
+        <source>Type a command or search…</source>
+        <translation>Команда или поиск…</translation>
+    </message>
+    <message>
+        <source>Command</source>
+        <translation>Команда</translation>
+    </message>
+    <message>
+        <source>No results found.</source>
+        <translation>Ничего не найдено.</translation>
+    </message>
+    <message>
+        <source>to move</source>
+        <translation>выбор</translation>
+    </message>
+    <message>
+        <source>to choose</source>
+        <translation>выполнить</translation>
+    </message>
+    <message>
+        <source>to close</source>
+        <translation>закрыть</translation>
+    </message>
+</context>
+<context>
     <name>FirstRunWindow</name>
     <message>
         <source>Migrate your torrents from qBittorrent?</source>
@@ -410,6 +449,105 @@
     <message>
         <source>Progress</source>
         <translation>Прогресс</translation>
+    </message>
+</context>
+<context>
+    <name>Main</name>
+    <message>
+        <source>Actions</source>
+        <translation>Действия</translation>
+    </message>
+    <message>
+        <source>Add torrent…</source>
+        <translation>Добавить торрент…</translation>
+    </message>
+    <message>
+        <source>Add magnet link…</source>
+        <translation>Добавить magnet-ссылку…</translation>
+    </message>
+    <message>
+        <source>Start all torrents</source>
+        <translation>Запустить все торренты</translation>
+    </message>
+    <message>
+        <source>Stop all torrents</source>
+        <translation>Остановить все торренты</translation>
+    </message>
+    <message>
+        <source>Turn off alternative speed limits</source>
+        <translation>Выключить альтернативные ограничения</translation>
+    </message>
+    <message>
+        <source>Turn on alternative speed limits</source>
+        <translation>Включить альтернативные ограничения</translation>
+    </message>
+    <message>
+        <source>Refresh RSS feeds</source>
+        <translation>Обновить RSS-ленты</translation>
+    </message>
+    <message>
+        <source>Switch to the default look</source>
+        <translation>Переключить на стандартную тему</translation>
+    </message>
+    <message>
+        <source>Switch to Liquid Glass</source>
+        <translation>Переключить на Liquid Glass</translation>
+    </message>
+    <message>
+        <source>Go to</source>
+        <translation>Перейти</translation>
+    </message>
+    <message>
+        <source>Transfers</source>
+        <translation>Передачи</translation>
+    </message>
+    <message>
+        <source>Transfers: downloading</source>
+        <translation>Передачи: загружаются</translation>
+    </message>
+    <message>
+        <source>Transfers: seeding</source>
+        <translation>Передачи: раздаются</translation>
+    </message>
+    <message>
+        <source>Transfers: completed</source>
+        <translation>Передачи: завершены</translation>
+    </message>
+    <message>
+        <source>Tracker search</source>
+        <translation>Поиск по трекерам</translation>
+    </message>
+    <message>
+        <source>RSS feeds</source>
+        <translation>RSS-ленты</translation>
+    </message>
+    <message>
+        <source>Media library</source>
+        <translation>Медиатека</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Настройки</translation>
+    </message>
+    <message>
+        <source>Settings: downloads</source>
+        <translation>Настройки: загрузки</translation>
+    </message>
+    <message>
+        <source>Settings: speed</source>
+        <translation>Настройки: скорость</translation>
+    </message>
+    <message>
+        <source>Settings: connection</source>
+        <translation>Настройки: соединение</translation>
+    </message>
+    <message>
+        <source>Settings: BitTorrent</source>
+        <translation>Настройки: BitTorrent</translation>
+    </message>
+    <message>
+        <source>Settings: advanced</source>
+        <translation>Настройки: дополнительно</translation>
     </message>
 </context>
 <context>

@@ -36,6 +36,13 @@ Surface {
         }
     }
 
+    // From the command palette: fill the query and search right away when possible
+    function searchFor(text) {
+        queryInput.text = text
+        if (ready)
+            search()
+    }
+
     function search() {
         if (queryInput.text.trim() === "")
             return

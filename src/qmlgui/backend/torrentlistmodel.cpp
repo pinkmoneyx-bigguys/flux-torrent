@@ -329,6 +329,15 @@ void TorrentListModel::setRows(const QVariantList &rows)
     updateCounts();
 }
 
+QStringList TorrentListModel::allIds() const
+{
+    QStringList ids;
+    ids.reserve(m_rows.size());
+    for (const TorrentRow &r : m_rows)
+        ids.append(r.id);
+    return ids;
+}
+
 QVariantMap TorrentListModel::get(const QString &id) const
 {
     const TorrentRow *r = row(id);

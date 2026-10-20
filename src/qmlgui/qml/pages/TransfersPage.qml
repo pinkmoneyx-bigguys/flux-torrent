@@ -790,6 +790,30 @@ Surface {
         onAccepted: page.addSources(selectedFiles)
     }
 
+    function openAddFile() {
+        fileDialog.open()
+    }
+    function openAddLink() {
+        addLinkDialog.open()
+    }
+
+    // The command palette picked a torrent: select it, scroll to it, show its details
+    Connections {
+        target: TransfersState
+        function onFocusIdChanged() {
+            const id = TransfersState.focusId
+            if (id === "")
+                return
+            const row = filter.rowOf(id)
+            if (row >= 0) {
+                page.selectOnly(id)
+                list.positionViewAtIndex(row, ListView.Center)
+                list.forceActiveFocus()
+            }
+            TransfersState.focusId = ""
+        }
+    }
+
     // One torrent opens the Add torrent dialog; several are added at once with the defaults
     function addSources(urls) {
         const list = Array.from(urls).map(u => String(u))

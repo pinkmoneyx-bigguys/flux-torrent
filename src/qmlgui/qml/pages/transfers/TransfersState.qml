@@ -6,6 +6,8 @@ import Flux
 QtObject {
     // "all", "downloading", "seeding", "completed", "stopped", "errored"
     property string status: "all"
+    // Set to a torrent id to have the Transfers page select and show it (the command palette)
+    property string focusId: ""
 
     readonly property var filters: [
         { key: "all", label: qsTr("All") },

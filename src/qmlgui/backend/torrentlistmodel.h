@@ -147,6 +147,8 @@ public:
     Q_INVOKABLE void setRows(const QVariantList &rows);
     // The row of `id` as a JS object, or an empty one
     Q_INVOKABLE QVariantMap get(const QString &id) const;
+    // Every torrent id, in list order
+    Q_INVOKABLE QStringList allIds() const;
 
     Q_INVOKABLE void start(const QStringList &ids);
     Q_INVOKABLE void stop(const QStringList &ids);

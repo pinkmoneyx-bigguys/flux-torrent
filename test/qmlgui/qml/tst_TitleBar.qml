@@ -182,10 +182,19 @@ TestCase {
         tryCompare(main, "visibility", Window.Windowed)
     }
 
-    function test_ctrlKFocusesSearch() {
+    function test_ctrlKOpensCommandPalette() {
         main.contentItem.forceActiveFocus()
         keyClick(Qt.Key_K, Qt.ControlModifier)
-        verify(bar.searchField.activeFocus, "Ctrl+K puts the cursor into the search field")
+        const palette = findChild(main.contentItem, "commandPalette") ?? findChild(main, "commandPalette")
+        verify(palette, "the window has a command palette")
+        tryCompare(palette, "opened", true)
+        tryVerify(() => findChild(palette.contentItem, "commandInput").activeFocus, 1000, "typing goes into the palette")
+        keyClick(Qt.Key_Escape)
+        tryCompare(palette, "visible", false)
+        mouseClick(findChild(main.contentItem, "titleSearch"))
+        tryCompare(palette, "opened", true, 1000, "a click on the search pill opens it too")
+        palette.close()
+        tryCompare(palette, "visible", false)
     }
 
     function test_searchPlaceholderAndName() {
