@@ -159,6 +159,15 @@ qt_add_qml_module(qbt_qmlgui
         backend/addtorrentdraft.cpp
         streaming/streamplanner.h
         streaming/streamplanner.cpp
+        streaming/streamstatestore.h
+        streaming/streamstatestore.cpp
+        streaming/httprange.h
+        streaming/httprange.cpp
+        streaming/streamsource.h
+        streaming/filestreamsource.h
+        streaming/filestreamsource.cpp
+        streaming/streamserver.h
+        streaming/streamserver.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h

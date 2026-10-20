@@ -7,6 +7,9 @@ set(qmlGuiTestFiles
     testsessionfacade.cpp
     testsystemprefs.cpp
     teststreamplanner.cpp
+    teststreamstatestore.cpp
+    testhttprange.cpp
+    teststreamserver.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})
