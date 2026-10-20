@@ -531,6 +531,10 @@
 <context>
     <name>FirstRunWindow</name>
     <message>
+        <source>Carry your settings over from qBittorrent?</source>
+        <translation>Перенести настройки из qBittorrent?</translation>
+    </message>
+    <message>
         <source>Migrate your torrents from qBittorrent?</source>
         <translation>Перенести раздачи из qBittorrent?</translation>
     </message>
@@ -541,6 +545,10 @@
             <numerusform>Раздач в профиле qBittorrent: %n</numerusform>
             <numerusform>Раздач в профиле qBittorrent: %n</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Your qBittorrent profile has no torrents: its settings and RSS feeds come along</source>
+        <translation>Раздач в профиле qBittorrent нет — перенесутся настройки и ленты RSS</translation>
     </message>
     <message>
         <source>The torrents and settings of your qBittorrent profile</source>

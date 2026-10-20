@@ -65,6 +65,20 @@ TestCase {
         verify(text("count").text.indexOf("3") >= 0, "the count is shown: " + text("count").text)
     }
 
+    // No torrents: it offers the settings, and there is nothing to warn about
+    function test_noTorrents() {
+        dlg.torrentCount = 0
+        compare(text("title").text, "Carry your settings over from qBittorrent?")
+        verify(!text("warning").visible, "no warning about running torrents in both")
+        dlg.torrentCount = 2
+        compare(text("title").text, "Migrate your torrents from qBittorrent?")
+        verify(text("warning").visible)
+        FluxTestI18n.setLanguage("ru")
+        dlg.torrentCount = 0
+        compare(text("title").text, "Перенести настройки из qBittorrent?")
+        compare(text("count").text, "Раздач в профиле qBittorrent нет — перенесутся настройки и ленты RSS")
+    }
+
     function test_unknownTorrentCount() {
         dlg.torrentCount = -1
         compare(text("count").text, "The torrents and settings of your qBittorrent profile")
