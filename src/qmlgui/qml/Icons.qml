@@ -66,6 +66,9 @@ QtObject {
     readonly property string x: "M18 6 6 18M6 6l12 12"
     readonly property string minus: "M5 12h14"
     readonly property string inbox: "M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"
+    // Spinner arc (lucide loader-circle), rotated by UiSpinner
+    readonly property string loader: "M21 12a9 9 0 1 1-6.2-8.6"
+    readonly property string puzzle: "M9 4h3a2 2 0 1 1 4 0h3v5a2 2 0 1 1 0 4v6h-5a2 2 0 1 0-4 0H5v-6a2 2 0 1 0 0-4V4z"
     readonly property string file: "M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5"
     readonly property string uiPanel: "M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 9v11"
 }

@@ -48,6 +48,11 @@ set_source_files_properties(qml/ui/UiDialog.qml PROPERTIES QT_RESOURCE_ALIAS ui/
 set_source_files_properties(qml/pages/transfers/TorrentStatus.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/TorrentStatus.qml)
 set_source_files_properties(qml/pages/transfers/TransfersState.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/TransfersState.qml)
 set_source_files_properties(qml/pages/transfers/TorrentDetailsPane.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/TorrentDetailsPane.qml)
+set_source_files_properties(qml/ui/UiSwitch.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSwitch.qml)
+set_source_files_properties(qml/ui/UiSelect.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSelect.qml)
+set_source_files_properties(qml/ui/UiSpinner.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSpinner.qml)
+set_source_files_properties(qml/ui/UiToast.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiToast.qml)
+set_source_files_properties(qml/pages/search/PluginsDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/search/PluginsDialog.qml)
 
 # Singletons must be flagged before qt_add_qml_module sees the files
 set_source_files_properties(qml/Theme.qml qml/Icons.qml qml/pages/transfers/TorrentStatus.qml
@@ -98,6 +103,11 @@ qt_add_qml_module(qbt_qmlgui
         qml/pages/transfers/TorrentStatus.qml
         qml/pages/transfers/TransfersState.qml
         qml/pages/transfers/TorrentDetailsPane.qml
+        qml/ui/UiSwitch.qml
+        qml/ui/UiSelect.qml
+        qml/ui/UiSpinner.qml
+        qml/ui/UiToast.qml
+        qml/pages/search/PluginsDialog.qml
     RESOURCES
         fonts/Onest-Variable.ttf
         fonts/Unbounded-Variable.ttf
@@ -123,6 +133,10 @@ qt_add_qml_module(qbt_qmlgui
         backend/torrentfiltermodel.cpp
         backend/torrentdetails.h
         backend/torrentdetails.cpp
+        backend/searchresults.h
+        backend/searchresults.cpp
+        backend/searchengine.h
+        backend/searchengine.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h

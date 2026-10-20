@@ -67,6 +67,57 @@
     </message>
 </context>
 <context>
+    <name>PluginsDialog</name>
+    <message>
+        <source>Search plugins</source>
+        <translation>Плагины поиска</translation>
+    </message>
+    <message>
+        <source>Searches use the plugins that are on. Plugins are Python scripts: install only the ones you trust.</source>
+        <translation>Поиск идёт по включённым плагинам. Плагины — это скрипты на Python: ставьте только те, которым доверяете.</translation>
+    </message>
+    <message>
+        <source>Remove %1</source>
+        <translation>Удалить %1</translation>
+    </message>
+    <message>
+        <source>No plugins installed</source>
+        <translation>Плагины не установлены</translation>
+    </message>
+    <message>
+        <source>Plugin URL (https://…/name.py)</source>
+        <translation>Адрес плагина (https://…/name.py)</translation>
+    </message>
+    <message>
+        <source>Choose a plugin file</source>
+        <translation>Выбрать файл плагина</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Установить</translation>
+    </message>
+    <message>
+        <source>Official plugins</source>
+        <translation>Официальные плагины</translation>
+    </message>
+    <message>
+        <source>Check for updates</source>
+        <translation>Проверить обновления</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Готово</translation>
+    </message>
+    <message>
+        <source>Choose a search plugin</source>
+        <translation>Выбор плагина поиска</translation>
+    </message>
+    <message>
+        <source>Search plugins (*.py)</source>
+        <translation>Плагины поиска (*.py)</translation>
+    </message>
+</context>
+<context>
     <name>RssPage</name>
     <message>
         <source>RSS feeds</source>
@@ -78,14 +129,281 @@
     </message>
 </context>
 <context>
+    <name>SearchEngine</name>
+    <message>
+        <source>Installed %1</source>
+        <translation>Установлен %1</translation>
+    </message>
+    <message>
+        <source>Could not install %1: %2</source>
+        <translation>Не удалось установить %1: %2</translation>
+    </message>
+    <message>
+        <source>Updated %1</source>
+        <translation>Обновлён %1</translation>
+    </message>
+    <message>
+        <source>Could not update %1: %2</source>
+        <translation>Не удалось обновить %1: %2</translation>
+    </message>
+    <message>
+        <source>All plugins are up to date.</source>
+        <translation>Все плагины обновлены.</translation>
+    </message>
+    <message>
+        <source>Could not check for updates: %1</source>
+        <translation>Не удалось проверить обновления: %1</translation>
+    </message>
+    <message>
+        <source>No search plugins are enabled.</source>
+        <translation>Нет включённых плагинов поиска.</translation>
+    </message>
+    <message>
+        <source>Could not add the torrent.</source>
+        <translation>Не удалось добавить торрент.</translation>
+    </message>
+    <message>
+        <source>Added “%1”</source>
+        <translation>Добавлен «%1»</translation>
+    </message>
+    <message>
+        <source>Removed %1</source>
+        <translation>Удалён %1</translation>
+    </message>
+</context>
+<context>
     <name>SearchPage</name>
     <message>
         <source>Tracker search</source>
         <translation>Поиск по трекерам</translation>
     </message>
     <message>
-        <source>Search across your torrent trackers will live here.</source>
-        <translation>Здесь будет поиск по вашим торрент-трекерам.</translation>
+        <source>Search torrents on all your trackers at once.</source>
+        <translation>Ищите торренты сразу на всех трекерах.</translation>
+    </message>
+    <message>
+        <source>All categories</source>
+        <translation>Все категории</translation>
+    </message>
+    <message>
+        <source>Anime</source>
+        <translation>Аниме</translation>
+    </message>
+    <message>
+        <source>Books</source>
+        <translation>Книги</translation>
+    </message>
+    <message>
+        <source>Games</source>
+        <translation>Игры</translation>
+    </message>
+    <message>
+        <source>Movies</source>
+        <translation>Фильмы</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>Музыка</translation>
+    </message>
+    <message>
+        <source>Pictures</source>
+        <translation>Изображения</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation>Программы</translation>
+    </message>
+    <message>
+        <source>TV shows</source>
+        <translation>Сериалы</translation>
+    </message>
+    <message>
+        <source>Plugins · %1</source>
+        <translation>Плагины · %1</translation>
+    </message>
+    <message>
+        <source>Plugins</source>
+        <translation>Плагины</translation>
+    </message>
+    <message>
+        <source>What are you looking for?</source>
+        <translation>Что ищем?</translation>
+    </message>
+    <message>
+        <source>Category</source>
+        <translation>Категория</translation>
+    </message>
+    <message>
+        <source>All enabled plugins</source>
+        <translation>Все включённые</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Остановить</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Найти</translation>
+    </message>
+    <message numerus="yes">
+        <source>Searching for “%1”… %n result(s) so far</source>
+        <translation>
+            <numerusform>Ищем «%1»… пока %n результат</numerusform>
+            <numerusform>Ищем «%1»… пока %n результата</numerusform>
+            <numerusform>Ищем «%1»… пока %n результатов</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Stopped. %n result(s) for “%1”</source>
+        <translation>
+            <numerusform>Остановлено. %n результат по «%1»</numerusform>
+            <numerusform>Остановлено. %n результата по «%1»</numerusform>
+            <numerusform>Остановлено. %n результатов по «%1»</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n result(s) for “%1”</source>
+        <translation>
+            <numerusform>%n результат по «%1»</numerusform>
+            <numerusform>%n результата по «%1»</numerusform>
+            <numerusform>%n результатов по «%1»</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>With seeds only</source>
+        <translation>Только с сидами</translation>
+    </message>
+    <message>
+        <source>Filter results…</source>
+        <translation>Фильтр результатов…</translation>
+    </message>
+    <message>
+        <source>Python is required</source>
+        <translation>Нужен Python</translation>
+    </message>
+    <message>
+        <source>Tracker search runs plugins written in Python. Install Python 3.9 or newer for all users, then check again.</source>
+        <translation>Поиск по трекерам работает через плагины на Python. Установите Python 3.9 или новее для всех пользователей и проверьте снова.</translation>
+    </message>
+    <message>
+        <source>Download Python</source>
+        <translation>Скачать Python</translation>
+    </message>
+    <message>
+        <source>Check again</source>
+        <translation>Проверить снова</translation>
+    </message>
+    <message>
+        <source>No search plugins yet</source>
+        <translation>Плагинов поиска пока нет</translation>
+    </message>
+    <message>
+        <source>Plugins connect Flux to trackers. Install the official set, or add the plugins you trust.</source>
+        <translation>Плагины подключают Flux к трекерам. Установите официальный набор или добавьте плагины, которым доверяете.</translation>
+    </message>
+    <message>
+        <source>Installing…</source>
+        <translation>Установка…</translation>
+    </message>
+    <message>
+        <source>Install official plugins</source>
+        <translation>Установить официальные</translation>
+    </message>
+    <message>
+        <source>Manage plugins</source>
+        <translation>Управление плагинами</translation>
+    </message>
+    <message>
+        <source>Search all your trackers at once</source>
+        <translation>Поиск сразу по всем трекерам</translation>
+    </message>
+    <message numerus="yes">
+        <source>Type what you are looking for and press Enter. Results arrive as each of %n tracker(s) answers.</source>
+        <translation>
+            <numerusform>Введите запрос и нажмите Enter. Результаты появляются по мере ответа %n трекера.</numerusform>
+            <numerusform>Введите запрос и нажмите Enter. Результаты появляются по мере ответа %n трекеров.</numerusform>
+            <numerusform>Введите запрос и нажмите Enter. Результаты появляются по мере ответа %n трекеров.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>All plugins are turned off. Turn some on in Plugins.</source>
+        <translation>Все плагины выключены. Включите нужные в «Плагинах».</translation>
+    </message>
+    <message>
+        <source>No results match the filter</source>
+        <translation>Под фильтр ничего не подходит</translation>
+    </message>
+    <message>
+        <source>The search failed</source>
+        <translation>Поиск не удался</translation>
+    </message>
+    <message>
+        <source>Nothing found</source>
+        <translation>Ничего не найдено</translation>
+    </message>
+    <message numerus="yes">
+        <source>Clear the filter to see all %n result(s).</source>
+        <translation>
+            <numerusform>Сбросьте фильтр, чтобы увидеть %n результат.</numerusform>
+            <numerusform>Сбросьте фильтр, чтобы увидеть все %n результата.</numerusform>
+            <numerusform>Сбросьте фильтр, чтобы увидеть все %n результатов.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Try other words, another category or more plugins.</source>
+        <translation>Попробуйте другие слова, другую категорию или больше плагинов.</translation>
+    </message>
+    <message>
+        <source>Clear filter</source>
+        <translation>Сбросить фильтр</translation>
+    </message>
+    <message>
+        <source>Asking the trackers…</source>
+        <translation>Опрашиваем трекеры…</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Имя</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Размер</translation>
+    </message>
+    <message>
+        <source>Seeds</source>
+        <translation>Сиды</translation>
+    </message>
+    <message>
+        <source>Leechers</source>
+        <translation>Личи</translation>
+    </message>
+    <message>
+        <source>Tracker</source>
+        <translation>Трекер</translation>
+    </message>
+    <message>
+        <source>Published</source>
+        <translation>Опубликован</translation>
+    </message>
+    <message>
+        <source>Open the page of %1</source>
+        <translation>Открыть страницу %1</translation>
+    </message>
+    <message>
+        <source>Added: %1</source>
+        <translation>Добавлен: %1</translation>
+    </message>
+    <message>
+        <source>Download %1</source>
+        <translation>Скачать %1</translation>
+    </message>
+    <message>
+        <source>Download</source>
+        <translation>Скачать</translation>
+    </message>
+    <message>
+        <source>Open description page</source>
+        <translation>Открыть страницу описания</translation>
     </message>
 </context>
 <context>

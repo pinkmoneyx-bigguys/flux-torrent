@@ -12,10 +12,13 @@ Popup {
     property string description
     default property alias body: bodyColumn.data
     property alias footerItems: footerRow.data
+    // Items on the left of the footer (secondary actions)
+    property alias footerLeftItems: footerLeftRow.data
+    property real preferredWidth: 512
 
     parent: Overlay.overlay
     anchors.centerIn: parent
-    width: Math.min(512, (parent ? parent.width : 512) - 32)
+    width: Math.min(preferredWidth, (parent ? parent.width : preferredWidth) - 32)
     padding: 24
     modal: true
     focus: true
@@ -86,6 +89,10 @@ Popup {
             Layout.fillWidth: true
             Layout.topMargin: Theme.sp(2)
             spacing: Theme.sp(2)
+            RowLayout {
+                id: footerLeftRow
+                spacing: Theme.sp(2)
+            }
             Item { Layout.fillWidth: true }
             RowLayout {
                 id: footerRow
