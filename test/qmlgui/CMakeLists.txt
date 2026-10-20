@@ -10,6 +10,7 @@ set(qmlGuiTestFiles
     teststreamstatestore.cpp
     testhttprange.cpp
     teststreamserver.cpp
+    testwatchhistory.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})

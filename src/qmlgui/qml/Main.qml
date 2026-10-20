@@ -222,12 +222,86 @@ ApplicationWindow {
                 anchors.fill: parent
                 currentIndex: window.currentPage
 
-                TransfersPage { id: transfersPage }
+                TransfersPage {
+                    id: transfersPage
+                    onPlayRequested: key => window.playMedia(key, -1)
+                }
                 SearchPage { id: searchPage }
                 RssPage {}
-                MediaPage {}
+                MediaPage {
+                    playerAvailable: playerView.available
+                    onPlayRequested: (key, startAt) => window.playMedia(key, startAt)
+                }
                 SettingsPage { id: settingsPage }
             }
         }
+    }
+
+    // --- Built-in player, over the pages (and over the title strip in full screen) ----------------
+    PlayerView {
+        id: playerView
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.top: fullscreen ? parent.top : titleBarArea.bottom
+        z: 50
+
+        property int visibilityBefore: Window.Windowed
+        onFullscreenToggled: on => {
+            titleBarArea.visible = !on
+            if (on) {
+                visibilityBefore = window.visibility
+                window.showFullScreen()
+            } else if (visibilityBefore === Window.Maximized) {
+                window.showMaximized()
+            } else {
+                window.showNormal()
+            }
+        }
+        onClosed: watched => window.afterPlayback(watched)
+    }
+
+    UiToast {
+        id: windowToast
+        objectName: "windowToast"
+        z: 100
+    }
+
+    // Plays a media library item (key "torrentId:fileIndex"): a downloaded file from disk, otherwise through
+    // the stream server while it downloads. `startAt` < 0 continues from the saved position.
+    function playMedia(key, startAt) {
+        const m = MediaLibraryModel.get(key)
+        if (m.key === undefined)
+            return
+        if (!playerView.available) {
+            if (!MediaLibraryModel.play(key))
+                windowToast.show(qsTr("Without the built-in player only downloaded files open."), true)
+            return
+        }
+        const resume = startAt >= 0 ? startAt : WatchHistory.resumePosition(key)
+        let url = ""
+        let stream = false
+        if (m.complete) {
+            url = "file:///" + String(m.path).replace(/\\/g, "/")
+        } else {
+            url = String(StreamManager.open(m.torrentId, m.fileIndex))
+            stream = true
+            if (url === "") {
+                windowToast.show(StreamManager.lastError, true)
+                return
+            }
+            if (StreamManager.enabledSkippedFile(m.torrentId, m.fileIndex))
+                windowToast.show(qsTr("This file was set to skip; it downloads now."), false)
+        }
+        const pad = n => (n < 10 ? "0" : "") + n
+        const detail = [m.season > 0 ? "S" + pad(m.season) + "E" + pad(m.episode) : "", m.year > 0 ? String(m.year) : "",
+                        m.quality === "2160p" ? "4K" : m.quality].filter(t => t !== "").join(" · ")
+        playerView.play(m.torrentId, m.fileIndex, m.title, detail, url, stream, resume)
+    }
+
+    // The player closed: give the torrent back
+    function afterPlayback(watchedToEnd) {
+        if (playerView.streaming)
+            StreamManager.close(playerView.torrentId, playerView.fileIndex)
     }
 }

@@ -17,6 +17,10 @@ Surface {
     radius: Theme.radiusPanel
 
     property string view: "grid"
+    // The built-in player exists (Flux was built with libmpv)
+    property bool playerAvailable: true
+    // Play a library item; startAt < 0 continues from the saved position
+    signal playRequested(string key, real startAt)
 
     // A stable hue per title, for the generated cover
     function hue(text) {
@@ -43,13 +47,26 @@ Surface {
         parts.push(Format.size(item.size))
         return parts.join("  ·  ")
     }
+    function clock(seconds) {
+        const s = Math.floor(seconds % 60)
+        const m = Math.floor(seconds / 60) % 60
+        const h = Math.floor(seconds / 3600)
+        const pad = n => (n < 10 ? "0" : "") + n
+        return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s)
+    }
     function open(key) {
         sheet.key = key
         sheet.open()
     }
     function play(key) {
-        if (!MediaLibraryModel.play(key))
+        const item = MediaLibraryModel.get(key)
+        if (playerAvailable || item.complete)
+            playRequested(key, -1)
+        else
             open(key)
+    }
+    function watchedOf(key) {
+        return WatchHistory.revision >= 0 ? WatchHistory.progress(key) : 0
     }
 
     ColumnLayout {
@@ -252,6 +269,8 @@ Surface {
         property int season
         property int episode
         property real progress: 1
+        // share already watched (WatchHistory)
+        property real watched: 0
         property bool hot: false
 
         readonly property real h: page.hue(title)
@@ -296,6 +315,15 @@ Surface {
             spacing: 6
             CoverBadge { visible: cover.quality !== ""; text: page.qualityLabel(cover.quality) }
             CoverBadge { visible: cover.season > 0 || cover.episode > 0; text: page.episodeLabel(cover.season, cover.episode) }
+        }
+        // watched part, above the download edge
+        Rectangle {
+            visible: cover.watched > 0.01
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: cover.progress < 1 ? 4 : 0
+            width: parent.width * cover.watched
+            height: 3
+            color: "#FAFAFA"
         }
         // download progress along the bottom edge
         Rectangle {
@@ -358,6 +386,7 @@ Surface {
                 season: card.season
                 episode: card.episode
                 progress: card.progress
+                watched: page.watchedOf(card.key)
                 hot: hover.hovered
 
                 TapHandler {
@@ -584,19 +613,35 @@ Surface {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: Theme.sp(2)
+                    readonly property real resumeAt: WatchHistory.revision >= 0 ? WatchHistory.resumePosition(sheet.key) : 0
                     UiButton {
                         objectName: "mediaPlay"
                         Layout.fillWidth: true
                         size: "default"
                         iconPath: Icons.play
-                        text: qsTr("Play")
-                        enabled: sheet.item.complete === true
-                        onClicked: MediaLibraryModel.play(sheet.key)
+                        text: parent.resumeAt > 0 ? qsTr("Continue from %1").arg(page.clock(parent.resumeAt))
+                            : sheet.item.complete === true ? qsTr("Play") : qsTr("Watch while downloading")
+                        enabled: sheet.item.complete === true || page.playerAvailable
+                        onClicked: {
+                            sheet.close()
+                            page.playRequested(sheet.key, -1)
+                        }
+                    }
+                    UiButton {
+                        objectName: "mediaPlayFromStart"
+                        visible: parent.resumeAt > 0
+                        Layout.fillWidth: true
+                        variant: "outline"
+                        text: qsTr("Play from the start")
+                        onClicked: {
+                            sheet.close()
+                            page.playRequested(sheet.key, 0)
+                        }
                     }
                     Text {
-                        visible: sheet.item.complete !== true
+                        visible: sheet.item.complete !== true && !page.playerAvailable
                         Layout.fillWidth: true
-                        text: qsTr("The file is still downloading. Watching while it downloads comes with the built-in player.")
+                        text: qsTr("The file is still downloading. Watching while it downloads needs the built-in player.")
                         color: Theme.textDim
                         font.family: Theme.fontText
                         font.pixelSize: Theme.textXs

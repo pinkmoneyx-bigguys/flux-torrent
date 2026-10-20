@@ -30,6 +30,7 @@ set_source_files_properties(qml/shell/TitleBar.qml PROPERTIES QT_RESOURCE_ALIAS 
 set_source_files_properties(qml/shell/Sidebar.qml PROPERTIES QT_RESOURCE_ALIAS shell/Sidebar.qml)
 set_source_files_properties(qml/shell/EmptyPage.qml PROPERTIES QT_RESOURCE_ALIAS shell/EmptyPage.qml)
 set_source_files_properties(qml/shell/CommandPalette.qml PROPERTIES QT_RESOURCE_ALIAS shell/CommandPalette.qml)
+set_source_files_properties(qml/player/PlayerView.qml PROPERTIES QT_RESOURCE_ALIAS player/PlayerView.qml)
 set_source_files_properties(qml/firstrun/FirstRunWindow.qml PROPERTIES QT_RESOURCE_ALIAS firstrun/FirstRunWindow.qml)
 set_source_files_properties(qml/pages/TransfersPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/TransfersPage.qml)
 set_source_files_properties(qml/pages/SearchPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/SearchPage.qml)
@@ -91,6 +92,7 @@ qt_add_qml_module(qbt_qmlgui
         qml/shell/Sidebar.qml
         qml/shell/EmptyPage.qml
         qml/shell/CommandPalette.qml
+        qml/player/PlayerView.qml
         qml/firstrun/FirstRunWindow.qml
         qml/pages/TransfersPage.qml
         qml/pages/SearchPage.qml
@@ -157,6 +159,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/appsettings.cpp
         backend/addtorrentdraft.h
         backend/addtorrentdraft.cpp
+        backend/watchhistory.h
+        backend/watchhistory.cpp
         streaming/streamplanner.h
         streaming/streamplanner.cpp
         streaming/streamstatestore.h

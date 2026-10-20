@@ -106,9 +106,12 @@ TestCase {
         const sheet = findChild(page, "mediaSheet")
         tryCompare(sheet, "opened", true)
         compare(findChild(sheet.contentItem, "mediaSheetTitle").text, "Big Buck Bunny")
-        verify(!findChild(sheet.contentItem, "mediaPlay").enabled, "an incomplete file cannot play yet")
+        verify(findChild(sheet.contentItem, "mediaPlay").enabled, "with the built-in player it plays while downloading")
+        page.playerAvailable = false
+        verify(!findChild(sheet.contentItem, "mediaPlay").enabled, "without it an incomplete file cannot play yet")
+        page.playerAvailable = true
         verify(!MediaLibraryModel.play("c:0"))
-        verify(MediaLibraryModel.play("a:0"), "a finished file plays")
+        verify(MediaLibraryModel.play("a:0"), "a finished file opens in the system player")
     }
 
     function test_emptyLibrary() {

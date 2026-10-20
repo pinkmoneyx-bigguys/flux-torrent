@@ -658,6 +658,15 @@ Surface {
         UiMenuItem { text: qsTr("Stop"); iconPath: Icons.pause; onTriggered: TorrentListModel.stop(page.targetIds()) }
         UiMenuItem { text: qsTr("Force start"); iconPath: Icons.bolt; onTriggered: TorrentListModel.forceStart(page.targetIds()) }
         UiMenuSeparator {}
+        UiMenuItem {
+            id: watchItem
+            readonly property string videoKey: rowMenu.visible ? MediaLibraryModel.bestVideoOf(page.currentId) : ""
+            visible: videoKey !== ""
+            height: visible ? implicitHeight : 0
+            text: qsTr("Watch")
+            iconPath: Icons.play
+            onTriggered: page.playRequested(videoKey)
+        }
         UiMenuItem { text: qsTr("Open folder"); iconPath: Icons.folder; onTriggered: TorrentListModel.openFolder(page.currentId) }
         UiMenuItem { text: qsTr("Copy magnet link"); iconPath: Icons.magnet; onTriggered: TorrentListModel.copyMagnets(page.targetIds()) }
         UiMenuSeparator {}
@@ -789,6 +798,9 @@ Surface {
         nameFilters: [qsTr("Torrent files (*.torrent)"), qsTr("All files (*)")]
         onAccepted: page.addSources(selectedFiles)
     }
+
+    // Watch a torrent's main video in the built-in player (Main handles it)
+    signal playRequested(string key)
 
     function openAddFile() {
         fileDialog.open()

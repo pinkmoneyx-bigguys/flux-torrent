@@ -296,11 +296,22 @@ QVariantMap MediaLibraryModel::get(const QString &key) const
     if (!m)
         return {};
     return {
-        {u"key"_s, m->key}, {u"torrentId"_s, m->torrentId}, {u"fileName"_s, m->fileName},
+        {u"key"_s, m->key}, {u"torrentId"_s, m->torrentId}, {u"fileIndex"_s, m->fileIndex}, {u"fileName"_s, m->fileName},
         {u"torrentName"_s, m->torrentName}, {u"path"_s, m->path}, {u"title"_s, m->title}, {u"year"_s, m->year},
         {u"season"_s, m->season}, {u"episode"_s, m->episode}, {u"quality"_s, m->quality}, {u"size"_s, m->size},
         {u"progress"_s, m->progress}, {u"added"_s, m->added}, {u"complete"_s, m->progress >= 1}
     };
+}
+
+QString MediaLibraryModel::bestVideoOf(const QString &torrentId) const
+{
+    const MediaItem *best = nullptr;
+    for (const MediaItem &m : m_all)
+    {
+        if ((m.torrentId == torrentId) && (!best || (m.size > best->size)))
+            best = &m;
+    }
+    return best ? best->key : QString();
 }
 
 bool MediaLibraryModel::play(const QString &key)

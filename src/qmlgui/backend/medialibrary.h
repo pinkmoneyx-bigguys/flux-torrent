@@ -119,6 +119,8 @@ public:
 
     // The item as a JS object, or an empty one
     Q_INVOKABLE QVariantMap get(const QString &key) const;
+    // The key of a torrent's main video (its largest video file), or ""
+    Q_INVOKABLE QString bestVideoOf(const QString &torrentId) const;
     // Opens a downloaded file in the default player; false while it is incomplete
     Q_INVOKABLE bool play(const QString &key);
     Q_INVOKABLE void showInFolder(const QString &key);
