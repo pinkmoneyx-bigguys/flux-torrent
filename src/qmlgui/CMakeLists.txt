@@ -168,6 +168,10 @@ qt_add_qml_module(qbt_qmlgui
         streaming/filestreamsource.cpp
         streaming/streamserver.h
         streaming/streamserver.cpp
+        streaming/streamsession.h
+        streaming/streamsession.cpp
+        streaming/streammanager.h
+        streaming/streammanager.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h
@@ -192,7 +196,7 @@ target_link_libraries(qbt_qmlgui
 )
 
 # qmltyperegistrations includes QML_ELEMENT headers by file name only
-target_include_directories(qbt_qmlgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/backend")
+target_include_directories(qbt_qmlgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/backend" "${CMAKE_CURRENT_SOURCE_DIR}/streaming")
 
 # English source strings in QML (qsTr), Russian in i18n/flux_ru.ts. The .qm files are embedded under
 # :/i18n and FluxShell installs the one that matches the system locale.

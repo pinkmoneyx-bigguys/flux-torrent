@@ -38,6 +38,7 @@
 #include <QWKQuick/qwkquickglobal.h>
 
 #include "base/global.h"
+#include "streaming/streammanager.h"
 
 FluxShell::FluxShell(QObject *parent, const QString &module, const QString &type)
     : QObject(parent)
@@ -80,6 +81,9 @@ bool FluxShell::show()
         qCritical("Failed to load the %s.%s QML component.", qUtf8Printable(m_module), qUtf8Printable(m_type));
         return false;
     }
+    // Streams a crashed run left open are rolled back at every start, not only when the player is used
+    if (m_type == u"Main")
+        m_engine->singletonInstance<StreamManager *>(m_module, u"StreamManager"_s);
     return true;
 }
 
