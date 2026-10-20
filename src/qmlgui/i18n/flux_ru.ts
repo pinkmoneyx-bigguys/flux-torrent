@@ -3044,6 +3044,10 @@
         <translation>Простаивает</translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation>Подключение к пирам…</translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation>Раздаётся</translation>
     </message>

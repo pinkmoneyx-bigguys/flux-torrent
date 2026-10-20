@@ -3034,6 +3034,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation type="unfinished"></translation>
     </message>

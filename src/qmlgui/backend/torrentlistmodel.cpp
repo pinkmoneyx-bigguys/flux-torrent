@@ -200,6 +200,13 @@ TorrentListModel::TorrentListModel(QObject *parent)
     });
     connect(session, &BitTorrent::Session::torrentAboutToBeRemoved, this, &TorrentListModel::onTorrentAboutToBeRemoved);
     connect(session, &BitTorrent::Session::torrentsUpdated, this, &TorrentListModel::onTorrentsUpdated);
+    connect(session, &BitTorrent::Session::torrentStarted, this, &TorrentListModel::onTorrentStarted);
+    // Changes libtorrent reports late or not at all as a status update (as qBittorrent's own list does)
+    for (const auto signal : {&BitTorrent::Session::torrentStopped, &BitTorrent::Session::torrentFinished,
+             &BitTorrent::Session::torrentMetadataReceived, &BitTorrent::Session::torrentFinishedChecking})
+    {
+        connect(session, signal, this, [this](Torrent *torrent) { onTorrentsUpdated({torrent}); });
+    }
 
     onTorrentsLoaded(session->torrents());
 }
@@ -252,7 +259,7 @@ bool TorrentListModel::matchesStatus(const TorrentRow &row, const QString &statu
 {
     const QString &s = row.state;
     if (status == u"downloading")
-        return (s == u"downloading") || (s == u"metadata") || (s == u"stalledDl") || (s == u"queuedDl")
+        return (s == u"downloading") || (s == u"metadata") || (s == u"stalledDl") || (s == u"connecting") || (s == u"queuedDl")
             || ((s == u"checking") && (row.progress < 1));
     if (status == u"seeding")
         return (s == u"seeding") || (s == u"stalledUp") || (s == u"queuedUp");
@@ -400,10 +407,16 @@ void TorrentListModel::onTorrentsLoaded(const QList<Torrent *> &torrents)
     rows.reserve(torrents.size());
     for (const Torrent *torrent : torrents)
     {
-        if (!m_index.contains(torrent->id().toString()))
-            rows.append(TorrentRow::fromTorrent(torrent));
+        const QString id = torrent->id().toString();
+        if (m_index.contains(id))
+            continue;
+        // the session has just started it too: its peers are being reached
+        if (!torrent->isStopped())
+            m_startedAt[id].start();
+        rows.append(rowOf(torrent));
     }
     appendRows(rows);
+    QTimer::singleShot(CONNECTING_MS + 100, this, [this] { refreshConnecting(); });
 }
 
 void TorrentListModel::onTorrentAboutToBeRemoved(Torrent *torrent)
@@ -416,6 +429,7 @@ void TorrentListModel::onTorrentAboutToBeRemoved(Torrent *torrent)
         return;
 
     const int i = it.value();
+    m_startedAt.remove(torrent->id().toString());
     beginRemoveRows({}, i, i);
     m_rows.removeAt(i);
     m_index.remove(torrent->id().toString());
@@ -436,10 +450,45 @@ void TorrentListModel::onTorrentsUpdated(const QList<Torrent *> &torrents)
             continue;
 
         const int i = it.value();
-        m_rows[i] = TorrentRow::fromTorrent(torrent);
+        m_rows[i] = rowOf(torrent);
         emit dataChanged(index(i), index(i));
     }
     updateCounts();
+}
+
+void TorrentListModel::onTorrentStarted(Torrent *torrent)
+{
+    m_startedAt[torrent->id().toString()].start();
+    onTorrentsUpdated({torrent});
+    // a stalled download stops being "connecting" with no status change of its own to say so
+    QTimer::singleShot(CONNECTING_MS + 100, this, [this] { refreshConnecting(); });
+}
+
+void TorrentListModel::refreshConnecting()
+{
+    QList<Torrent *> torrents;
+    for (const TorrentRow &row : std::as_const(m_rows))
+    {
+        if (row.state == u"connecting")
+            torrents.append(torrentsOf({row.id}));
+    }
+    if (!torrents.isEmpty())
+        onTorrentsUpdated(torrents);
+}
+
+TorrentRow TorrentListModel::rowOf(const Torrent *torrent) const
+{
+    TorrentRow row = TorrentRow::fromTorrent(torrent);
+    const auto started = m_startedAt.constFind(row.id);
+    row.state = shownState(row.state, (started != m_startedAt.cend()) ? started->elapsed() : -1);
+    return row;
+}
+
+QString TorrentListModel::shownState(const QString &state, const qint64 msSinceStart)
+{
+    if ((state == u"stalledDl") && (msSinceStart >= 0) && (msSinceStart < CONNECTING_MS))
+        return u"connecting"_s;
+    return state;
 }
 
 void TorrentListModel::appendRows(const QList<TorrentRow> &rows)

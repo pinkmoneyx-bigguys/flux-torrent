@@ -3034,6 +3034,10 @@
         <translation>Dormant</translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation>Connexion aux pairs…</translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation>En partage</translation>
     </message>

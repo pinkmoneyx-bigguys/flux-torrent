@@ -54,6 +54,18 @@ TestCase {
         waitForRendering(page)
     }
 
+    // Just started, no data yet: it says it is reaching its peers, in the download colour, and counts as
+    // downloading
+    function test_connecting() {
+        TorrentListModel.setRows([{ id: "c", name: "fresh.mkv", state: "connecting", size: 1000, progress: 0.2 }])
+        waitForRendering(page)
+        const status = findChild(rowById("c"), "rowStatus")
+        compare(status.text, "Connecting to peers…")
+        compare(String(status.color), String(TorrentStatus.color("downloading")))
+        compare(TorrentListModel.counts.downloading, 1)
+        verify(findChild(rowById("c"), "rowProgress").active, "its bar shimmers like a running download")
+    }
+
     function test_counts() {
         const c = TorrentListModel.counts
         compare(c.all, 5)

@@ -30,6 +30,7 @@
 
 #include <QAbstractListModel>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QHash>
 #include <QList>
 #include <QString>
@@ -135,8 +136,14 @@ public:
     static TorrentListModel *create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
 
     // "downloading", "seeding", "stalledDl", "stalledUp", "queuedDl", "queuedUp", "checking", "metadata",
-    // "stoppedDl" (incomplete, stopped), "stoppedUp" (complete, stopped), "moving", "missing", "error"
+    // "stoppedDl" (incomplete, stopped), "stoppedUp" (complete, stopped), "moving", "missing", "error";
+    // and "connecting" (see shownState)
     static QString stateKey(int torrentState);
+    // The state to show: a download that has no data yet in the first CONNECTING_MS after it was started
+    // is "connecting", not "stalledDl". Peers were dropped when it stopped; they are reached again, and
+    // it is their choice when to send (most reconsider every 10–15 s). `msSinceStart` < 0: not known
+    static QString shownState(const QString &state, qint64 msSinceStart);
+    static constexpr qint64 CONNECTING_MS = 30000;
     // Whether a row belongs to a filter tab: "all", "downloading", "seeding", "completed", "stopped",
     // "active", "errored"
     static bool matchesStatus(const TorrentRow &row, const QString &status);
@@ -194,6 +201,11 @@ private:
     void onTorrentsLoaded(const QList<BitTorrent::Torrent *> &torrents);
     void onTorrentAboutToBeRemoved(BitTorrent::Torrent *torrent);
     void onTorrentsUpdated(const QList<BitTorrent::Torrent *> &torrents);
+    void onTorrentStarted(BitTorrent::Torrent *torrent);
+    // rows still "connecting" once their time is up: shown again as they are
+    void refreshConnecting();
+    // TorrentRow::fromTorrent with the shown state
+    TorrentRow rowOf(const BitTorrent::Torrent *torrent) const;
     void appendRows(const QList<TorrentRow> &rows);
     void reindex(int from);
     void updateCounts();
@@ -203,6 +215,8 @@ private:
     QHash<QString, int> m_index;
     QVariantMap m_counts;
     bool m_detached = false;
+    // when each torrent was last started (by the user, or with the session)
+    QHash<QString, QElapsedTimer> m_startedAt;
 
     struct SpeedSeries
     {

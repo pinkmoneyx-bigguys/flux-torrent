@@ -3034,6 +3034,10 @@
         <translation>Stockt</translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation>Verbindet mit Peers…</translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation>Seedet</translation>
     </message>

@@ -3034,6 +3034,10 @@
         <translation>Estagnado</translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation>Conectando aos pares…</translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation>Semeando</translation>
     </message>

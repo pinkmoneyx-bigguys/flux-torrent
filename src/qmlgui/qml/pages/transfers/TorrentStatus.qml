@@ -9,6 +9,8 @@ QtObject {
         case "downloading": return qsTr("Downloading")
         case "metadata": return qsTr("Fetching metadata")
         case "stalledDl": return qsTr("Stalled")
+        // just started: reaching its peers again (TorrentListModel::shownState)
+        case "connecting": return qsTr("Connecting to peers…")
         case "seeding":
         case "stalledUp": return qsTr("Seeding")
         case "queuedDl":
@@ -26,6 +28,7 @@ QtObject {
     function color(state) {
         switch (state) {
         case "downloading":
+        case "connecting":
         case "metadata":
         case "moving": return Theme.download
         case "seeding":
@@ -44,6 +47,7 @@ QtObject {
     function icon(state) {
         switch (state) {
         case "downloading":
+        case "connecting":
         case "metadata": return Icons.download
         case "stalledDl": return Icons.hourglass
         case "seeding":
@@ -60,7 +64,8 @@ QtObject {
 
     // Work is under way: the bar shimmers (checking also spins its glyph)
     function isActive(state) {
-        return state === "downloading" || state === "metadata" || state === "checking" || state === "moving"
+        return state === "downloading" || state === "connecting" || state === "metadata" || state === "checking"
+               || state === "moving"
     }
 
     function isStopped(state) {

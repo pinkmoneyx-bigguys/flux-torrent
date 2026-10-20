@@ -1099,6 +1099,7 @@ Surface {
                 mono: true
                 // only a running download has an estimate; ∞ when it is running without one
                 readonly property bool running: rowItem.state === "downloading" || rowItem.state === "stalledDl"
+                                                || rowItem.state === "connecting"
                                                 || rowItem.state === "metadata"
                 dim: !running || rowItem.eta >= 8640000
                 text: running ? Format.eta(rowItem.eta) : "—"

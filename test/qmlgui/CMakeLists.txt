@@ -15,6 +15,7 @@ set(qmlGuiTestFiles
     testupdater.cpp
     testposters.cpp
     testlanguages.cpp
+    testtorrentlistmodel.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})

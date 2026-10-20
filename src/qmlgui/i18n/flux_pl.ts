@@ -3044,6 +3044,10 @@
         <translation>Oczekujący</translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation>Łączenie z partnerami…</translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation>Seedowanie</translation>
     </message>

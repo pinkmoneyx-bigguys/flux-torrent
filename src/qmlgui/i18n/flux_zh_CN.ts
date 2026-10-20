@@ -3024,6 +3024,10 @@
         <translation>等待中</translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation>正在连接用户…</translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation>做种中</translation>
     </message>

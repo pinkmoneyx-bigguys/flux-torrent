@@ -3044,6 +3044,10 @@
         <translation>Простоює</translation>
     </message>
     <message>
+        <source>Connecting to peers…</source>
+        <translation>Підключення до пірів…</translation>
+    </message>
+    <message>
         <source>Seeding</source>
         <translation>Роздається</translation>
     </message>
