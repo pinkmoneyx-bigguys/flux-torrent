@@ -75,7 +75,31 @@ Surface {
     readonly property real tableWidth: table.width
     // the column divider being dragged, if any (the table draws a guide under it)
     property Item activeGrip: null
-    readonly property var defaultWidths: ({ size: 88, progress: 190, speed: 116, eta: 84, swarm: 100, ratio: 72 })
+    // at least as wide as the header's title in the UI language (a translated "SEEDS/PEERS" can run
+    // longer than the English); never much wider, or a column further
+    // right no longer fits the window
+    readonly property var defaultWidths: {
+        const w = {
+            size: fitHead(88, qsTr("Size")), speed: fitHead(116, qsTr("Speed")), eta: fitHead(84, qsTr("ETA")),
+            swarm: fitHead(100, qsTr("Seeds/peers")), ratio: fitHead(72, qsTr("Ratio"))
+        }
+        // the progress bar gives up what the titles took, so every column still fits the window
+        const grown = (w.size - 88) + (w.speed - 116) + (w.eta - 84) + (w.swarm - 100) + (w.ratio - 72)
+        w.progress = Math.max(150, 190 - grown)
+        return w
+    }
+    TextMetrics {
+        id: headMetrics
+        font.family: Theme.fontText
+        font.pixelSize: 11
+        font.weight: Font.Medium
+        font.letterSpacing: 0.6
+    }
+    function fitHead(base, title) {
+        headMetrics.text = title.toLocaleUpperCase()
+        // the cell's 12 px inset and a little air (the sort arrow, on one column only, may then elide it)
+        return Math.min(base + 32, Math.max(base, Math.ceil(headMetrics.advanceWidth) + 12 + 4))
+    }
     readonly property var minWidths: ({ size: 56, progress: 110, speed: 88, eta: 48, swarm: 64, ratio: 48 })
     readonly property var optionalColumns: ["swarm", "eta", "ratio"]
     readonly property real nameMin: 200
@@ -984,9 +1008,10 @@ Surface {
                         spacing: 8
                         Text {
                             objectName: "rowStatus"
-                            // as wide as its text, or what is left before the chip, eliding then
+                            // as wide as its text, or what is left before the chip, eliding then (rounded
+                            // up: the layout keeps whole pixels, and a width a fraction short elides)
                             Layout.fillWidth: true
-                            Layout.maximumWidth: implicitWidth
+                            Layout.maximumWidth: Math.ceil(implicitWidth)
                             text: (rowItem.state === "missing" || rowItem.state === "error") && rowItem.error !== ""
                                   ? rowItem.error : TorrentStatus.label(rowItem.state)
                             color: rowItem.stateColor

@@ -68,5 +68,6 @@ QString Format::ratio(const qreal r) const
     if ((r < 0) || (r > 9999))
         return u"∞"_s;
 
-    return QLocale::system().toString(r, 'f', 2);
+    // the UI language's formats (Languages::effectiveLocale, set as the default)
+    return QLocale().toString(r, 'f', 2);
 }

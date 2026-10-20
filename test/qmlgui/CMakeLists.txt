@@ -14,6 +14,7 @@ set(qmlGuiTestFiles
     testjacred.cpp
     testupdater.cpp
     testposters.cpp
+    testlanguages.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})
@@ -25,6 +26,9 @@ foreach(testFile ${qmlGuiTestFiles})
 
     add_dependencies(check "${testFilename}")
 endforeach()
+
+# the translation files are read where they are kept
+target_compile_definitions(testlanguages PRIVATE FLUX_I18N_DIR="${CMAKE_SOURCE_DIR}/src/qmlgui/i18n")
 
 # The first-run flow end to end: real dialog on the offscreen platform, a throw-away profile
 add_executable(testfirstrun testfirstrun.cpp)

@@ -100,6 +100,7 @@
 #include "gui/uithememanager.h"
 #include "gui/windowstate.h"
 #elif defined(QBT_QML_GUI)
+#include "qmlgui/backend/languages.h"
 #include "qmlgui/fluxshell.h"
 #include "qmlgui/migration/firstrun.h"
 #include "qmlgui/migration/profilemigrator.h"
@@ -1002,6 +1003,7 @@ int Application::exec()
         delete m_startupProgressDialog;
 #elif defined(QBT_QML_GUI)
         m_fluxShell = new FluxShell(this);
+        connect(m_fluxShell, &FluxShell::reloadTranslationsRequested, this, &Application::reloadTranslation);
         if (!m_fluxShell->show())
         {
             // Without a window the process would keep seeding unseen and hold the single-instance lock, so
@@ -1206,9 +1208,15 @@ bool Application::event(QEvent *ev)
 
 void Application::initializeTranslation()
 {
+#ifdef QBT_QML_GUI
+    // the language Flux shows: its own choice, or English for a system language it isn't translated into
+    // (qBittorrent's units and durations then match the rest of the UI)
+    const QString localeStr = Languages::effective();
+#else
     Preferences *const pref = Preferences::instance();
     // Load translation
     const QString localeStr = pref->getLocale();
+#endif
 
     if (m_qtTranslator.load((u"qtbase_" + localeStr), QLibraryInfo::path(QLibraryInfo::TranslationsPath))
         || m_qtTranslator.load((u"qt_" + localeStr), QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
@@ -1239,6 +1247,13 @@ void Application::initializeTranslation()
         setLayoutDirection(Qt::LeftToRight);
     }
 #endif
+}
+
+void Application::reloadTranslation()
+{
+    removeTranslator(&m_qtTranslator);
+    removeTranslator(&m_translator);
+    initializeTranslation();
 }
 
 #if (!defined(DISABLE_GUI) && defined(Q_OS_WIN))

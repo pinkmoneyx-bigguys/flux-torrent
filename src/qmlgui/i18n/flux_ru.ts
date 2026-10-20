@@ -602,6 +602,13 @@
     </message>
 </context>
 <context>
+    <name>Languages</name>
+    <message>
+        <source>System (%1)</source>
+        <translation>Как в системе (%1)</translation>
+    </message>
+</context>
+<context>
     <name>Main</name>
     <message>
         <source>Actions</source>
@@ -710,6 +717,10 @@
     <message>
         <source>Settings: advanced</source>
         <translation>Настройки: дополнительно</translation>
+    </message>
+    <message>
+        <source>Settings: language</source>
+        <translation>Настройки: язык</translation>
     </message>
     <message>
         <source>The video did not show up in the library.</source>
@@ -1851,6 +1862,10 @@
         <translation>Стриминг</translation>
     </message>
     <message>
+        <source>Language</source>
+        <translation>Язык</translation>
+    </message>
+    <message>
         <source>Advanced</source>
         <translation>Дополнительно</translation>
     </message>
@@ -1949,6 +1964,14 @@
     <message>
         <source>Reset all</source>
         <translation>Сбросить всё</translation>
+    </message>
+    <message>
+        <source>Interface language</source>
+        <translation>Язык интерфейса</translation>
+    </message>
+    <message>
+        <source>Numbers and dates follow it too. The window reopens in the new language.</source>
+        <translation>Числа и даты тоже пишутся по нему. Окно откроется заново уже на новом языке.</translation>
     </message>
     <message>
         <source>Where files go</source>

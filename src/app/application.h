@@ -173,6 +173,8 @@ private:
 #endif
 
     void initializeTranslation();
+    // Again for a changed language: the old translators go first
+    void reloadTranslation();
     void processParams(const QBtCommandLineParameters &params);
     void runExternalProgram(const QString &programTemplate, const BitTorrent::Torrent *torrent) const;
     void sendNotificationEmail(const BitTorrent::Torrent *torrent);

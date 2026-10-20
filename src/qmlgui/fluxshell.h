@@ -54,7 +54,17 @@ public:
     // Loads the embedded Flux UI translation (:/i18n/flux_<lang>.qm) that best matches `locale`
     static bool loadTranslation(QTranslator &translator, const QLocale &locale);
 
+signals:
+    // the language was changed: the application reloads Qt's and qBittorrent's translations (connected
+    // directly, so they are in place before Flux's own and the new window)
+    void reloadTranslationsRequested();
+
 private:
+    // Switches to Languages::effective(): translators, number and date formats, then the window again
+    void switchLanguage();
+    // Replaces the main window with a fresh one in the same place, on the same page
+    void reloadMain();
+
     QTranslator m_translator;
     QQmlApplicationEngine *m_engine = nullptr;
     QString m_module;

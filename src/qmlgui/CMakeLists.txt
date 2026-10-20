@@ -149,6 +149,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/appinfo.cpp
         backend/jacredsearch.h
         backend/jacredsearch.cpp
+        backend/languages.h
+        backend/languages.cpp
         backend/posters.h
         backend/posters.cpp
         backend/torrentmaker.h
@@ -258,12 +260,22 @@ if (FLUX_MPV)
 endif()
 
 
-# English source strings in QML (qsTr), Russian in i18n/flux_ru.ts. The .qm files are embedded under
-# :/i18n and FluxShell installs the one that matches the system locale.
+# English source strings in QML (qsTr), the translations in i18n/flux_<code>.ts (the codes of
+# Languages::supported()). flux_en.ts holds only the English plural forms ("%n file(s)" → "1 file"). The .qm files are embedded under :/i18n and FluxShell installs the one of the
+# chosen language (Settings, General).
 # After changing UI strings refresh the .ts with: cmake --build build --target flux_lupdate
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
 qt_add_translations(qbt_qmlgui
-    TS_FILES i18n/flux_ru.ts
+    TS_FILES
+        i18n/flux_en.ts
+        i18n/flux_ru.ts
+        i18n/flux_uk.ts
+        i18n/flux_de.ts
+        i18n/flux_es.ts
+        i18n/flux_fr.ts
+        i18n/flux_pt_BR.ts
+        i18n/flux_pl.ts
+        i18n/flux_zh_CN.ts
     SOURCE_TARGETS qbt_qmlgui
     LUPDATE_TARGET flux_lupdate
     LRELEASE_TARGET flux_lrelease

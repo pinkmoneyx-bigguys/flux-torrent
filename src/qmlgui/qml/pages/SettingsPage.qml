@@ -22,6 +22,7 @@ Surface {
         { key: "connection", label: qsTr("Connection"), icon: Icons.network },
         { key: "bittorrent", label: qsTr("BitTorrent"), icon: Icons.bittorrent },
         { key: "streaming", label: qsTr("Streaming"), icon: Icons.play },
+        { key: "language", label: qsTr("Language"), icon: Icons.language },
         { key: "advanced", label: qsTr("Advanced"), icon: Icons.settings },
         { key: "about", label: qsTr("About Flux"), icon: Icons.info }
     ]
@@ -221,6 +222,29 @@ Surface {
                     y: Theme.sp(4)
                     width: Math.min(form.width - 2 * Theme.sp(6), 760)
                     spacing: Theme.sp(8)
+
+                    // ===== Language =====
+                    ColumnLayout {
+                        visible: root.section === "language"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
+
+                        SettingsGroup {
+                            title: qsTr("Language")
+                            // Flux, qBittorrent's units and the number and date formats switch together;
+                            // the window opens again in the new language, here
+                            SettingRow {
+                                key: "language"
+                                type: "select"
+                                external: true
+                                externalValue: Languages.selected
+                                options: Languages.options
+                                label: qsTr("Interface language")
+                                description: qsTr("Numbers and dates follow it too. The window reopens in the new language.")
+                                onExternalCommit: value => Languages.select(value)
+                            }
+                        }
+                    }
 
                     // ===== Downloads =====
                     ColumnLayout {

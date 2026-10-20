@@ -14,6 +14,21 @@ ApplicationWindow {
 
     // 0 Transfers, 1 Tracker search, 2 RSS feeds, 3 Media library, 4 Settings
     property int currentPage: 0
+    // A window opened again for a new language (FluxShell::reloadMain) comes back as the old one was:
+    // {x, y, width, height, maximized}, and on the same section of the settings
+    property var restoreGeometry: null
+    property string startSection: ""
+    readonly property string settingsSection: settingsPage.section
+    // the size and place of the window when not maximized (what a maximized one comes back to)
+    property rect normalGeometry
+    function _rememberNormal() {
+        if (visibility === Window.Windowed)
+            normalGeometry = Qt.rect(x, y, width, height)
+    }
+    onXChanged: _rememberNormal()
+    onYChanged: _rememberNormal()
+    onWidthChanged: _rememberNormal()
+    onHeightChanged: _rememberNormal()
     // The sidebar folded to a rail of icons (the logo or Ctrl+B); remembered in the profile
     property bool sidebarCollapsed: UiSettings.layoutValue("sidebarCollapsed", false)
     function toggleSidebar() {
@@ -44,9 +59,18 @@ ApplicationWindow {
         Theme.glassSource = backdrop
 
         agent.setup(window)
-        // centred on the screen it opens on (48 px: room for the taskbar)
-        x = Screen.virtualX + Math.round((Screen.width - width) / 2)
-        y = Screen.virtualY + Math.max(0, Math.round((Screen.height - 48 - height) / 2))
+        if (restoreGeometry) {
+            x = restoreGeometry.x
+            y = restoreGeometry.y
+            width = restoreGeometry.width
+            height = restoreGeometry.height
+        } else {
+            // centred on the screen it opens on (48 px: room for the taskbar)
+            x = Screen.virtualX + Math.round((Screen.width - width) / 2)
+            y = Screen.virtualY + Math.max(0, Math.round((Screen.height - 48 - height) / 2))
+        }
+        if (startSection !== "")
+            settingsPage.section = startSection
         // dark system surfaces (snap layout flyout, border); Windows 11 22H2+
         if (SystemPrefs.windowsBuild >= 22621)
             agent.setWindowAttribute("dark-mode", true)
@@ -62,7 +86,19 @@ ApplicationWindow {
         }
         titleBarHitTestItems = registered
 
-        visible = true
+        if (restoreGeometry && restoreGeometry.maximized) {
+            showMaximized()
+        } else {
+            visible = true
+            // shown, the agent grows the window over the hidden system title bar: the old one's exact
+            // place again (still before anything is drawn)
+            if (restoreGeometry) {
+                x = restoreGeometry.x
+                y = restoreGeometry.y
+                width = restoreGeometry.width
+                height = restoreGeometry.height
+            }
+        }
         // a quiet look for a newer release (when the user lets it)
         Qt.callLater(Updater.checkIfDue)
         // the last update could not put its files in place: say so, the details are in About
@@ -134,7 +170,8 @@ ApplicationWindow {
             { group: qsTr("Go to"), id: "settings", arg: "speed", label: qsTr("Settings: speed"), icon: Icons.settings, keywords: "limit schedule" },
             { group: qsTr("Go to"), id: "settings", arg: "connection", label: qsTr("Settings: connection"), icon: Icons.settings, keywords: "port proxy upnp" },
             { group: qsTr("Go to"), id: "settings", arg: "bittorrent", label: qsTr("Settings: BitTorrent"), icon: Icons.settings, keywords: "dht queue ratio seeding" },
-            { group: qsTr("Go to"), id: "settings", arg: "advanced", label: qsTr("Settings: advanced"), icon: Icons.settings, keywords: "libtorrent disk network" }
+            { group: qsTr("Go to"), id: "settings", arg: "advanced", label: qsTr("Settings: advanced"), icon: Icons.settings, keywords: "libtorrent disk network" },
+            { group: qsTr("Go to"), id: "settings", arg: "language", label: qsTr("Settings: language"), icon: Icons.language, keywords: "language translation locale" }
         ]
         onTriggered: (id, arg) => window.runCommand(id, arg)
     }

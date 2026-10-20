@@ -100,6 +100,42 @@ TestCase {
         AppSettings.setValue("proxyType", "none")
     }
 
+    // Language: the system's first, then every translation under its own name; a choice is kept
+    function test_language() {
+        page.section = "language"
+        const select = setting("language")
+        verify(select.visible)
+        const options = Languages.options
+        compare(options.length, 10, "system + 9 languages")
+        compare(options[0].key, "")
+        verify(options[0].label.indexOf("(") > 0, "the system choice names its language: " + options[0].label)
+        const labels = options.map(o => o.label)
+        for (const name of ["English", "Русский", "Українська", "Deutsch", "Español", "Français", "Português (Brasil)", "Polski", "简体中文"])
+            verify(labels.indexOf(name) >= 0, name + " is offered")
+        compare(select.currentKey, "")
+
+        Languages.select("de")
+        compare(Languages.selected, "de")
+        compare(Languages.current, "de")
+        tryCompare(select, "currentKey", "de")
+        Languages.select("")
+        compare(Languages.selected, "")
+    }
+
+    // Every language Flux offers has its translation built in
+    function test_translationsBuiltIn() {
+        for (const o of Languages.options) {
+            if (o.key === "" || o.key === "en")
+                continue
+            verify(FluxTestI18n.setLanguage(o.key), "a translation for " + o.key)
+        }
+        // English: the plural forms
+        verify(FluxTestI18n.setLanguage("en"))
+        compare(qsTranslate("SearchPage", "%n result(s) for “%1”", "", 1).arg("x"), "1 result for “x”")
+        compare(qsTranslate("SearchPage", "%n result(s) for “%1”", "", 5).arg("x"), "5 results for “x”")
+        FluxTestI18n.setLanguage("")
+    }
+
     function test_selectShowsCurrent() {
         page.section = "bittorrent"
         compare(AppSettings.setValue("encryption", "require"), "")

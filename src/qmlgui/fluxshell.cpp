@@ -30,15 +30,31 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QFontDatabase>
 #include <QLocale>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QVariantMap>
 #include <Qt>
 
 #include <QWKQuick/qwkquickglobal.h>
 
 #include "base/global.h"
+#include "backend/languages.h"
 #include "streaming/streammanager.h"
+
+namespace
+{
+    // Chinese text in the UI language's own glyphs: Qt's fallback for Han script otherwise follows the
+    // system (a Japanese face on many systems), and the simplified forms come out mixed with others
+    void applyScriptFonts(const QString &language)
+    {
+        const QString chinese = u"Microsoft YaHei UI"_s;
+        QFontDatabase::removeApplicationFallbackFontFamily(QChar::Script_Han, chinese);
+        if (language == u"zh_CN")
+            QFontDatabase::addApplicationFallbackFontFamily(QChar::Script_Han, chinese);
+    }
+}
 
 FluxShell::FluxShell(QObject *parent, const QString &module, const QString &type)
     : QObject(parent)
@@ -46,8 +62,13 @@ FluxShell::FluxShell(QObject *parent, const QString &module, const QString &type
     , m_type {type}
 {
     // Installed before the engine exists, so the first load of the QML already sees it
-    if (loadTranslation(m_translator, QLocale::system()))
+    const QLocale locale = Languages::effectiveLocale();
+    QLocale::setDefault(locale);
+    applyScriptFonts(Languages::effective());
+    if (loadTranslation(m_translator, locale))
         QCoreApplication::installTranslator(&m_translator);
+    // queued: the window that asked is replaced, so its call returns first
+    connect(Languages::instance(), &Languages::switchRequested, this, &FluxShell::switchLanguage, Qt::QueuedConnection);
 
     m_engine = new QQmlApplicationEngine(this);
     // QML type WindowAgent (import QWindowKit) used by Main.qml
@@ -64,6 +85,52 @@ FluxShell::~FluxShell()
 bool FluxShell::loadTranslation(QTranslator &translator, const QLocale &locale)
 {
     return translator.load(locale, u"flux"_s, u"_"_s, u":/i18n"_s);
+}
+
+void FluxShell::switchLanguage()
+{
+    emit reloadTranslationsRequested();
+
+    const QLocale locale = Languages::effectiveLocale();
+    QCoreApplication::removeTranslator(&m_translator);
+    if (loadTranslation(m_translator, locale))
+        QCoreApplication::installTranslator(&m_translator);
+    QLocale::setDefault(locale);
+    applyScriptFonts(Languages::effective());
+
+    // A fresh window rather than QQmlEngine::retranslate(): that redoes only the qsTr() bindings, while
+    // sizes, speeds and dates (Format, toLocaleString) and texts made in C++ would keep the old language
+    reloadMain();
+}
+
+void FluxShell::reloadMain()
+{
+    QQuickWindow *old = nullptr;
+    for (QObject *object : m_engine->rootObjects())
+    {
+        if ((old = qobject_cast<QQuickWindow *>(object)))
+            break;
+    }
+    if (!old)
+        return;
+
+    // where it was and what it showed
+    const bool maximized = (old->windowStates() & Qt::WindowMaximized);
+    const QRectF normal = old->property("normalGeometry").toRectF();
+    const QRect geometry = (maximized && normal.isValid()) ? normal.toRect() : old->geometry();
+    const QVariantMap restore {
+        {u"x"_s, geometry.x()}, {u"y"_s, geometry.y()}, {u"width"_s, geometry.width()},
+        {u"height"_s, geometry.height()}, {u"maximized"_s, maximized}
+    };
+    m_engine->setInitialProperties({
+        {u"currentPage"_s, old->property("currentPage")},
+        {u"startSection"_s, old->property("settingsSection")},
+        {u"restoreGeometry"_s, restore}
+    });
+    m_engine->loadFromModule(m_module, m_type);
+    // the new one is up (it shows itself once ready): the old one goes without closing, so nothing quits
+    old->hide();
+    old->deleteLater();
 }
 
 bool FluxShell::show()

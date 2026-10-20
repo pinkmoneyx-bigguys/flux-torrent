@@ -45,6 +45,7 @@
 #include "base/global.h"
 #include "base/profile.h"
 #include "base/settingsstorage.h"
+#include "qmlgui/backend/languages.h"
 #include "qmlgui/fluxshell.h"
 #include "profilemigrator.h"
 
@@ -190,7 +191,7 @@ Flux::FirstRunOutcome Flux::runFirstRun()
 
     // The dialog is shown before the main shell exists: it needs the UI translation on its own
     QTranslator translator;
-    if (FluxShell::loadTranslation(translator, QLocale::system()))
+    if (FluxShell::loadTranslation(translator, Languages::effectiveLocale()))
         QCoreApplication::installTranslator(&translator);
     // Closing the dialog must not make QGuiApplication quit by itself
     const bool quitOnLastWindowClosed = QGuiApplication::quitOnLastWindowClosed();

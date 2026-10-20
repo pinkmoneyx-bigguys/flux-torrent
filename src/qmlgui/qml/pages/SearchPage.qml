@@ -198,7 +198,9 @@ Surface {
                 UiSelect {
                     objectName: "searchCategory"
                     implicitHeight: 30
-                    Layout.preferredWidth: 160
+                    // as wide as the chosen one's name (translations run longer), within reason
+                    Layout.preferredWidth: Math.min(260, Math.max(160, implicitWidth))
+                    Layout.minimumWidth: Layout.preferredWidth
                     text: qsTr("Category")
                     currentKey: page.category
                     model: SearchEngine.categories.map(c => ({ key: c.key, label: page.categoryLabel(c.key) }))
@@ -207,7 +209,8 @@ Surface {
                 UiSelect {
                     objectName: "searchPlugin"
                     implicitHeight: 30
-                    Layout.preferredWidth: 190
+                    Layout.preferredWidth: Math.min(260, Math.max(190, implicitWidth))
+                    Layout.minimumWidth: Layout.preferredWidth
                     text: qsTr("Sources")
                     currentKey: page.plugin
                     model: [{ key: "enabled", label: qsTr("All enabled sources") }]
@@ -227,7 +230,9 @@ Surface {
                 }
                 Text {
                     objectName: "searchStatus"
+                    // what the controls leave (eliding): the selects and switches keep their size
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 0
                     text: {
                         const n = SearchEngine.results.count
                         switch (SearchEngine.status) {
