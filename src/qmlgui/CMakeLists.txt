@@ -141,6 +141,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/searchengine.cpp
         backend/rssmanager.h
         backend/rssmanager.cpp
+        backend/medialibrary.h
+        backend/medialibrary.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h

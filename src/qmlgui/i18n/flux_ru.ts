@@ -62,8 +62,132 @@
         <translation>Медиатека</translation>
     </message>
     <message>
-        <source>Watch and listen to what you have downloaded, right here.</source>
-        <translation>Здесь можно будет смотреть и слушать скачанное.</translation>
+        <source>Movies and episodes from your torrents.</source>
+        <translation>Фильмы и серии из ваших раздач.</translation>
+    </message>
+    <message>
+        <source>Ep. %1</source>
+        <translation>Серия %1</translation>
+    </message>
+    <message>
+        <source>Sort</source>
+        <translation>Сортировка</translation>
+    </message>
+    <message>
+        <source>Recently added</source>
+        <translation>Недавно добавленные</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>Название</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Размер</translation>
+    </message>
+    <message>
+        <source>Grid</source>
+        <translation>Сетка</translation>
+    </message>
+    <message>
+        <source>List</source>
+        <translation>Список</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Все</translation>
+    </message>
+    <message>
+        <source>Movies</source>
+        <translation>Фильмы</translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation>Сериалы</translation>
+    </message>
+    <message>
+        <source>Downloading</source>
+        <translation>Загружаются</translation>
+    </message>
+    <message>
+        <source>Search the library…</source>
+        <translation>Поиск по медиатеке…</translation>
+    </message>
+    <message>
+        <source>Episode</source>
+        <translation>Серия</translation>
+    </message>
+    <message>
+        <source>Quality</source>
+        <translation>Качество</translation>
+    </message>
+    <message>
+        <source>Progress</source>
+        <translation>Прогресс</translation>
+    </message>
+    <message>
+        <source>No videos yet</source>
+        <translation>Видео пока нет</translation>
+    </message>
+    <message>
+        <source>Nothing here</source>
+        <translation>Здесь пусто</translation>
+    </message>
+    <message>
+        <source>Movies and episodes from your torrents show up here as soon as a torrent with video starts downloading.</source>
+        <translation>Фильмы и серии из раздач появятся здесь, как только начнёт загружаться торрент с видео.</translation>
+    </message>
+    <message>
+        <source>No videos match this filter.</source>
+        <translation>Под этот фильтр видео не подходит.</translation>
+    </message>
+    <message>
+        <source>Search trackers</source>
+        <translation>Искать на трекерах</translation>
+    </message>
+    <message>
+        <source>%1% · downloading</source>
+        <translation>%1% · загружается</translation>
+    </message>
+    <message>
+        <source>Play %1</source>
+        <translation>Воспроизвести %1</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Смотреть</translation>
+    </message>
+    <message>
+        <source>The file is still downloading. Watching while it downloads comes with the built-in player.</source>
+        <translation>Файл ещё загружается. Смотреть во время загрузки можно будет во встроенном плеере.</translation>
+    </message>
+    <message>
+        <source>Show in folder</source>
+        <translation>Показать в папке</translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation>Загружено</translation>
+    </message>
+    <message>
+        <source>Year</source>
+        <translation>Год</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Файл</translation>
+    </message>
+    <message>
+        <source>Torrent</source>
+        <translation>Торрент</translation>
+    </message>
+    <message>
+        <source>Location</source>
+        <translation>Расположение</translation>
     </message>
 </context>
 <context>
