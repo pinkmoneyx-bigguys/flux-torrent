@@ -12,5 +12,9 @@ foreach ($name in $FluxChecks.Keys) {
         Write-Output ("OK   {0}" -f $name)
     }
 }
+foreach ($name in $FluxOptionalChecks.Keys) {
+    $reason = & $FluxOptionalChecks[$name]
+    if ($reason) { Write-Output ("WARN {0}: {1}" -f $name, $reason) } else { Write-Output ("OK   {0}" -f $name) }
+}
 if ($failed -gt 0) { exit 1 }
 exit 0

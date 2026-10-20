@@ -12,6 +12,9 @@ $Flux = [ordered]@{
     DepsRoot      = 'C:\deps'
     BoostVersion  = '1.90.0'
     LibtorrentTag = 'v2.0.11'
+    # libmpv for the built-in player (optional): shinchiro/mpv-winbuild-cmake dev package
+    MpvRelease    = '20261019'
+    MpvPackage    = 'mpv-dev-x86_64-20261019-git-6a262d11f6.7z'
 }
 $Flux.QtPrefix         = Join-Path $Flux.QtRoot "$($Flux.QtVersion)\$($Flux.QtArch)"
 $Flux.BoostDir         = Join-Path $Flux.DepsRoot ('boost_' + $Flux.BoostVersion.Replace('.', '_'))
@@ -20,6 +23,7 @@ $Flux.LibtorrentPrefix = Join-Path $Flux.DepsRoot 'libtorrent'
 $Flux.TripletsDir      = Join-Path $PSScriptRoot 'vcpkg-triplets'
 $Flux.VcpkgToolchain   = Join-Path $Flux.VcpkgRoot 'scripts\buildsystems\vcpkg.cmake'
 $Flux.VcpkgInstalled   = Join-Path $Flux.VcpkgRoot "installed\$($Flux.Triplet)"
+$Flux.MpvDir           = Join-Path $Flux.DepsRoot 'mpv'
 
 function Get-VsWherePath {
     Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
@@ -110,6 +114,32 @@ function Test-FluxBoost {
 function Test-FluxLibtorrent {
     $cfg = Join-Path $Flux.LibtorrentPrefix 'lib\cmake\LibtorrentRasterbar\LibtorrentRasterbarConfig.cmake'
     if (Test-Path $cfg) { $null } else { "libtorrent not installed in $($Flux.LibtorrentPrefix)" }
+}
+
+function Test-FluxMpv {
+    foreach ($f in @('libmpv-2.dll', 'mpv.lib', 'include\mpv\render_gl.h')) {
+        if (-not (Test-Path (Join-Path $Flux.MpvDir $f))) { return "libmpv not ready in $($Flux.MpvDir) (missing $f)" }
+    }
+    $null
+}
+
+# MSVC import library for libmpv-2.dll: the package only ships a MinGW one (libmpv.dll.a), so mpv.lib is made
+# from the DLL's exports (dumpbin -> .def -> lib). Needs the MSVC developer environment.
+function New-FluxMpvImportLib {
+    $dll = Join-Path $Flux.MpvDir 'libmpv-2.dll'
+    $def = Join-Path $Flux.MpvDir 'mpv.def'
+    $lines = & dumpbin.exe /nologo /exports $dll
+    if ($LASTEXITCODE -ne 0) { throw 'dumpbin failed on libmpv-2.dll' }
+    $names = foreach ($l in $lines) { if ($l -match '^\s+\d+\s+[0-9A-F]+\s+[0-9A-F]{8}\s+(mpv_\w+)') { $Matches[1] } }
+    if (-not $names) { throw 'no mpv_* exports found in libmpv-2.dll' }
+    Set-Content -Path $def -Value (@('LIBRARY libmpv-2', 'EXPORTS') + $names) -Encoding ASCII
+    & lib.exe /nologo "/def:$def" /machine:x64 "/out:$(Join-Path $Flux.MpvDir 'mpv.lib')"
+    if ($LASTEXITCODE -ne 0) { throw 'lib.exe failed to make mpv.lib' }
+}
+
+# Optional parts: reported as WARN, the build works without them (no built-in player)
+$FluxOptionalChecks = [ordered]@{
+    mpv = { Test-FluxMpv }
 }
 
 $FluxChecks = [ordered]@{

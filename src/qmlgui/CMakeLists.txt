@@ -172,6 +172,8 @@ qt_add_qml_module(qbt_qmlgui
         streaming/streamsession.cpp
         streaming/streammanager.h
         streaming/streammanager.cpp
+        player/mpvitem.h
+        player/mpvitem.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h
@@ -196,7 +198,36 @@ target_link_libraries(qbt_qmlgui
 )
 
 # qmltyperegistrations includes QML_ELEMENT headers by file name only
-target_include_directories(qbt_qmlgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/backend" "${CMAKE_CURRENT_SOURCE_DIR}/streaming")
+target_include_directories(qbt_qmlgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/backend" "${CMAKE_CURRENT_SOURCE_DIR}/streaming"
+    "${CMAKE_CURRENT_SOURCE_DIR}/player")
+
+# The built-in player: libmpv from shinchiro/mpv-winbuild-cmake in C:/deps/mpv (scripts/setup-env.ps1 fetches it
+# and makes the MSVC import library mpv.lib). Without it Flux builds with a stub MpvItem (available == false).
+set(FLUX_MPV_DIR "C:/deps/mpv" CACHE PATH "libmpv dev package (include/, mpv.lib, libmpv-2.dll)")
+if (EXISTS "${FLUX_MPV_DIR}/mpv.lib" AND EXISTS "${FLUX_MPV_DIR}/include/mpv/render_gl.h")
+    set(fluxMpvDefault ON)
+else()
+    set(fluxMpvDefault OFF)
+endif()
+option(FLUX_MPV "Build the built-in libmpv player" ${fluxMpvDefault})
+if (FLUX_MPV)
+    find_package(Qt6 REQUIRED COMPONENTS OpenGL)
+    add_library(mpv::mpv SHARED IMPORTED GLOBAL)
+    set_target_properties(mpv::mpv PROPERTIES
+        IMPORTED_LOCATION "${FLUX_MPV_DIR}/libmpv-2.dll"
+        IMPORTED_IMPLIB "${FLUX_MPV_DIR}/mpv.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "${FLUX_MPV_DIR}/include"
+    )
+    target_link_libraries(qbt_qmlgui PUBLIC mpv::mpv Qt6::OpenGL)
+    target_compile_definitions(qbt_qmlgui PUBLIC FLUX_HAS_MPV)
+    # next to Flux.exe and the test runners, so they start from the build folder
+    add_custom_command(TARGET qbt_qmlgui POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${FLUX_MPV_DIR}/libmpv-2.dll" "${CMAKE_BINARY_DIR}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_BINARY_DIR}/test/qmlgui"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${FLUX_MPV_DIR}/libmpv-2.dll" "${CMAKE_BINARY_DIR}/test/qmlgui"
+    )
+endif()
+
 
 # English source strings in QML (qsTr), Russian in i18n/flux_ru.ts. The .qm files are embedded under
 # :/i18n and FluxShell installs the one that matches the system locale.

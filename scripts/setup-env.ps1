@@ -164,11 +164,33 @@ if (Test-FluxLibtorrent) {
     Invoke-Native 'cmake' @('--build', $bld, '--target', 'install')
 } else { Write-Skip 'libtorrent' }
 
-# 7. Lock file
+# 7. libmpv (built-in player)
+Write-Step "libmpv $($Flux.MpvRelease)"
+if (Test-FluxMpv) {
+    New-Item -ItemType Directory -Force -Path $Flux.MpvDir | Out-Null
+    if (-not (Test-Path (Join-Path $Flux.MpvDir 'libmpv-2.dll'))) {
+        $dl = Join-Path $Flux.DepsRoot 'dl'
+        New-Item -ItemType Directory -Force -Path $dl | Out-Null
+        $archive = Join-Path $dl $Flux.MpvPackage
+        if (-not (Test-Path $archive)) {
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest -Uri "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$($Flux.MpvRelease)/$($Flux.MpvPackage)" -OutFile $archive -UseBasicParsing
+        }
+        # Windows 11 tar (libarchive) reads 7z
+        & "$env:SystemRoot\System32\tar.exe" -xf $archive -C $Flux.MpvDir
+        if ($LASTEXITCODE -ne 0) { throw "Не удалось распаковать $($Flux.MpvPackage)" }
+        Set-Content -Path (Join-Path $Flux.MpvDir 'VERSION.txt') -Value "$($Flux.MpvPackage -replace '\.7z$', '') (shinchiro/mpv-winbuild-cmake release $($Flux.MpvRelease))" -Encoding ASCII
+    }
+    Enter-FluxDevShell
+    New-FluxMpvImportLib
+} else { Write-Skip 'libmpv' }
+
+# 8. Lock file
 $lock['qt'] = $Flux.QtVersion
 $lock['boost'] = $Flux.BoostVersion
 $lock['libtorrent'] = $Flux.LibtorrentTag
 $lock['triplet'] = $Flux.Triplet
+$lock['mpv'] = $Flux.MpvPackage
 $lines = @('# Pinned dependency versions for Flux. Written by scripts/setup-env.ps1.')
 foreach ($k in ($lock.Keys | Sort-Object)) { $lines += "$k = $($lock[$k])" }
 Set-Content -Path $lockFile -Value $lines -Encoding ASCII

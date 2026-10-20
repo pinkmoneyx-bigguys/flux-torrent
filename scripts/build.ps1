@@ -66,4 +66,7 @@ if ($Deploy) {
     $deployArgs = @('--release', '--no-translations', (Join-Path $deployDir $exeName))
     if ($Gui -eq 'Qml') { $deployArgs = @('--qmldir', (Join-Path $Flux.RepoRoot 'src\qmlgui\qml')) + $deployArgs }
     Invoke-Native (Join-Path $Flux.QtPrefix 'bin\windeployqt.exe') $deployArgs
+    # the built-in player (optional)
+    $mpvDll = Join-Path $Flux.MpvDir 'libmpv-2.dll'
+    if (($Gui -eq 'Qml') -and (Test-Path $mpvDll)) { Copy-Item $mpvDll $deployDir -Force }
 }
