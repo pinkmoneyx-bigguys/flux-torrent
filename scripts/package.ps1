@@ -1,6 +1,6 @@
-# Packs the deployed Flux (deploy\, made by `build.ps1 -Gui Qml -Deploy`) into dist\Flux-<version>-win64.zip,
-# the file to attach to a GitHub release. Flux's updater offers that archive to everyone on an older version
-# once a release tagged v<version> is published.
+﻿# Packs the deployed Flux (deploy\, made by `build.ps1 -Gui Qml -Deploy`) into dist\Flux-<version>-win64.zip,
+# the file to attach to a GitHub release. Once a release tagged v<version> is published, every Flux on an
+# older version offers it and installs it itself (Settings, About: "Update and restart").
 param(
     [string]$Version = '',
     [string]$DeployDir = ''   # default: deploy\ in the repository

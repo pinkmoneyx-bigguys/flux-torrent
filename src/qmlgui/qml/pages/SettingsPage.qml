@@ -11,6 +11,9 @@ Surface {
 
     property string title: qsTr("Settings")
     property string hint: qsTr("Application settings will appear here.")
+    // an update is being downloaded or put in place
+    readonly property bool installing: Updater.installState === "downloading" || Updater.installState === "unpacking"
+                                       || Updater.installState === "restarting"
     property string section: "downloads"
 
     readonly property var sections: [
@@ -728,12 +731,20 @@ Surface {
                                             objectName: "updateStatus"
                                             Layout.fillWidth: true
                                             text: {
+                                                switch (Updater.installState) {
+                                                case "downloading": return qsTr("Downloading Flux %1…").arg(Updater.latestVersion.replace(/^v/i, ""))
+                                                case "unpacking": return qsTr("Unpacking the update…")
+                                                case "restarting": return qsTr("Flux restarts into the new version…")
+                                                }
                                                 switch (Updater.status) {
                                                 case "checking": return qsTr("Checking for updates…")
                                                 case "available": return qsTr("Version %1 is available").arg(Updater.latestVersion.replace(/^v/i, ""))
                                                 case "upToDate": return qsTr("You have the latest version")
                                                 case "error": return qsTr("Could not check for updates")
-                                                default: return qsTr("Updates have not been checked yet")
+                                                // checked before, but not since this start (automatic checks are off)
+                                                default: return Updater.lastChecked.getTime && !isNaN(Updater.lastChecked.getTime())
+                                                         ? qsTr("Check whether a newer version is out")
+                                                         : qsTr("Updates have not been checked yet")
                                                 }
                                             }
                                             color: Theme.text
@@ -744,27 +755,58 @@ Surface {
                                         }
                                         Text {
                                             Layout.fillWidth: true
-                                            text: Updater.status === "error" ? Updater.error
+                                            text: Updater.installState === "downloading" && Updater.installProgress >= 0
+                                                  ? qsTr("%1 of %2").arg(Format.size(Updater.installProgress * Updater.downloadSize)).arg(Format.size(Updater.downloadSize))
+                                                : Updater.installState === "failed" ? Updater.installError
+                                                : Updater.status === "error" ? Updater.error
                                                 : Updater.status === "available" && Updater.downloadName !== ""
                                                   ? qsTr("%1 · %2").arg(Updater.downloadName).arg(Format.size(Updater.downloadSize))
                                                 : Updater.lastChecked.getTime && !isNaN(Updater.lastChecked.getTime())
                                                   ? qsTr("Checked %1").arg(Updater.lastChecked.toLocaleString(Qt.locale(), Locale.ShortFormat))
                                                   : ""
                                             visible: text !== ""
-                                            color: Updater.status === "error" ? Theme.error : Theme.textDim
+                                            objectName: "updateDetail"
+                                            color: Updater.status === "error" || Updater.installState === "failed" ? Theme.error : Theme.textDim
                                             font.family: Theme.fontText
                                             font.pixelSize: Theme.textXs
+                                            wrapMode: Updater.installState === "failed" ? Text.Wrap : Text.NoWrap
                                             elide: Text.ElideRight
                                         }
+                                        UiProgress {
+                                            objectName: "updateProgress"
+                                            visible: root.installing
+                                            Layout.fillWidth: true
+                                            Layout.topMargin: Theme.sp(1)
+                                            value: Updater.installProgress >= 0 ? Updater.installProgress : 1
+                                            active: true
+                                            color: Theme.download
+                                        }
+                                    }
+                                    // installs it here and restarts; a developer build gets the file instead
+                                    UiButton {
+                                        objectName: "installUpdate"
+                                        visible: Updater.status === "available" && Updater.canInstall && !root.installing
+                                        iconPath: Icons.download
+                                        text: Updater.installState === "failed" ? qsTr("Try again") : qsTr("Update and restart")
+                                        onClicked: Updater.install()
                                     }
                                     UiButton {
-                                        visible: Updater.status === "available"
-                                        iconPath: Icons.download
-                                        text: qsTr("Download")
+                                        visible: Updater.status === "available" && (!Updater.canInstall || Updater.installState === "failed") && !root.installing
+                                        variant: Updater.canInstall ? "outline" : "default"
+                                        iconPath: Updater.canInstall ? "" : Icons.download
+                                        text: Updater.canInstall ? qsTr("Download manually") : qsTr("Download")
                                         onClicked: Updater.openDownload()
                                     }
                                     UiButton {
+                                        objectName: "cancelUpdate"
+                                        visible: Updater.installState === "downloading" || Updater.installState === "unpacking"
+                                        variant: "outline"
+                                        text: qsTr("Cancel")
+                                        onClicked: Updater.cancelInstall()
+                                    }
+                                    UiButton {
                                         objectName: "checkUpdates"
+                                        visible: !root.installing
                                         variant: "outline"
                                         enabled: Updater.status !== "checking" && AppInfo.repository !== ""
                                         text: qsTr("Check now")
@@ -812,7 +854,7 @@ Surface {
                                 externalValue: Updater.autoCheck
                                 onExternalCommit: value => Updater.autoCheck = value
                                 label: qsTr("Check for updates automatically")
-                                description: qsTr("Once a day, when Flux starts.")
+                                description: qsTr("Every time Flux starts.")
                             }
                         }
 

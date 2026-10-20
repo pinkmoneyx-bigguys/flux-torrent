@@ -63,8 +63,13 @@ ApplicationWindow {
         titleBarHitTestItems = registered
 
         visible = true
-        // a quiet look for a newer release (at most once a day, when the user lets it)
+        // a quiet look for a newer release (when the user lets it)
         Qt.callLater(Updater.checkIfDue)
+        // the last update could not put its files in place: say so, the details are in About
+        if (Updater.installState === "failed") {
+            toastPurpose = "update"
+            windowToast.show(qsTr("The update was not installed"), false, qsTr("Details"))
+        }
     }
 
     // Page switching from the keyboard

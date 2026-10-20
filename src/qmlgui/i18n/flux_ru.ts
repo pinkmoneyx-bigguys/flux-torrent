@@ -740,6 +740,10 @@
         <translation>Подробнее</translation>
     </message>
     <message>
+        <source>The update was not installed</source>
+        <translation>Обновление не установилось</translation>
+    </message>
+    <message>
         <source>Created and seeding: %1</source>
         <translation>Создан и раздаётся: %1</translation>
     </message>
@@ -2355,6 +2359,10 @@
         <translation>Остановить по времени раздачи</translation>
     </message>
     <message>
+        <source>Every time Flux starts.</source>
+        <translation>При каждом запуске Flux.</translation>
+    </message>
+    <message>
         <source>min</source>
         <translation>мин</translation>
     </message>
@@ -2511,6 +2519,18 @@
         <translation>В этой сборке не указано, где публикуются её релизы.</translation>
     </message>
     <message>
+        <source>Downloading Flux %1…</source>
+        <translation>Скачивается Flux %1…</translation>
+    </message>
+    <message>
+        <source>Unpacking the update…</source>
+        <translation>Распаковка обновления…</translation>
+    </message>
+    <message>
+        <source>Flux restarts into the new version…</source>
+        <translation>Flux перезапускается в новой версии…</translation>
+    </message>
+    <message>
         <source>Checking for updates…</source>
         <translation>Проверяем обновления…</translation>
     </message>
@@ -2527,8 +2547,16 @@
         <translation>Не удалось проверить обновления</translation>
     </message>
     <message>
+        <source>Check whether a newer version is out</source>
+        <translation>Проверьте, не вышла ли новая версия</translation>
+    </message>
+    <message>
         <source>Updates have not been checked yet</source>
         <translation>Обновления ещё не проверялись</translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 из %2</translation>
     </message>
     <message>
         <source>%1 · %2</source>
@@ -2539,16 +2567,24 @@
         <translation>Проверено %1</translation>
     </message>
     <message>
+        <source>Try again</source>
+        <translation>Повторить</translation>
+    </message>
+    <message>
+        <source>Update and restart</source>
+        <translation>Обновить и перезапустить</translation>
+    </message>
+    <message>
+        <source>Download manually</source>
+        <translation>Скачать вручную</translation>
+    </message>
+    <message>
         <source>Check now</source>
         <translation>Проверить</translation>
     </message>
     <message>
         <source>Check for updates automatically</source>
         <translation>Проверять обновления автоматически</translation>
-    </message>
-    <message>
-        <source>Once a day, when Flux starts.</source>
-        <translation>Раз в день, при запуске Flux.</translation>
     </message>
     <message>
         <source>Project</source>
@@ -3277,6 +3313,10 @@
 <context>
     <name>Updater</name>
     <message>
+        <source>The last update could not replace the program files (robocopy code %1). The log is in %2.</source>
+        <translation>Прошлое обновление не смогло заменить файлы программы (код robocopy %1). Журнал: %2.</translation>
+    </message>
+    <message>
         <source>This build does not say where its releases are published.</source>
         <translation>В этой сборке не указано, где публикуются её релизы.</translation>
     </message>
@@ -3291,6 +3331,46 @@
     <message>
         <source>GitHub sent an answer Flux does not understand.</source>
         <translation>GitHub прислал ответ, который Flux не понимает.</translation>
+    </message>
+    <message>
+        <source>The download address is not a secure one.</source>
+        <translation>Адрес загрузки небезопасный.</translation>
+    </message>
+    <message>
+        <source>Cannot create %1.</source>
+        <translation>Не удаётся создать %1.</translation>
+    </message>
+    <message>
+        <source>Cannot write %1.</source>
+        <translation>Не удаётся записать %1.</translation>
+    </message>
+    <message>
+        <source>The download failed: %1</source>
+        <translation>Не удалось скачать: %1</translation>
+    </message>
+    <message>
+        <source>The download is incomplete (%1 of %2 bytes).</source>
+        <translation>Файл скачался не полностью (%1 из %2 байт).</translation>
+    </message>
+    <message>
+        <source>The download is damaged: its checksum does not match the release.</source>
+        <translation>Скачанный файл повреждён: контрольная сумма не совпадает с релизом.</translation>
+    </message>
+    <message>
+        <source>The downloaded archive could not be unpacked.</source>
+        <translation>Не удалось распаковать скачанный архив.</translation>
+    </message>
+    <message>
+        <source>The archive has no Flux.exe in it.</source>
+        <translation>В архиве нет Flux.exe.</translation>
+    </message>
+    <message>
+        <source>The installer could not start.</source>
+        <translation>Не удалось запустить установку.</translation>
+    </message>
+    <message>
+        <source>Installing needs the administrator&apos;s permission.</source>
+        <translation>Для установки нужно разрешение администратора.</translation>
     </message>
 </context>
 </TS>

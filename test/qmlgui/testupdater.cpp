@@ -26,7 +26,10 @@
  * exception statement from your version.
  */
 
+#include <QDir>
+#include <QFile>
 #include <QObject>
+#include <QTemporaryDir>
 #include <QTest>
 
 #include "qmlgui/backend/updater.h"
@@ -119,6 +122,46 @@ private slots:
     {
         QVERIFY(Updater::parseRelease("{\"message\":\"Not Found\"}").isEmpty());
         QVERIFY(Updater::parseRelease("<html></html>").isEmpty());
+    }
+
+    // GitHub gives each file's SHA-256: the download is checked against it
+    void digestOfTheFile()
+    {
+        const QByteArray zip = "{\"name\":\"Flux-0.2.0-win64.zip\",\"size\":50,\"digest\":\"sha256:abc123\","
+            "\"browser_download_url\":\"https://github.com/o/r/releases/download/x/Flux-0.2.0-win64.zip\"}";
+        QCOMPARE(Updater::parseRelease(release("v0.2.0", zip)).value(u"downloadDigest"_s).toString(), u"sha256:abc123"_s);
+        QVERIFY(Updater::parseRelease(release("v0.2.0", asset("Flux.zip", 1))).value(u"downloadDigest"_s).toString().isEmpty());
+    }
+
+    // The archive holds Flux-<version>\Flux.exe; one packed without the folder works too
+    void programDirInTheArchive()
+    {
+        QTemporaryDir root;
+        QVERIFY(root.isValid());
+        const QDir dir {root.path()};
+        QVERIFY(Updater::findProgramDir(dir.path()).isEmpty());
+
+        QVERIFY(dir.mkpath(u"Flux-0.2.0"_s));
+        QFile exe {dir.filePath(u"Flux-0.2.0/Flux.exe"_s)};
+        QVERIFY(exe.open(QIODevice::WriteOnly));
+        exe.close();
+        QCOMPARE(Updater::findProgramDir(dir.path()), QDir(dir.filePath(u"Flux-0.2.0"_s)).absolutePath());
+
+        QFile top {dir.filePath(u"Flux.exe"_s)};
+        QVERIFY(top.open(QIODevice::WriteOnly));
+        top.close();
+        QCOMPARE(Updater::findProgramDir(dir.path()), dir.absolutePath());
+    }
+
+    // The script waits for Flux, copies the new files over the old and starts it again
+    void applyScript()
+    {
+        const QString script = Updater::applyScript();
+        QVERIFY(script.contains(u"param([int]$ProcessId, [string]$From, [string]$To, [string]$Log)"));
+        QVERIFY(script.contains(u"WaitForExit"));
+        QVERIFY(script.contains(u"robocopy $From $To /E"));
+        QVERIFY(script.contains(u"Start-Process -FilePath $exe"));
+        QVERIFY(script.contains(u"failed.txt"));
     }
 };
 
