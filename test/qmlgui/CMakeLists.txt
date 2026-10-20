@@ -6,6 +6,7 @@ set(qmlGuiTestFiles
     testprofilemigrator.cpp
     testsessionfacade.cpp
     testsystemprefs.cpp
+    teststreamplanner.cpp
 )
 
 foreach(testFile ${qmlGuiTestFiles})

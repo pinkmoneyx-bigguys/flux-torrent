@@ -157,6 +157,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/appsettings.cpp
         backend/addtorrentdraft.h
         backend/addtorrentdraft.cpp
+        streaming/streamplanner.h
+        streaming/streamplanner.cpp
         migration/firstrun.h
         migration/firstrun.cpp
         migration/profilemigrator.h
