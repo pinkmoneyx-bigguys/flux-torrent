@@ -26,7 +26,8 @@ Item {
             if (row.children[i].snap)
                 row.children[i].snap()
         }
-        Qt.callLater(() => _snapping = false)
+        // via root: a row deleted before the call has no context left to find _snapping in
+        Qt.callLater(() => { if (root) root._snapping = false })
     }
 
     // 1: new characters come up from below (growing value), -1: down from above

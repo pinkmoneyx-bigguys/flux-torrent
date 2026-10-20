@@ -925,7 +925,13 @@ Surface {
             height: parent.height
             color: Theme.ring
         }
+        // the line under the row; none under the last one when it ends at (or a few pixels above) the
+        // card's bottom edge, whose border would double it
         Rectangle {
+            objectName: "rowDivider"
+            readonly property ListView view: rowItem.ListView.view
+            visible: !view || rowItem.index < view.count - 1
+                     || (rowItem.y + rowItem.height - view.contentY < view.height - 4)
             anchors.bottom: parent.bottom
             width: parent.width
             height: 1

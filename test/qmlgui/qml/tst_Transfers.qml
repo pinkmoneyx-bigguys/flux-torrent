@@ -250,6 +250,25 @@ TestCase {
         verify(statusRight <= nameRight + 0.5, "inside the name column: " + statusRight + " <= " + nameRight)
     }
 
+    // The last row's line doesn't double the card's border when the list reaches the bottom edge
+    function test_noDoubleBorderAtTheBottom() {
+        const list = findChild(page, "transfersList")
+        const many = []
+        for (let i = 0; i < 40; ++i)
+            many.push({ id: "r" + i, name: "row " + i, state: "seeding", size: 1000, progress: 1 })
+        TorrentListModel.setRows(many)
+        waitForRendering(page)
+        list.positionViewAtEnd()
+        waitForRendering(page)
+        verify(!findChild(rowById("r39"), "rowDivider").visible, "no line under the last row at the bottom edge")
+        verify(findChild(rowById("r38"), "rowDivider").visible, "the others keep theirs")
+
+        // a short list ends above the edge: its last row keeps the line
+        TorrentListModel.setRows(rows)
+        waitForRendering(page)
+        verify(findChild(rowById(rows[rows.length - 1].id), "rowDivider").visible)
+    }
+
     // The graph's shift follows the clock from the very frame new samples land
     function test_graphShiftInStepWithSamples() {
         page.currentId = "a"
