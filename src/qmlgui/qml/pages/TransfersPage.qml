@@ -451,11 +451,16 @@ Surface {
             id: details
             objectName: "transfersDetails"
             readonly property bool open: page.currentId !== ""
-            readonly property real openHeight: Math.max(220, Math.min(320, page.height * 0.36))
+            // the height the user dragged it to (kept in the profile), or 0 for about a third of the page
+            property real chosenHeight: UiSettings.layoutValue("detailsHeight", 0)
+            readonly property real maxHeight: Math.max(minHeight, page.height - 200)
+            readonly property real minHeight: 150
+            readonly property real openHeight: chosenHeight > 0 ? Math.max(minHeight, Math.min(maxHeight, chosenHeight))
+                                                                : Math.max(220, Math.min(320, page.height * 0.36))
             Layout.fillWidth: true
             Layout.preferredHeight: open ? openHeight : 0
             Behavior on Layout.preferredHeight {
-                enabled: !Theme.reducedMotion
+                enabled: !Theme.reducedMotion && !heightGrip.pressed
                 NumberAnimation { duration: Theme.durMed; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
             }
             opacity: open ? 1 : 0
@@ -466,6 +471,50 @@ Surface {
             visible: open || Layout.preferredHeight > 1
             clip: true
             onCloseRequested: page.currentId = ""
+
+            // Drag the top edge to resize; double-click for the automatic height
+            MouseArea {
+                id: heightGrip
+                objectName: "detailsHeightGrip"
+                property real startY
+                property real startHeight
+                y: Theme.sp(4) - 6
+                width: parent.width
+                height: 13
+                z: 10
+                hoverEnabled: true
+                cursorShape: Qt.SplitVCursor
+                preventStealing: true
+                onPressed: mouse => {
+                    startY = mapToItem(page, 0, mouse.y).y
+                    startHeight = details.openHeight
+                }
+                onPositionChanged: mouse => {
+                    if (!pressed)
+                        return
+                    const dy = mapToItem(page, 0, mouse.y).y - startY
+                    details.chosenHeight = Math.round(Math.max(details.minHeight, Math.min(details.maxHeight, startHeight - dy)))
+                }
+                onReleased: UiSettings.setLayoutValue("detailsHeight", details.chosenHeight)
+                onDoubleClicked: {
+                    details.chosenHeight = 0
+                    UiSettings.setLayoutValue("detailsHeight", 0)
+                }
+
+                // a grabber pill on the separator while the pointer is on it
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 36
+                    height: 4
+                    radius: 2
+                    color: heightGrip.pressed ? Theme.ring : Theme.alpha(Theme.text, 0.35)
+                    opacity: heightGrip.containsMouse || heightGrip.pressed ? 1 : 0
+                    Behavior on opacity {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { duration: Theme.durFast }
+                    }
+                }
+            }
         }
         // the pane keeps the last torrent while it slides shut
         Connections {

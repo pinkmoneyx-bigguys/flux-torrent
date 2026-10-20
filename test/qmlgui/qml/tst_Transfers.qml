@@ -167,6 +167,50 @@ TestCase {
         page.widths = Object.assign({}, page.defaultWidths)
     }
 
+    // Every torrent's rates are sampled into a history; the details pane draws it on its Speed tab
+    function test_speedHistoryAndGraph() {
+        TorrentListModel.sampleHistory()
+        TorrentListModel.sampleHistory()
+        const h = TorrentListModel.speedHistory("a")
+        verify(h.down.length >= 2, "two samples or more: " + h.down.length)
+        verify(h.down[h.down.length - 1] > 0, "a downloading torrent has a download rate")
+        verify(TorrentListModel.speedHistory("").down.length >= 2, "and so does the total")
+        compare(TorrentListModel.speedHistory("nope").down.length, 0)
+
+        page.currentId = "a"
+        const pane = findChild(page, "transfersDetails")
+        tryVerify(() => pane.visible)
+        pane.tab = "speed"
+        const graph = findChild(pane, "detailsSpeedGraph")
+        tryVerify(() => graph.visible, 1000)
+        compare(graph.torrentId, "a")
+        verify(graph.down.length >= 2)
+        verify(graph.peak >= graph.lastDown, "the scale covers the rates")
+        pane.tab = "general"
+        page.currentId = ""
+    }
+
+    // The details pane is as tall as its top edge is dragged; double-click goes back to automatic
+    function test_detailsHeightDrag() {
+        page.currentId = "a"
+        const pane = findChild(page, "transfersDetails")
+        tryVerify(() => pane.visible)
+        tryCompare(pane, "height", pane.openHeight, 2000)
+        const before = pane.height
+        const grip = findChild(pane, "detailsHeightGrip")
+        // press and move in page coordinates: the grip rises with the edge, the pointer does not
+        const at = grip.mapToItem(page, grip.width / 2, grip.height / 2)
+        mousePress(page, at.x, at.y)
+        for (let dy = 10; dy <= 60; dy += 10)
+            mouseMove(page, at.x, at.y - dy)
+        mouseRelease(page, at.x, at.y - 60)
+        tryVerify(() => Math.abs(pane.height - (before + 60)) <= 3, 2000, "60 px taller: " + pane.height)
+        compare(UiSettings.layoutValue("detailsHeight", 0), pane.chosenHeight, "remembered")
+        mouseDoubleClickSequence(grip, grip.width / 2, grip.height / 2)
+        compare(pane.chosenHeight, 0)
+        page.currentId = ""
+    }
+
     function test_clickSelects() {
         mouseClick(rowItem(1), 200, 20)
         compare(page.selectedIds(), ["b"])

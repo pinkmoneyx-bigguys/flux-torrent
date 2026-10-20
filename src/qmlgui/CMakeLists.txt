@@ -52,6 +52,7 @@ set_source_files_properties(qml/pages/transfers/TransfersState.qml PROPERTIES QT
 set_source_files_properties(qml/pages/transfers/TorrentDetailsPane.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/TorrentDetailsPane.qml)
 set_source_files_properties(qml/pages/transfers/AddTorrentDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/AddTorrentDialog.qml)
 set_source_files_properties(qml/pages/transfers/CreateTorrentDialog.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/CreateTorrentDialog.qml)
+set_source_files_properties(qml/pages/transfers/SpeedGraph.qml PROPERTIES QT_RESOURCE_ALIAS pages/transfers/SpeedGraph.qml)
 set_source_files_properties(qml/ui/UiSwitch.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSwitch.qml)
 set_source_files_properties(qml/ui/UiSelect.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSelect.qml)
 set_source_files_properties(qml/ui/UiSpinner.qml PROPERTIES QT_RESOURCE_ALIAS ui/UiSpinner.qml)
@@ -116,6 +117,7 @@ qt_add_qml_module(qbt_qmlgui
         qml/pages/transfers/TorrentDetailsPane.qml
         qml/pages/transfers/AddTorrentDialog.qml
         qml/pages/transfers/CreateTorrentDialog.qml
+        qml/pages/transfers/SpeedGraph.qml
         qml/ui/UiSwitch.qml
         qml/ui/UiSelect.qml
         qml/ui/UiSpinner.qml

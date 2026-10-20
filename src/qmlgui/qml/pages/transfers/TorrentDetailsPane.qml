@@ -3,7 +3,7 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Flux
 
-// The bottom pane of Transfers for one torrent: line tabs General / Files / Trackers / Peers.
+// The bottom pane of Transfers for one torrent: line tabs General / Files / Trackers / Peers / Speed.
 // Data comes from TorrentDetails, refreshed every second while the pane is visible.
 Item {
     id: pane
@@ -45,7 +45,8 @@ Item {
                     { key: "general", label: qsTr("General") },
                     { key: "files", label: qsTr("Files"), count: details.files.length },
                     { key: "trackers", label: qsTr("Trackers"), count: details.trackers.length },
-                    { key: "peers", label: qsTr("Peers"), count: details.peers.length }
+                    { key: "peers", label: qsTr("Peers"), count: details.peers.length },
+                    { key: "speed", label: qsTr("Speed") }
                 ]
                 onActivated: key => pane.tab = key
             }
@@ -75,7 +76,7 @@ Item {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: ["general", "files", "trackers", "peers"].indexOf(pane.tab)
+            currentIndex: ["general", "files", "trackers", "peers", "speed"].indexOf(pane.tab)
 
             // --- General ------------------------------------------------------------------------
             Flickable {
@@ -315,6 +316,20 @@ Item {
                     DetailCell { Layout.preferredWidth: 96; alignRight: true; text: Math.floor(peerRow.modelData.progress * 1000) / 10 + "%" }
                     DetailCell { Layout.preferredWidth: 96; alignRight: true; text: Format.speed(peerRow.modelData.dlSpeed); dim: peerRow.modelData.dlSpeed === 0 }
                     DetailCell { Layout.preferredWidth: 96; alignRight: true; text: Format.speed(peerRow.modelData.upSpeed); dim: peerRow.modelData.upSpeed === 0 }
+                }
+            }
+
+            // --- Speed --------------------------------------------------------------------------
+            Item {
+                SpeedGraph {
+                    objectName: "detailsSpeedGraph"
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.sp(6)
+                    anchors.rightMargin: Theme.sp(4)
+                    anchors.topMargin: Theme.sp(4)
+                    anchors.bottomMargin: Theme.sp(3)
+                    torrentId: pane.torrentId
+                    visible: pane.tab === "speed"
                 }
             }
         }

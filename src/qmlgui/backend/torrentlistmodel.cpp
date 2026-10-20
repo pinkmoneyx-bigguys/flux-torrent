@@ -37,6 +37,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QRandomGenerator>
+#include <QSet>
+#include <QTimer>
 
 #include "base/bittorrent/addtorrentparams.h"
 #include "base/bittorrent/infohash.h"
@@ -135,10 +138,33 @@ TorrentRow TorrentRow::fromVariant(const QVariantMap &map)
     return row;
 }
 
+namespace
+{
+    const int HISTORY_INTERVAL = 1000;
+    const int HISTORY_SIZE = 300;  // five minutes
+}
+
+void TorrentListModel::SpeedSeries::append(const qreal d, const qreal u, const int limit)
+{
+    down.append(d);
+    up.append(u);
+    if (down.size() > limit)
+    {
+        down.removeFirst();
+        up.removeFirst();
+    }
+}
+
 TorrentListModel::TorrentListModel(QObject *parent)
     : QAbstractListModel(parent)
+    , m_historyTimer {new QTimer(this)}
 {
     updateCounts();
+
+    m_historyTimer->setInterval(HISTORY_INTERVAL);
+    m_historyTimer->setTimerType(Qt::PreciseTimer);
+    connect(m_historyTimer, &QTimer::timeout, this, &TorrentListModel::sampleHistory);
+    m_historyTimer->start();
 
     // Development aid for window captures: a JSON array of rows instead of the session's torrents
     if (const QString demo = qEnvironmentVariable("FLUX_DEMO_TORRENTS"); !demo.isEmpty())
@@ -582,4 +608,70 @@ QString TorrentListModel::addLink(const QString &link)
     if (!descriptor)
         return descriptor.error();
     return session->addTorrent(descriptor.value()) ? QString() : tr("This torrent is already in the list.");
+}
+
+qint64 TorrentListModel::historySampledAt() const
+{
+    return m_sampledAt;
+}
+
+int TorrentListModel::historyInterval() const
+{
+    return HISTORY_INTERVAL;
+}
+
+int TorrentListModel::historySize() const
+{
+    return HISTORY_SIZE;
+}
+
+void TorrentListModel::sampleHistory()
+{
+    qreal totalDown = 0;
+    qreal totalUp = 0;
+    QSet<QString> present;
+    for (const TorrentRow &r : std::as_const(m_rows))
+    {
+        qreal down = r.dlSpeed;
+        qreal up = r.upSpeed;
+        // demo rows hold still: give them a little life so the graph can be looked at
+        if (m_detached)
+        {
+            const auto wobble = [](const qreal v) { return v * (0.75 + 0.5 * QRandomGenerator::global()->generateDouble()); };
+            down = wobble(down);
+            up = wobble(up);
+        }
+        m_history[r.id].append(down, up, HISTORY_SIZE);
+        present.insert(r.id);
+        totalDown += down;
+        totalUp += up;
+    }
+    // forget the torrents that are gone
+    for (auto it = m_history.begin(); it != m_history.end();)
+        it = present.contains(it.key()) ? std::next(it) : m_history.erase(it);
+    m_totalHistory.append(totalDown, totalUp, HISTORY_SIZE);
+
+    m_sampledAt = QDateTime::currentMSecsSinceEpoch();
+    emit historySampled();
+}
+
+QVariantMap TorrentListModel::speedHistory(const QString &id) const
+{
+    const SpeedSeries *series = id.isEmpty() ? &m_totalHistory : nullptr;
+    if (!series)
+    {
+        const auto it = m_history.constFind(id);
+        if (it == m_history.cend())
+            return {{u"down"_s, QVariantList {}}, {u"up"_s, QVariantList {}}};
+        series = &it.value();
+    }
+    QVariantList down;
+    QVariantList up;
+    down.reserve(series->down.size());
+    up.reserve(series->up.size());
+    for (const qreal v : series->down)
+        down.append(v);
+    for (const qreal v : series->up)
+        up.append(v);
+    return {{u"down"_s, down}, {u"up"_s, up}};
 }

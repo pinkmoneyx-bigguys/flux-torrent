@@ -40,6 +40,7 @@
 
 class QJSEngine;
 class QQmlEngine;
+class QTimer;
 
 namespace BitTorrent
 {
@@ -93,6 +94,11 @@ class TorrentListModel : public QAbstractListModel
     // {all, downloading, seeding, completed, stopped, active, errored}: number of rows in each filter
     Q_PROPERTY(QVariantMap counts READ counts NOTIFY countsChanged FINAL)
     Q_PROPERTY(int count READ rowCount NOTIFY countsChanged FINAL)
+    // Speed history: one sample of every torrent's rates each historyInterval ms, the last
+    // HISTORY_SIZE kept; historySampledAt is when the newest was taken (ms since the epoch)
+    Q_PROPERTY(qint64 historySampledAt READ historySampledAt NOTIFY historySampled FINAL)
+    Q_PROPERTY(int historyInterval READ historyInterval CONSTANT FINAL)
+    Q_PROPERTY(int historySize READ historySize CONSTANT FINAL)
 
 public:
     enum Role
@@ -169,8 +175,17 @@ public:
     // Development aid for window captures: the AddTorrentDraft.loadDemo state in FLUX_DEMO_ADD=<json>, or {}
     Q_INVOKABLE QVariantMap demoAddState() const;
 
+    qint64 historySampledAt() const;
+    int historyInterval() const;
+    int historySize() const;
+    // {down: [bytes/s], up: [bytes/s]}, oldest first; "" for all torrents together
+    Q_INVOKABLE QVariantMap speedHistory(const QString &id) const;
+    // Takes a sample now (tests)
+    Q_INVOKABLE void sampleHistory();
+
 signals:
     void countsChanged();
+    void historySampled();
 
 private:
     void onTorrentsLoaded(const QList<BitTorrent::Torrent *> &torrents);
@@ -185,4 +200,15 @@ private:
     QHash<QString, int> m_index;
     QVariantMap m_counts;
     bool m_detached = false;
+
+    struct SpeedSeries
+    {
+        QList<qreal> down;
+        QList<qreal> up;
+        void append(qreal d, qreal u, int limit);
+    };
+    QHash<QString, SpeedSeries> m_history;
+    SpeedSeries m_totalHistory;
+    qint64 m_sampledAt = 0;
+    QTimer *m_historyTimer = nullptr;
 };
