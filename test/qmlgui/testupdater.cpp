@@ -89,7 +89,7 @@ private slots:
 
     void parsesARelease()
     {
-        const QVariantMap r = Updater::parseRelease(release("v0.2.0", asset("Flux-0.2.0-win64.zip", 50) + "," + asset("Flux-0.2.0-setup.exe", 40)));
+        const QVariantMap r = Updater::parseRelease(release("v0.2.0", asset("Flux-0.2.0-win64.zip", 50) + "," + asset("Flux-0.2.0-setup.exe", 40)), u"setup"_s);
         QCOMPARE(r.value(u"version"_s).toString(), u"v0.2.0"_s);
         QCOMPARE(r.value(u"name"_s).toString(), u"Flux v0.2.0"_s);
         QCOMPARE(r.value(u"url"_s).toString(), u"https://github.com/o/r/releases/tag/v0.2.0"_s);
@@ -98,6 +98,35 @@ private slots:
         QCOMPARE(r.value(u"downloadSize"_s).toLongLong(), 40LL);
         QVERIFY(r.value(u"downloadUrl"_s).toString().endsWith(u"Flux-0.2.0-setup.exe"));
         QVERIFY(!r.value(u"prerelease"_s).toBool());
+    }
+
+    // An installed Flux takes the installer; one unpacked from an archive takes the portable archive
+    void assetForTheKindOfInstall()
+    {
+        const QByteArray assets = asset("Flux-0.2.0-setup.exe", 40) + "," + asset("Flux-0.2.0-portable-win64.zip", 60)
+            + "," + asset("Flux-0.2.0-win64.zip", 55);
+        QCOMPARE(Updater::parseRelease(release("v0.2.0", assets), u"setup"_s).value(u"downloadName"_s).toString(),
+            u"Flux-0.2.0-setup.exe"_s);
+        QCOMPARE(Updater::parseRelease(release("v0.2.0", assets), u"portable"_s).value(u"downloadName"_s).toString(),
+            u"Flux-0.2.0-portable-win64.zip"_s);
+        QCOMPARE(Updater::parseRelease(release("v0.2.0", assets), u"zip"_s).value(u"downloadName"_s).toString(),
+            u"Flux-0.2.0-portable-win64.zip"_s);
+        // only an installer: still offered to an unpacked Flux
+        QCOMPARE(Updater::parseRelease(release("v0.2.0", asset("Flux-0.2.0-setup.exe", 40)), u"portable"_s)
+            .value(u"downloadName"_s).toString(), u"Flux-0.2.0-setup.exe"_s);
+    }
+
+    void kindOfInstall()
+    {
+        QTemporaryDir root;
+        const QDir dir {root.path()};
+        QCOMPARE(Updater::installKind(dir.path()), u"zip"_s);
+        QVERIFY(dir.mkdir(u"profile"_s));
+        QCOMPARE(Updater::installKind(dir.path()), u"portable"_s);
+        QFile manifest {dir.filePath(u".flux-install.json"_s)};
+        QVERIFY(manifest.open(QIODevice::WriteOnly));
+        manifest.close();
+        QCOMPARE(Updater::installKind(dir.path()), u"setup"_s);
     }
 
     void archiveWhenNoInstaller()
@@ -159,7 +188,7 @@ private slots:
         const QString script = Updater::applyScript();
         QVERIFY(script.contains(u"param([int]$ProcessId, [string]$From, [string]$To, [string]$Log)"));
         QVERIFY(script.contains(u"WaitForExit"));
-        QVERIFY(script.contains(u"robocopy $From $To /E"));
+        QVERIFY(script.contains(u"robocopy $From $To /E /XD profile"));
         QVERIFY(script.contains(u"Start-Process -FilePath $exe"));
         QVERIFY(script.contains(u"failed.txt"));
     }

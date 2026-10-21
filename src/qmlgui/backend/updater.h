@@ -119,7 +119,10 @@ public:
     static int compareVersions(const QString &a, const QString &b);
     // A GitHub release object as {version, name, url, notes, draft, prerelease, downloadUrl, downloadName,
     // downloadSize, downloadDigest ("sha256:…" when GitHub has it)}
-    static QVariantMap parseRelease(const QByteArray &json);
+    static QVariantMap parseRelease(const QByteArray &json, const QString &kind = QStringLiteral("zip"));
+    // How the Flux in `appDir` was put there: "setup" (the installer), "portable" (an archive with a profile
+    // folder beside the program), "zip" (an archive)
+    static QString installKind(const QString &appDir);
 
 signals:
     void changed();

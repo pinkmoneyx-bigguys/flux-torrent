@@ -55,6 +55,7 @@
 #include "base/net/downloadmanager.h"
 #include "base/settingsstorage.h"
 #include "appinfo.h"
+#include "languages.h"
 
 namespace
 {
@@ -143,7 +144,17 @@ int Updater::compareVersions(const QString &a, const QString &b)
     return QString::compare(sa, sb, Qt::CaseInsensitive) < 0 ? -1 : 1;
 }
 
-QVariantMap Updater::parseRelease(const QByteArray &json)
+QString Updater::installKind(const QString &appDir)
+{
+    const QDir dir {appDir};
+    if (dir.exists(u".flux-install.json"_s))
+        return u"setup"_s;
+    if (dir.exists(u"profile"_s))
+        return u"portable"_s;
+    return u"zip"_s;
+}
+
+QVariantMap Updater::parseRelease(const QByteArray &json, const QString &kind)
 {
     const QJsonObject release = QJsonDocument::fromJson(json).object();
     if (release.isEmpty() || !release.contains(u"tag_name"_s))
@@ -158,18 +169,22 @@ QVariantMap Updater::parseRelease(const QByteArray &json)
         {u"prerelease"_s, release.value(u"prerelease"_s).toBool()}
     };
 
-    // the file to offer: an installer, else an archive (Windows builds first)
+    // the file to offer: for an installed Flux its installer, for an unpacked one the portable archive
+    // (another archive, else the installer)
+    const bool installed = (kind == u"setup");
     int bestRank = 0;
     for (const QJsonValue &value : release.value(u"assets"_s).toArray())
     {
         const QJsonObject asset = value.toObject();
         const QString name = asset.value(u"name"_s).toString();
         const QString lower = name.toLower();
+        const bool installer = lower.endsWith(u".exe") || lower.endsWith(u".msi");
+        const bool archive = lower.endsWith(u".zip") || lower.endsWith(u".7z");
         int rank = 0;
-        if (lower.endsWith(u".exe") || lower.endsWith(u".msi"))
-            rank = 4;
-        else if (lower.endsWith(u".zip") || lower.endsWith(u".7z"))
-            rank = 2;
+        if (installer)
+            rank = installed ? (lower.endsWith(u"-setup.exe") ? 8 : 6) : 1;
+        else if (archive)
+            rank = installed ? 2 : (lower.contains(u"portable") ? 8 : 6);
         if ((rank > 0) && (lower.contains(u"win") || lower.contains(u"x64")))
             rank += 1;
         if (rank > bestRank)
@@ -297,7 +312,7 @@ void Updater::check(const bool quiet)
             finish(u"error"_s, tr("Could not reach GitHub: %1").arg(result.errorString));
             return;
         }
-        const QVariantMap release = parseRelease(result.data);
+        const QVariantMap release = parseRelease(result.data, installKind(QCoreApplication::applicationDirPath()));
         if (release.isEmpty())
         {
             finish(u"error"_s, tr("GitHub sent an answer Flux does not understand."));
@@ -518,7 +533,8 @@ if ($flux -and -not $flux.WaitForExit(120000)) {
 }
 
 # the new version over the old one; a file still locked a moment is tried again
-robocopy $From $To /E /R:20 /W:1 /NP /NJH /NJS "/LOG:$Log" | Out-Null
+# (a portable Flux's profile is not the archive's: it stays as it is)
+robocopy $From $To /E /XD profile /R:20 /W:1 /NP /NJH /NJS "/LOG:$Log" | Out-Null
 $code = $LASTEXITCODE
 
 # again with the options Flux was started with (a profile folder, say)
@@ -593,7 +609,12 @@ void Updater::unpacked(const QString &programDir)
 
 void Updater::startInstaller(const QString &path)
 {
-    if (!launch(path, {}, false))
+    // the installer's update: into this folder, once this Flux has quit, in this Flux's language
+    const QString arguments = u"--update --dir \"%1\" --pid %2 --lang %3"_s
+        .arg(QDir::toNativeSeparators(QCoreApplication::applicationDirPath()))
+        .arg(QCoreApplication::applicationPid())
+        .arg(Languages::effective());
+    if (!launch(path, arguments, false))
     {
         setInstallState(u"failed"_s, tr("The installer could not start."));
         return;
