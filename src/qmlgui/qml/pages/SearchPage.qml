@@ -83,15 +83,41 @@ Surface {
 
     // The mouse wheel: a generous step with a short glide (Qt's own steps are small and jump); several
     // notches add up. Touchpads keep scrolling as they do.
-    function wheelScroll(flickable, glide, event) {
-        const top = flickable.originY
-        const bottom = Math.max(top, flickable.originY + flickable.contentHeight - flickable.height)
-        const from = glide.running ? glide.to : flickable.contentY
-        glide.stop()
-        glide.from = flickable.contentY
-        glide.to = Math.max(top, Math.min(bottom, from - event.angleDelta.y / 120 * 280))
+    // Each notch moves a goal by `step`; the view eases toward it every frame (WheelGlide), so notches in a
+    // row make one continuous glide instead of a start and a stop each.
+    function wheelScroll(flickable, glide, event, step) {
+        const from = glide.running ? glide.goal : flickable.contentY
+        glide.flickable = flickable
+        glide.goal = glideLimit(flickable, from - event.angleDelta.y / 120 * (step || 240))
         glide.start()
         event.accepted = true
+    }
+    function glideLimit(flickable, y) {
+        const top = flickable.originY
+        const bottom = Math.max(top, flickable.originY + flickable.contentHeight - flickable.height)
+        return Math.max(top, Math.min(bottom, y))
+    }
+    function glideFrame(glide) {
+        const f = glide.flickable
+        // a drag or a flick takes over; the end may have moved as rows were measured
+        if (!f || f.moving) {
+            glide.stop()
+            return
+        }
+        glide.goal = glideLimit(f, glide.goal)
+        const d = glide.goal - f.contentY
+        if (Math.abs(d) < 0.5) {
+            f.contentY = glide.goal
+            glide.stop()
+            return
+        }
+        f.contentY += d * (1 - Math.exp(-glide.frameTime * 14))
+    }
+    component WheelGlide: FrameAnimation {
+        property real goal: 0
+        property Flickable flickable
+        running: false
+        onTriggered: page.glideFrame(this)
     }
 
     function trackerName(engine) {
@@ -376,7 +402,7 @@ Surface {
                     acceptedDevices: PointerDevice.Mouse
                     onWheel: event => page.wheelScroll(list, listGlide, event)
                 }
-                NumberAnimation { id: listGlide; target: list; property: "contentY"; duration: 220; easing.type: Easing.OutCubic }
+                WheelGlide { id: listGlide }
 
                 header: ResultsHeader {
                     width: list.width
@@ -407,9 +433,9 @@ Surface {
                 reuseItems: true
                 WheelHandler {
                     acceptedDevices: PointerDevice.Mouse
-                    onWheel: event => page.wheelScroll(grid, gridGlide, event)
+                    onWheel: event => page.wheelScroll(grid, gridGlide, event, 280)
                 }
-                NumberAnimation { id: gridGlide; target: grid; property: "contentY"; duration: 220; easing.type: Easing.OutCubic }
+                WheelGlide { id: gridGlide }
                 delegate: FilmCard {
                     width: grid.cellWidth
                     height: grid.cellHeight
@@ -1120,8 +1146,8 @@ Surface {
 
     // A film's card: its poster, what it is about (Wikipedia, in the interface language) and a trailer, then
     // every release of it with its full name and what it is (quality, source, season, voice-overs), to narrow
-    // down by quality, voice-over or words and to download or watch. The film's part scrolls away with the
-    // list and comes back when scrolling up, so a long list gets the whole height.
+    // down by quality, voice-over or words and to download or watch. The film's part is the top of the list:
+    // it scrolls away with it, so a long list gets the whole height.
     component ReleasesDialog: UiDialog {
         id: rd
         objectName: "releasesDialog"
@@ -1246,12 +1272,15 @@ Surface {
                 acceptedDevices: PointerDevice.Mouse
                 onWheel: event => {
                     rd.atTop = false
-                    page.wheelScroll(releaseList, releaseGlide, event)
+                    page.wheelScroll(releaseList, releaseGlide, event, 200)
                 }
             }
-            NumberAnimation { id: releaseGlide; target: releaseList; property: "contentY"; duration: 220; easing.type: Easing.OutCubic }
+            WheelGlide { id: releaseGlide }
             model: rd.shown
-            headerPositioning: ListView.PullBackHeader
+            // the film's part stays at the top: it scrolls away with the list and back only with it
+            headerPositioning: ListView.InlineHeader
+            // rows made ahead, so a glide down doesn't stop to build them
+            cacheBuffer: 1200
             onMovementStarted: rd.atTop = false
             onModelChanged: {
                 if (rd.atTop)
