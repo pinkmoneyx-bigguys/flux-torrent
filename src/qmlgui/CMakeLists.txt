@@ -30,6 +30,8 @@ set_source_files_properties(qml/shell/TitleBar.qml PROPERTIES QT_RESOURCE_ALIAS 
 set_source_files_properties(qml/shell/Sidebar.qml PROPERTIES QT_RESOURCE_ALIAS shell/Sidebar.qml)
 set_source_files_properties(qml/shell/EmptyPage.qml PROPERTIES QT_RESOURCE_ALIAS shell/EmptyPage.qml)
 set_source_files_properties(qml/shell/CommandPalette.qml PROPERTIES QT_RESOURCE_ALIAS shell/CommandPalette.qml)
+set_source_files_properties(qml/ui/FilmPoster.qml PROPERTIES QT_RESOURCE_ALIAS ui/FilmPoster.qml)
+set_source_files_properties(qml/ui/SmoothWheel.qml PROPERTIES QT_RESOURCE_ALIAS ui/SmoothWheel.qml)
 set_source_files_properties(qml/shell/TrayIcon.qml PROPERTIES QT_RESOURCE_ALIAS shell/TrayIcon.qml)
 set_source_files_properties(qml/shell/TrayMenu.qml PROPERTIES QT_RESOURCE_ALIAS shell/TrayMenu.qml)
 # the icon in the notification area: the program's own, every size Windows may ask for
@@ -134,6 +136,8 @@ qt_add_qml_module(qbt_qmlgui
         qml/pages/settings/SettingsGroup.qml
         qml/shell/TrayIcon.qml
         qml/shell/TrayMenu.qml
+        qml/ui/FilmPoster.qml
+        qml/ui/SmoothWheel.qml
     RESOURCES
         ${PROJECT_SOURCE_DIR}/src/icons/flux.ico
         fonts/Onest-Variable.ttf

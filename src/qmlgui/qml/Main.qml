@@ -38,10 +38,10 @@ ApplicationWindow {
     // windowed or maximized: what a window hidden from the minimized state comes back to
     property int _shownVisibility: Window.Windowed
     property bool _trayMaximized: false
-    onVisibilityChanged: {
-        if (visibility === Window.Windowed || visibility === Window.Maximized)
-            _shownVisibility = visibility
-        else if (visibility === Window.Minimized && trayIcon.minimizesToTray)
+    onVisibilityChanged: shown => {
+        if (shown === Window.Windowed || shown === Window.Maximized)
+            _shownVisibility = shown
+        else if (shown === Window.Minimized && trayIcon.minimizesToTray)
             Qt.callLater(hideToTray)
     }
     function hideToTray() {

@@ -74,15 +74,41 @@ TestCase {
         compare(MediaLibraryModel.count, 2)
     }
 
+    // One poster a film or series: a show's episodes go together, in order
     function test_newestFirstAndSort() {
         const grid = findChild(page, "mediaGrid")
-        compare(grid.count, 4)
-        compare(MediaLibraryModel.get(grid.itemAtIndex(0).key).title, "Big Buck Bunny", "recently added first")
+        compare(grid.count, 3, "the two episodes of the show make one title")
+        compare(MediaLibraryModel.titles[0].title, "Big Buck Bunny", "recently added first")
         MediaLibraryModel.sortKey = "title"
-        compare(grid.itemAtIndex(1).title, "Severance")
-        compare(grid.itemAtIndex(1).episode, 3, "episodes of a show in order")
+        const show = MediaLibraryModel.titles[1]
+        compare(show.title, "Severance")
+        verify(show.series)
+        compare(show.count, 2)
+        compare(show.seasons, [3])
+        compare(show.items.map(i => i.episode), [3, 4], "episodes of a show in order")
+        verify(show.downloading, "one episode is still coming")
         MediaLibraryModel.sortKey = "size"
-        compare(grid.itemAtIndex(0).title, "Big Buck Bunny")
+        compare(MediaLibraryModel.titles[0].title, "Big Buck Bunny")
+    }
+
+    // A film plays from its poster; a series opens its episodes
+    function test_seriesOpensItsEpisodes() {
+        MediaLibraryModel.sortKey = "title"
+        const sheet = findChild(page, "mediaSheet")
+        page.activate(MediaLibraryModel.titles[1])
+        tryCompare(sheet, "opened", true)
+        compare(findChild(sheet.contentItem, "mediaSheetTitle").text, "Severance")
+        verify(findChild(sheet.contentItem, "mediaEpisodes").visible)
+        verify(!findChild(sheet.contentItem, "mediaPlay").visible, "the episodes have their own play")
+        sheet.close()
+        tryCompare(sheet, "visible", false)
+
+        let played = ""
+        const remember = (key, at) => played = key
+        page.playRequested.connect(remember)
+        page.activate(MediaLibraryModel.titles[2])
+        compare(played, "a:0", "Sintel plays")
+        page.playRequested.disconnect(remember)
     }
 
     function test_search() {

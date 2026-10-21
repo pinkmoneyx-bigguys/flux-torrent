@@ -801,6 +801,14 @@
         <source>Ep. %1</source>
         <translation>Odc. %1</translation>
     </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation>
+            <numerusform>%n odcinek</numerusform>
+            <numerusform>%n odcinki</numerusform>
+            <numerusform>%n odcinków</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Sort</source>
         <translation>Sortuj</translation>
@@ -881,6 +889,14 @@
         <source>%1% · downloading</source>
         <translation>%1% · pobieranie</translation>
     </message>
+    <message numerus="yes">
+        <source>%n ep.</source>
+        <translation>
+            <numerusform>%n odc.</numerusform>
+            <numerusform>%n odc.</numerusform>
+            <numerusform>%n odc.</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Play %1</source>
         <translation>Odtwórz %1</translation>
@@ -912,6 +928,22 @@
     <message>
         <source>Show in folder</source>
         <translation>Pokaż w folderze</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Sezon %1</translation>
+    </message>
+    <message>
+        <source>Episode %1</source>
+        <translation>Odcinek %1</translation>
+    </message>
+    <message>
+        <source>%1% downloaded</source>
+        <translation>pobrano %1%</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Szczegóły</translation>
     </message>
     <message>
         <source>Downloaded</source>
@@ -1192,8 +1224,8 @@
         <translation>Wszystkie kanały</translation>
     </message>
     <message>
-        <source>Search articles…</source>
-        <translation>Szukaj w artykułach…</translation>
+        <source>Search…</source>
+        <translation>Szukaj…</translation>
     </message>
     <message>
         <source>All</source>

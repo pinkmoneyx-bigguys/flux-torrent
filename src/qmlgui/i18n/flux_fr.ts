@@ -799,6 +799,13 @@
         <source>Ep. %1</source>
         <translation>Ép. %1</translation>
     </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation>
+            <numerusform>%n épisode</numerusform>
+            <numerusform>%n épisodes</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Sort</source>
         <translation>Trier</translation>
@@ -879,6 +886,13 @@
         <source>%1% · downloading</source>
         <translation>%1&#xa0;% · en téléchargement</translation>
     </message>
+    <message numerus="yes">
+        <source>%n ep.</source>
+        <translation>
+            <numerusform>%n ép.</numerusform>
+            <numerusform>%n ép.</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Play %1</source>
         <translation>Lire %1</translation>
@@ -910,6 +924,22 @@
     <message>
         <source>Show in folder</source>
         <translation>Afficher dans le dossier</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Saison %1</translation>
+    </message>
+    <message>
+        <source>Episode %1</source>
+        <translation>Épisode %1</translation>
+    </message>
+    <message>
+        <source>%1% downloaded</source>
+        <translation>%1&#xa0;% téléchargé</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Détails</translation>
     </message>
     <message>
         <source>Downloaded</source>
@@ -1190,8 +1220,8 @@
         <translation>Tous les flux</translation>
     </message>
     <message>
-        <source>Search articles…</source>
-        <translation>Rechercher dans les articles…</translation>
+        <source>Search…</source>
+        <translation>Rechercher…</translation>
     </message>
     <message>
         <source>All</source>
@@ -1660,13 +1690,13 @@
     <message numerus="yes">
         <source>Only titles with “%1”: %n result(s) that have it just in their genres or notes are hidden</source>
         <translation>
-            <numerusform>Seulement les titres avec « %1 » : %n résultat qui ne l&apos;a que dans les genres ou les notes est masqué</numerusform>
-            <numerusform>Seulement les titres avec « %1 » : %n résultats qui ne l&apos;ont que dans les genres ou les notes sont masqués</numerusform>
+            <numerusform>Seulement les titres avec «&#xa0;%1&#xa0;»&#xa0;: %n résultat qui ne l&apos;a que dans les genres ou les notes est masqué</numerusform>
+            <numerusform>Seulement les titres avec «&#xa0;%1&#xa0;»&#xa0;: %n résultats qui ne l&apos;ont que dans les genres ou les notes sont masqués</numerusform>
         </translation>
     </message>
     <message>
         <source>Showing everything the trackers found for “%1”, genres and notes too</source>
-        <translation>Tout ce que les trackers ont trouvé pour « %1 », genres et notes compris</translation>
+        <translation>Tout ce que les trackers ont trouvé pour «&#xa0;%1&#xa0;», genres et notes compris</translation>
     </message>
     <message>
         <source>Show them</source>

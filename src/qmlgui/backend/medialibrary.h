@@ -77,6 +77,11 @@ class MediaLibraryModel : public QAbstractListModel
     Q_PROPERTY(int count READ rowCount NOTIFY countsChanged FINAL)
     // {all, movies, series, downloading}: items per kind before the search
     Q_PROPERTY(QVariantMap counts READ counts NOTIFY countsChanged FINAL)
+    // The shown files by title, in the same order: a film (its files: the movie, another version) or a series
+    // (its episodes), named as the torrent is (the local title first). [{key, posterKey, title, original, year,
+    // series, quality, count, seasons, size, progress, downloading, main, items: [{key, season, episode,
+    // quality, size, progress, complete, fileName}]}]; `main` is the file a click plays (a film's largest)
+    Q_PROPERTY(QVariantList titles READ titles NOTIFY titlesChanged FINAL)
 
 public:
     enum Role
@@ -116,6 +121,9 @@ public:
     QString sortKey() const;
     void setSortKey(const QString &key);
     QVariantMap counts() const;
+    QVariantList titles() const;
+    // One entry of `titles` by its key, or {}
+    Q_INVOKABLE QVariantMap title(const QString &key) const;
 
     // The item as a JS object, or an empty one
     Q_INVOKABLE QVariantMap get(const QString &key) const;
@@ -131,16 +139,20 @@ public:
 signals:
     void filterChanged();
     void countsChanged();
+    void titlesChanged();
 
 private:
     void scheduleRefresh();
     void refresh();
     void applyFilter();
+    // `titles` from the shown files
+    void groupTitles();
     const MediaItem *find(const QString &key) const;
 
     QList<MediaItem> m_all;
     QList<MediaItem> m_visible;
     QVariantMap m_counts;
+    QVariantList m_titles;
     QString m_kind = QStringLiteral("all");
     QString m_search;
     QString m_sortKey = QStringLiteral("added");

@@ -797,6 +797,12 @@
         <source>Ep. %1</source>
         <translation>第 %1 集</translation>
     </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation>
+            <numerusform>%n 集</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Sort</source>
         <translation>排序</translation>
@@ -877,6 +883,12 @@
         <source>%1% · downloading</source>
         <translation>%1% · 下载中</translation>
     </message>
+    <message numerus="yes">
+        <source>%n ep.</source>
+        <translation>
+            <numerusform>%n 集</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Play %1</source>
         <translation>播放 %1</translation>
@@ -908,6 +920,22 @@
     <message>
         <source>Show in folder</source>
         <translation>在文件夹中显示</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>第 %1 季</translation>
+    </message>
+    <message>
+        <source>Episode %1</source>
+        <translation>第 %1 集</translation>
+    </message>
+    <message>
+        <source>%1% downloaded</source>
+        <translation>已下载 %1%</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>详情</translation>
     </message>
     <message>
         <source>Downloaded</source>
@@ -1188,8 +1216,8 @@
         <translation>全部订阅源</translation>
     </message>
     <message>
-        <source>Search articles…</source>
-        <translation>搜索文章…</translation>
+        <source>Search…</source>
+        <translation>搜索…</translation>
     </message>
     <message>
         <source>All</source>

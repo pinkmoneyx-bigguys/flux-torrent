@@ -799,6 +799,13 @@
         <source>Ep. %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation>
+            <numerusform>%n episode</numerusform>
+            <numerusform>%n episodes</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Sort</source>
         <translation type="unfinished"></translation>
@@ -879,6 +886,13 @@
         <source>%1% · downloading</source>
         <translation type="unfinished"></translation>
     </message>
+    <message numerus="yes">
+        <source>%n ep.</source>
+        <translation>
+            <numerusform>%n ep.</numerusform>
+            <numerusform>%n ep.</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Play %1</source>
         <translation type="unfinished"></translation>
@@ -909,6 +923,22 @@
     </message>
     <message>
         <source>Show in folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Episode %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1% downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Details</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1190,7 +1220,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Search articles…</source>
+        <source>Search…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

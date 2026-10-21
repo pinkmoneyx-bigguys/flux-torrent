@@ -3,9 +3,9 @@ import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import Flux
 
-// Media library: the video files of all torrents as a grid of cards (or a table), by kind — movies,
-// series, still downloading — with search and sorting. A card opens a side sheet with the file's details;
-// a finished file plays in the default player until the built-in player arrives.
+// Media library: the videos of all torrents as a shelf of posters, one per film or series (its episodes
+// together), or as a table of files; by kind — movies, series, still downloading — with search and sorting.
+// A film's poster plays it; a series opens its episodes; the details slide in from the right.
 Surface {
     id: page
     objectName: "page_media"
@@ -22,7 +22,7 @@ Surface {
     // Play a library item; startAt < 0 continues from the saved position
     signal playRequested(string key, real startAt)
 
-    // A stable hue per title, for the generated cover
+    // A stable hue per title, for the list's little covers
     function hue(text) {
         let h = 0
         for (let i = 0; i < text.length; ++i)
@@ -38,13 +38,22 @@ Surface {
     function qualityLabel(q) {
         return q === "2160p" ? "4K" : q
     }
-    function meta(item) {
+    // "S1", "S1–3"
+    function seasonsLabel(seasons) {
+        if (!seasons || seasons.length === 0)
+            return ""
+        return seasons.length === 1 ? "S" + seasons[0] : "S" + seasons[0] + "–" + seasons[seasons.length - 1]
+    }
+    // what a title is, under its name
+    function titleMeta(t) {
+        if (t.downloading)
+            return qsTr("%1% · downloading").arg(Math.floor(t.progress * 100))
         const parts = []
-        if (item.season > 0 || item.episode > 0)
-            parts.push(episodeLabel(item.season, item.episode))
-        if (item.year > 0)
-            parts.push(item.year)
-        parts.push(Format.size(item.size))
+        if (t.series)
+            parts.push(qsTr("%n episode(s)", "", t.count))
+        else if (t.year > 0)
+            parts.push(String(t.year))
+        parts.push(Format.size(t.size))
         return parts.join("  ·  ")
     }
     function clock(seconds) {
@@ -54,8 +63,16 @@ Surface {
         const pad = n => (n < 10 ? "0" : "") + n
         return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : m + ":" + pad(s)
     }
+    // the details of one file
     function open(key) {
+        sheet.group = null
         sheet.key = key
+        sheet.open()
+    }
+    // a film or a series: its details, its episodes
+    function openTitle(t) {
+        sheet.group = t
+        sheet.key = t.main
         sheet.open()
     }
     function play(key) {
@@ -64,6 +81,13 @@ Surface {
             playRequested(key, -1)
         else
             open(key)
+    }
+    // a poster's click: a film plays, a series shows its episodes
+    function activate(t) {
+        if (t.series || t.count > 1)
+            openTitle(t)
+        else
+            play(t.main)
     }
     function watchedOf(key) {
         return WatchHistory.revision >= 0 ? WatchHistory.progress(key) : 0
@@ -103,7 +127,7 @@ Surface {
             Layout.leftMargin: Theme.sp(6)
             Layout.rightMargin: Theme.sp(6)
             Layout.topMargin: Theme.sp(4)
-            Layout.bottomMargin: Theme.sp(4)
+            Layout.bottomMargin: Theme.sp(2)
             spacing: Theme.sp(3)
 
             UiTabs {
@@ -120,7 +144,9 @@ Surface {
             Item { Layout.fillWidth: true }
             UiInput {
                 objectName: "mediaSearch"
-                Layout.preferredWidth: 260
+                Layout.fillWidth: true
+                Layout.maximumWidth: 280
+                Layout.minimumWidth: 160
                 iconPath: Icons.search
                 placeholderText: qsTr("Search the library…")
                 onTextChanged: MediaLibraryModel.search = text
@@ -131,33 +157,38 @@ Surface {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            // --- Grid ---------------------------------------------------------------------------
+            // --- Shelf of posters -----------------------------------------------------------------
             GridView {
                 id: grid
                 objectName: "mediaGrid"
                 anchors.fill: parent
-                anchors.leftMargin: Theme.sp(6) - 8
-                anchors.rightMargin: Theme.sp(6) - 8
+                anchors.leftMargin: Theme.sp(5)
+                anchors.rightMargin: Theme.sp(3)
                 visible: page.view === "grid" && count > 0
-                model: MediaLibraryModel
+                model: MediaLibraryModel.titles
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
+                topMargin: Theme.sp(2)
                 bottomMargin: Theme.sp(6)
-                readonly property int columns: Math.max(2, Math.floor(width / 250))
+                readonly property int columns: Math.max(2, Math.floor(width / 190))
                 cellWidth: Math.floor(width / columns)
-                cellHeight: (cellWidth - 16) * 9 / 16 + 72
+                cellHeight: Math.round((cellWidth - 2 * Theme.sp(2)) * 1.5) + 76
+                cacheBuffer: Math.max(0, cellHeight * 2)
+                reuseItems: true
                 ScrollBar.vertical: ScrollBar {}
-                delegate: MediaCard {
+                SmoothWheel { step: 280 }
+                delegate: TitleCard {
                     width: grid.cellWidth
                     height: grid.cellHeight
                 }
             }
 
-            // --- List ---------------------------------------------------------------------------
+            // --- Files ----------------------------------------------------------------------------
             Rectangle {
                 anchors.fill: parent
                 anchors.leftMargin: Theme.sp(6)
                 anchors.rightMargin: Theme.sp(6)
+                anchors.topMargin: Theme.sp(2)
                 anchors.bottomMargin: Theme.sp(6)
                 visible: page.view === "list" && MediaLibraryModel.count > 0
                 radius: Theme.radiusCtl + 2
@@ -175,7 +206,9 @@ Surface {
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     headerPositioning: ListView.OverlayHeader
+                    reuseItems: true
                     ScrollBar.vertical: ScrollBar {}
+                    SmoothWheel {}
                     header: Rectangle {
                         width: list.width
                         height: 40
@@ -261,119 +294,12 @@ Surface {
     }
 
     // --- Pieces ---------------------------------------------------------------------------------
-    // The generated cover: a dark tint per title, the kind icon, quality and episode badges, progress
-    component Cover: Rectangle {
-        id: cover
-        property string title
-        property string quality
-        property int season
-        property int episode
-        property real progress: 1
-        // share already watched (WatchHistory)
-        property real watched: 0
-        property bool hot: false
-
-        readonly property real h: page.hue(title)
-        radius: Theme.radiusCtl + 2
-        clip: true
-        gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 0; color: Qt.hsla(cover.h, 0.28, 0.20, 1) }
-            GradientStop { position: 1; color: Qt.hsla((cover.h + 0.06) % 1, 0.30, 0.09, 1) }
-        }
-        border.width: 1
-        border.color: cover.hot ? Theme.alpha(Theme.text, 0.25) : Theme.border
-        Behavior on border.color {
-            enabled: !Theme.reducedMotion
-            ColorAnimation { duration: Theme.durMed }
-        }
-        // lifts a little under the pointer
-        scale: cover.hot && !Theme.reducedMotion ? 1.025 : 1
-        Behavior on scale {
-            NumberAnimation { duration: Theme.durMed; easing.type: Theme.easing.type; easing.bezierCurve: Theme.easing.bezierCurve }
-        }
-
-        Icon {
-            anchors.centerIn: parent
-            opacity: cover.hot ? 0 : 1
-            visible: opacity > 0
-            Behavior on opacity {
-                enabled: !Theme.reducedMotion
-                NumberAnimation { duration: Theme.durFast }
-            }
-            path: cover.season > 0 || cover.episode > 0 ? Icons.media : Icons.film
-            size: Math.min(36, cover.height * 0.28)
-            strokeWidth: 1.25
-            color: Qt.rgba(1, 1, 1, 0.28)
-        }
-        // play affordance on hover
-        Rectangle {
-            opacity: cover.hot ? 1 : 0
-            visible: opacity > 0
-            scale: cover.hot ? 1 : 0.8
-            Behavior on opacity {
-                enabled: !Theme.reducedMotion
-                NumberAnimation { duration: Theme.durFast }
-            }
-            Behavior on scale {
-                enabled: !Theme.reducedMotion
-                NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutBack }
-            }
-            anchors.centerIn: parent
-            width: 44
-            height: 44
-            radius: 22
-            color: cover.progress >= 1 ? "#FAFAFA" : Qt.rgba(1, 1, 1, 0.16)
-            Icon {
-                anchors.centerIn: parent
-                anchors.horizontalCenterOffset: 1
-                path: Icons.play
-                size: 18
-                strokeWidth: 2
-                color: cover.progress >= 1 ? "#0A0A0A" : "#FAFAFA"
-            }
-        }
-        Row {
-            x: 8
-            y: 8
-            spacing: 6
-            CoverBadge { visible: cover.quality !== ""; text: page.qualityLabel(cover.quality) }
-            CoverBadge { visible: cover.season > 0 || cover.episode > 0; text: page.episodeLabel(cover.season, cover.episode) }
-        }
-        // watched part, above the download edge
-        Rectangle {
-            visible: cover.watched > 0.01
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: cover.progress < 1 ? 4 : 0
-            width: parent.width * cover.watched
-            height: 3
-            color: "#FAFAFA"
-        }
-        // download progress along the bottom edge
-        Rectangle {
-            visible: cover.progress < 1
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 4
-            color: Qt.rgba(0, 0, 0, 0.45)
-            Rectangle {
-                width: parent.width * cover.progress
-                height: parent.height
-                color: Theme.download
-                Behavior on width {
-                    enabled: !Theme.reducedMotion
-                    NumberAnimation { duration: Theme.durValue; easing.type: Easing.OutCubic }
-                }
-            }
-        }
-    }
-
     component CoverBadge: Rectangle {
         property alias text: label.text
         implicitWidth: label.implicitWidth + 12
         implicitHeight: 20
         radius: 5
-        color: Qt.rgba(0, 0, 0, 0.55)
+        color: Qt.rgba(0, 0, 0, 0.62)
         Text {
             id: label
             anchors.centerIn: parent
@@ -385,40 +311,119 @@ Surface {
         }
     }
 
-    component MediaCard: Item {
+    // A film or a series on the shelf: its poster (what is on offer on it, how far it has come along the
+    // bottom), its name and what it is
+    component TitleCard: Item {
         id: card
-        required property string key
-        required property string title
-        required property string quality
-        required property int season
-        required property int episode
-        required property int year
-        required property real size
-        required property real progress
+        required property var modelData
+        readonly property bool hot: hover.hovered
+        // a film: how much of it was watched
+        readonly property real watched: !modelData.series && modelData.count === 1 ? page.watchedOf(modelData.main) : 0
 
         Accessible.role: Accessible.Button
-        Accessible.name: title
+        Accessible.name: modelData.title
 
         HoverHandler { id: hover }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 8
-            spacing: 8
+            anchors.margins: Theme.sp(2)
+            anchors.bottomMargin: Theme.sp(4)
+            spacing: Theme.sp(2)
 
-            Cover {
+            FilmPoster {
+                id: cover
                 Layout.fillWidth: true
-                Layout.preferredHeight: width * 9 / 16
-                title: card.title
-                quality: card.quality
-                season: card.season
-                episode: card.episode
-                progress: card.progress
-                watched: page.watchedOf(card.key)
-                hot: hover.hovered
+                Layout.preferredHeight: width * 1.5
+                radius: 8
+                film: ({ key: card.modelData.posterKey, title: card.modelData.title, original: card.modelData.original,
+                         year: card.modelData.year, series: card.modelData.series })
+                border.width: 1
+                border.color: card.hot ? Theme.alpha(Theme.text, 0.3) : Theme.border
+                scale: card.hot && !Theme.reducedMotion ? 1.02 : 1
+                Behavior on scale {
+                    NumberAnimation { duration: Theme.durMed; easing.type: Easing.OutCubic }
+                }
 
+                TapHandler { onTapped: page.activate(card.modelData) }
                 TapHandler {
-                    onTapped: page.play(card.key)
+                    acceptedButtons: Qt.RightButton
+                    onTapped: page.openTitle(card.modelData)
+                }
+
+                // what is on offer, top left; a series' seasons and episodes, top right
+                Row {
+                    x: 6
+                    y: 6
+                    spacing: 4
+                    CoverBadge {
+                        visible: card.modelData.quality !== ""
+                        text: page.qualityLabel(card.modelData.quality)
+                    }
+                }
+                CoverBadge {
+                    visible: card.modelData.series
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.margins: 6
+                    text: [page.seasonsLabel(card.modelData.seasons), qsTr("%n ep.", "", card.modelData.count)]
+                          .filter(t => t !== "").join(" · ")
+                }
+
+                // play (a film) or the episodes (a series), under the pointer
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    opacity: card.hot ? 1 : 0
+                    visible: opacity > 0
+                    Behavior on opacity {
+                        enabled: !Theme.reducedMotion
+                        NumberAnimation { duration: Theme.durFast }
+                    }
+                    gradient: Gradient {
+                        GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0) }
+                        GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.55) }
+                    }
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 48
+                        height: 48
+                        radius: 24
+                        color: Qt.rgba(1, 1, 1, 0.92)
+                        Icon {
+                            anchors.centerIn: parent
+                            anchors.horizontalCenterOffset: card.modelData.series ? 0 : 1
+                            path: card.modelData.series || card.modelData.count > 1 ? Icons.list : Icons.play
+                            size: 18
+                            strokeWidth: 2.2
+                            color: "#0A0A0A"
+                        }
+                    }
+                }
+
+                // watched (a film), and the download along the bottom edge
+                Rectangle {
+                    visible: card.watched > 0.01
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: card.modelData.downloading ? 4 : 0
+                    x: 1
+                    width: (parent.width - 2) * card.watched
+                    height: 3
+                    color: "#FAFAFA"
+                }
+                Rectangle {
+                    visible: card.modelData.downloading
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 1
+                    x: 1
+                    width: parent.width - 2
+                    height: 4
+                    color: Qt.rgba(0, 0, 0, 0.55)
+                    Rectangle {
+                        width: parent.width * card.modelData.progress
+                        height: parent.height
+                        color: Theme.download
+                    }
                 }
             }
             ColumnLayout {
@@ -426,7 +431,7 @@ Surface {
                 spacing: 2
                 Text {
                     Layout.fillWidth: true
-                    text: card.title
+                    text: card.modelData.title
                     color: Theme.text
                     font.family: Theme.fontText
                     font.pixelSize: Theme.textSm
@@ -435,28 +440,16 @@ Surface {
                 }
                 Text {
                     Layout.fillWidth: true
-                    text: card.progress < 1
-                          ? qsTr("%1% · downloading").arg(Math.floor(card.progress * 100))
-                          : page.meta(card)
-                    color: card.progress < 1 ? Theme.download : Theme.textDim
+                    text: page.titleMeta(card.modelData)
+                    color: card.modelData.downloading ? Theme.download : Theme.textDim
                     font.family: Theme.fontText
                     font.pixelSize: Theme.textXs
                     font.features: { "tnum": 1 }
                     elide: Text.ElideRight
                 }
+                // the name opens the details
+                TapHandler { onTapped: page.openTitle(card.modelData) }
             }
-        }
-        // the text block opens the details
-        TapHandler {
-            onTapped: eventPoint => {
-                if (eventPoint.position.y > card.height - 64)
-                    page.open(card.key)
-            }
-        }
-        // right click anywhere: details
-        TapHandler {
-            acceptedButtons: Qt.RightButton
-            onTapped: page.open(card.key)
         }
     }
 
@@ -479,7 +472,7 @@ Surface {
         required property real size
         required property real progress
 
-        height: 44
+        height: 48
         color: rowHover.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
         Behavior on color {
             enabled: !Theme.reducedMotion
@@ -499,13 +492,13 @@ Surface {
                 Layout.fillWidth: true
                 spacing: Theme.sp(3)
                 Rectangle {
-                    implicitWidth: 40
-                    implicitHeight: 24
+                    implicitWidth: 24
+                    implicitHeight: 32
                     radius: 4
                     gradient: Gradient {
                         orientation: Gradient.Vertical
-                        GradientStop { position: 0; color: Qt.hsla(page.hue(mr.title), 0.28, 0.22, 1) }
-                        GradientStop { position: 1; color: Qt.hsla(page.hue(mr.title), 0.30, 0.10, 1) }
+                        GradientStop { position: 0; color: Qt.hsla(page.hue(mr.title), 0.28, 0.24, 1) }
+                        GradientStop { position: 1; color: Qt.hsla(page.hue(mr.title), 0.30, 0.11, 1) }
                     }
                 }
                 Text {
@@ -569,7 +562,7 @@ Surface {
                     size: "iconSm"
                     variant: "ghost"
                     iconPath: Icons.play
-                    enabled: mr.progress >= 1
+                    enabled: mr.progress >= 1 || page.playerAvailable
                     Accessible.name: qsTr("Play %1").arg(mr.title)
                     onClicked: page.play(mr.key)
                 }
@@ -578,15 +571,23 @@ Surface {
     }
 
     // --- Details sheet ----------------------------------------------------------------------------
-    // shadcn Sheet: slides in from the right over a dimmed page
+    // shadcn Sheet: slides in from the right over a dimmed page. A film (or one file): its poster, how to
+    // play it and what it is; a series: its episodes by season.
     Drawer {
         id: sheet
         objectName: "mediaSheet"
+        // the file whose details show (a film's main one)
         property string key
+        // the film or series it was opened for, or null (a file of the table)
+        property var group: null
         readonly property var item: key !== "" && sheet.visible ? MediaLibraryModel.get(key) : ({})
+        readonly property bool episodes: group !== null && (group.series || group.count > 1)
+        readonly property var film: group !== null
+            ? { key: group.posterKey, title: group.title, original: group.original, year: group.year, series: group.series }
+            : Posters.film(item.torrentName || item.fileName || "")
 
         edge: Qt.RightEdge
-        width: Math.min(440, page.width * 0.5)
+        width: Math.min(480, page.width * 0.55)
         height: page.Window.window ? page.Window.window.height : page.height
         dim: true
         interactive: visible
@@ -599,28 +600,75 @@ Surface {
         }
 
         contentItem: Flickable {
+            id: sheetFlick
             clip: true
-            contentHeight: sheetColumn.implicitHeight + 48
+            contentHeight: sheetColumn.implicitHeight + 56
             boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar {}
+            SmoothWheel { step: 200 }
 
             ColumnLayout {
                 id: sheetColumn
-                x: 24
-                y: 24
-                width: parent.width - 48
-                spacing: Theme.sp(4)
+                x: 28
+                y: 28
+                width: parent.width - 56
+                spacing: Theme.sp(5)
 
+                // poster, name, what it is
                 RowLayout {
                     Layout.fillWidth: true
-                    Text {
-                        objectName: "mediaSheetTitle"
+                    spacing: Theme.sp(4)
+                    FilmPoster {
+                        Layout.alignment: Qt.AlignTop
+                        Layout.preferredWidth: 104
+                        Layout.preferredHeight: 156
+                        radius: 8
+                        film: sheet.film
+                        border.width: 1
+                        border.color: Theme.border
+                    }
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        text: sheet.item.title ?? ""
-                        color: Theme.text
-                        font.family: Theme.fontText
-                        font.pixelSize: 18
-                        font.weight: Font.DemiBold
-                        wrapMode: Text.Wrap
+                        Layout.alignment: Qt.AlignTop
+                        spacing: Theme.sp(2)
+                        Text {
+                            objectName: "mediaSheetTitle"
+                            Layout.fillWidth: true
+                            text: sheet.group !== null ? sheet.group.title : (sheet.item.title ?? "")
+                            color: Theme.text
+                            font.family: Theme.fontText
+                            font.pixelSize: 19
+                            font.weight: Font.DemiBold
+                            wrapMode: Text.Wrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: text !== ""
+                            text: sheet.group !== null
+                                  ? [sheet.group.original !== sheet.group.title ? sheet.group.original : "",
+                                     sheet.group.year > 0 ? String(sheet.group.year) : ""].filter(t => t !== "").join(" · ")
+                                  : ""
+                            color: Theme.textDim
+                            font.family: Theme.fontText
+                            font.pixelSize: Theme.textSm
+                            wrapMode: Text.Wrap
+                        }
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 6
+                            UiBadge {
+                                readonly property string q: sheet.group !== null ? sheet.group.quality : (sheet.item.quality ?? "")
+                                visible: q !== ""
+                                text: page.qualityLabel(q)
+                            }
+                            UiBadge {
+                                visible: sheet.episodes
+                                text: sheet.group !== null ? qsTr("%n episode(s)", "", sheet.group.count) : ""
+                            }
+                            UiBadge {
+                                text: Format.size(sheet.group !== null ? sheet.group.size : (sheet.item.size ?? 0))
+                            }
+                        }
                     }
                     UiButton {
                         Layout.alignment: Qt.AlignTop
@@ -631,18 +679,10 @@ Surface {
                         onClicked: sheet.close()
                     }
                 }
-                Cover {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: width * 9 / 16
-                    title: sheet.item.title ?? ""
-                    quality: sheet.item.quality ?? ""
-                    season: sheet.item.season ?? 0
-                    episode: sheet.item.episode ?? 0
-                    progress: sheet.item.progress ?? 1
-                }
 
-                // Actions
+                // --- One film: play it ------------------------------------------------------------
                 ColumnLayout {
+                    visible: !sheet.episodes
                     Layout.fillWidth: true
                     spacing: Theme.sp(2)
                     readonly property real resumeAt: WatchHistory.revision >= 0 ? WatchHistory.resumePosition(sheet.key) : 0
@@ -688,9 +728,127 @@ Surface {
                     }
                 }
 
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.border }
+                // --- A series: its episodes by season ---------------------------------------------
+                ColumnLayout {
+                    objectName: "mediaEpisodes"
+                    visible: sheet.episodes
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    Repeater {
+                        model: sheet.episodes ? sheet.group.items : []
+                        delegate: ColumnLayout {
+                            id: ep
+                            required property var modelData
+                            required property int index
+                            readonly property var previous: index > 0 ? sheet.group.items[index - 1] : null
+                            readonly property real watched: page.watchedOf(modelData.key)
+                            Layout.fillWidth: true
+                            spacing: 0
+
+                            // a season's heading, before its first episode
+                            Text {
+                                visible: ep.modelData.season > 0 && (ep.previous === null || ep.previous.season !== ep.modelData.season)
+                                Layout.topMargin: ep.index > 0 ? Theme.sp(4) : 0
+                                Layout.bottomMargin: Theme.sp(2)
+                                text: qsTr("Season %1").arg(ep.modelData.season)
+                                color: Theme.textDim
+                                font.family: Theme.fontText
+                                font.pixelSize: Theme.textXs
+                                font.weight: Font.Medium
+                                font.capitalization: Font.AllUppercase
+                                font.letterSpacing: 0.6
+                            }
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 52
+                                radius: Theme.radiusCtl
+                                color: epHover.hovered ? Theme.hover : "transparent"
+                                HoverHandler { id: epHover }
+                                TapHandler { onTapped: page.play(ep.modelData.key) }
+                                TapHandler {
+                                    acceptedButtons: Qt.RightButton
+                                    onTapped: page.open(ep.modelData.key)
+                                }
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 6
+                                    spacing: Theme.sp(3)
+
+                                    // watched all through, partly, or not yet
+                                    Rectangle {
+                                        implicitWidth: 28
+                                        implicitHeight: 28
+                                        radius: 14
+                                        color: ep.watched >= 0.9 ? Theme.alpha(Theme.upload, 0.16) : Theme.muted
+                                        Icon {
+                                            anchors.centerIn: parent
+                                            anchors.horizontalCenterOffset: ep.watched >= 0.9 ? 0 : 1
+                                            path: ep.watched >= 0.9 ? Icons.check : Icons.play
+                                            size: 13
+                                            strokeWidth: 2.2
+                                            color: ep.watched >= 0.9 ? Theme.upload : Theme.text
+                                        }
+                                    }
+                                    ColumnLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 3
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: ep.modelData.episode > 0 ? qsTr("Episode %1").arg(ep.modelData.episode) : ep.modelData.fileName
+                                            color: Theme.text
+                                            font.family: Theme.fontText
+                                            font.pixelSize: Theme.textSm
+                                            font.weight: Font.Medium
+                                            elide: Text.ElideRight
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: [page.episodeLabel(ep.modelData.season, ep.modelData.episode),
+                                                   page.qualityLabel(ep.modelData.quality), Format.size(ep.modelData.size),
+                                                   ep.modelData.complete ? "" : qsTr("%1% downloaded").arg(Math.floor(ep.modelData.progress * 100))]
+                                                  .filter(t => t !== "").join("  ·  ")
+                                            color: ep.modelData.complete ? Theme.textDim : Theme.download
+                                            font.family: Theme.fontText
+                                            font.pixelSize: Theme.textXs
+                                            font.features: { "tnum": 1 }
+                                            elide: Text.ElideRight
+                                        }
+                                        // how far it was watched
+                                        Rectangle {
+                                            visible: ep.watched > 0.01 && ep.watched < 0.9
+                                            Layout.fillWidth: true
+                                            Layout.topMargin: 2
+                                            implicitHeight: 3
+                                            radius: 1.5
+                                            color: Theme.muted
+                                            Rectangle {
+                                                width: parent.width * ep.watched
+                                                height: parent.height
+                                                radius: 1.5
+                                                color: Theme.text
+                                            }
+                                        }
+                                    }
+                                    UiButton {
+                                        size: "iconSm"
+                                        variant: "ghost"
+                                        iconPath: Icons.info
+                                        Accessible.name: qsTr("Details")
+                                        onClicked: page.open(ep.modelData.key)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.border; visible: !sheet.episodes }
 
                 GridLayout {
+                    visible: !sheet.episodes
                     Layout.fillWidth: true
                     columns: 2
                     columnSpacing: Theme.sp(4)

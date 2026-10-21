@@ -801,6 +801,14 @@
         <source>Ep. %1</source>
         <translation>Серія %1</translation>
     </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation>
+            <numerusform>%n серія</numerusform>
+            <numerusform>%n серії</numerusform>
+            <numerusform>%n серій</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Sort</source>
         <translation>Сортування</translation>
@@ -881,6 +889,14 @@
         <source>%1% · downloading</source>
         <translation>%1% · завантажується</translation>
     </message>
+    <message numerus="yes">
+        <source>%n ep.</source>
+        <translation>
+            <numerusform>%n сер.</numerusform>
+            <numerusform>%n сер.</numerusform>
+            <numerusform>%n сер.</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Play %1</source>
         <translation>Відтворити %1</translation>
@@ -912,6 +928,22 @@
     <message>
         <source>Show in folder</source>
         <translation>Показати в теці</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Сезон %1</translation>
+    </message>
+    <message>
+        <source>Episode %1</source>
+        <translation>Серія %1</translation>
+    </message>
+    <message>
+        <source>%1% downloaded</source>
+        <translation>завантажено %1%</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Подробиці</translation>
     </message>
     <message>
         <source>Downloaded</source>
@@ -1192,8 +1224,8 @@
         <translation>Усі стрічки</translation>
     </message>
     <message>
-        <source>Search articles…</source>
-        <translation>Пошук у статтях…</translation>
+        <source>Search…</source>
+        <translation>Пошук…</translation>
     </message>
     <message>
         <source>All</source>

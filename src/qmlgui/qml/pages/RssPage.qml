@@ -143,7 +143,7 @@ Surface {
                 ColumnLayout {
                     // a nested layout fills the width by default: pin the column instead
                     Layout.fillWidth: false
-                    Layout.preferredWidth: 248
+                    Layout.preferredWidth: Math.max(184, Math.min(236, parent.width * 0.24))
                     Layout.fillHeight: true
                     spacing: 0
 
@@ -167,6 +167,7 @@ Surface {
                         topMargin: 6
                         bottomMargin: 6
                         ScrollBar.vertical: ScrollBar {}
+                        SmoothWheel {}
                         model: [{ path: "", name: qsTr("All feeds"), folder: false, depth: 0, unread: RssManager.unreadCount, all: true }]
                                .concat(RssManager.feeds)
                         delegate: FeedRow {}
@@ -178,22 +179,23 @@ Surface {
                 // Articles ------------------------------------------------------------------------
                 ColumnLayout {
                     Layout.fillWidth: false
-                    Layout.preferredWidth: Math.min(420, Math.max(320, parent.width * 0.34))
+                    // the reader keeps the larger share: it is where an article is read
+                    Layout.preferredWidth: Math.min(460, Math.max(340, parent.width * 0.36))
                     Layout.fillHeight: true
                     spacing: 0
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 48
-                        Layout.leftMargin: 12
-                        Layout.rightMargin: 12
+                        Layout.preferredHeight: 52
+                        Layout.leftMargin: 14
+                        Layout.rightMargin: 14
                         spacing: Theme.sp(2)
 
                         UiInput {
                             objectName: "rssSearch"
                             Layout.fillWidth: true
                             iconPath: Icons.search
-                            placeholderText: qsTr("Search articles…")
+                            placeholderText: qsTr("Search…")
                             onTextChanged: RssManager.search = text
                         }
                         UiTabs {
@@ -214,15 +216,13 @@ Surface {
                         boundsBehavior: Flickable.StopAtBounds
                         model: RssManager.articles
                         currentIndex: -1
-                        spacing: 8
-                        topMargin: 12
-                        bottomMargin: 12
-                        leftMargin: 12
-                        rightMargin: 12
+                        topMargin: 6
+                        bottomMargin: 6
                         keyNavigationEnabled: true
                         activeFocusOnTab: true
                         ScrollBar.vertical: ScrollBar {}
-                        delegate: ArticleCard {}
+                        SmoothWheel { step: 200 }
+                        delegate: ArticleRow {}
                         Keys.onUpPressed: page.selectArticle(Math.max(0, currentIndex - 1))
                         Keys.onDownPressed: page.selectArticle(Math.min(count - 1, currentIndex + 1))
 
@@ -256,9 +256,9 @@ Surface {
 
                         RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 48
-                            Layout.leftMargin: 16
-                            Layout.rightMargin: 16
+                            Layout.preferredHeight: 52
+                            Layout.leftMargin: 24
+                            Layout.rightMargin: 24
                             spacing: Theme.sp(2)
 
                             UiButton {
@@ -277,27 +277,36 @@ Surface {
                             UiButton {
                                 visible: page.article && page.article.link !== ""
                                 variant: "outline"
+                                size: "icon"
                                 iconPath: Icons.externalLink
-                                text: qsTr("Open in browser")
+                                Accessible.name: qsTr("Open in browser")
                                 onClicked: RssManager.openLink(page.currentArticle)
+                                UiTooltip {
+                                    text: qsTr("Open in browser")
+                                    shown: parent.hovered
+                                }
                             }
                             Item { Layout.fillWidth: true }
                         }
                         Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: Theme.border }
 
                         Flickable {
+                            id: reader
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             clip: true
-                            contentHeight: readerColumn.implicitHeight + 48
+                            contentWidth: width
+                            contentHeight: readerColumn.implicitHeight + 64
                             boundsBehavior: Flickable.StopAtBounds
                             ScrollBar.vertical: ScrollBar {}
+                            SmoothWheel { step: 200 }
 
                             ColumnLayout {
                                 id: readerColumn
-                                x: 24
-                                y: 20
-                                width: parent.width - 48
+                                x: 28
+                                y: 24
+                                // a readable line, however wide the window
+                                width: Math.min(reader.width - 56, 720)
                                 spacing: Theme.sp(3)
 
                                 Text {
@@ -306,8 +315,9 @@ Surface {
                                     text: page.article ? page.article.title : ""
                                     color: Theme.text
                                     font.family: Theme.fontText
-                                    font.pixelSize: 18
+                                    font.pixelSize: 20
                                     font.weight: Font.DemiBold
+                                    lineHeight: 1.2
                                     wrapMode: Text.Wrap
                                     Accessible.role: Accessible.Heading
                                     Accessible.name: text
@@ -337,6 +347,7 @@ Surface {
                                     selectionColor: "#3F3F46"
                                     font.family: Theme.fontText
                                     font.pixelSize: Theme.textBase
+                                    // (RichText takes no lineHeight: the paragraphs keep their own spacing)
                                     onLinkActivated: link => {
                                         if (/^https?:/i.test(link))
                                             Qt.openUrlExternally(link)
@@ -407,7 +418,7 @@ Surface {
         property string title
         default property alias actions: actionRow.data
         Layout.fillWidth: true
-        Layout.preferredHeight: 48
+        Layout.preferredHeight: 52
         Layout.leftMargin: 16
         Layout.rightMargin: 10
         spacing: Theme.sp(2)
@@ -510,7 +521,9 @@ Surface {
         }
     }
 
-    component ArticleCard: AbstractButton {
+    // An article in the list: unread dot, title, the first words of it, then the feed and the time; the
+    // torrent downloads from here too, under the pointer
+    component ArticleRow: AbstractButton {
         id: card
         required property int index
         required property string title
@@ -523,12 +536,16 @@ Surface {
         required property var date
         required property bool read
         readonly property bool current: ListView.isCurrentItem
-        // what the reader shows for the current card
+        readonly property bool hasTorrent: torrentUrl !== "" || link.indexOf("magnet:") === 0 || /\.torrent($|\?)/i.test(link)
+        // what the reader shows for the current row
         readonly property var info: ({ title: title, feedName: feedName, author: author, description: description,
                                        torrentUrl: torrentUrl, link: link, date: date })
 
-        width: ListView.view.width - 24
-        padding: 12
+        width: ListView.view.width
+        topPadding: 12
+        bottomPadding: 12
+        leftPadding: 16
+        rightPadding: 12
         hoverEnabled: true
         focusPolicy: Qt.NoFocus
 
@@ -542,76 +559,107 @@ Surface {
         }
         onDoubleClicked: RssManager.openLink(index)
 
-        background: Rectangle {
-            radius: Theme.radiusCtl + 2
-            color: card.current ? Theme.muted : card.hovered ? Theme.alpha(Theme.muted, 0.5) : Theme.alpha(Theme.muted, 0)
-            Behavior on color {
-                enabled: !Theme.reducedMotion
-                ColorAnimation { duration: Theme.durFast }
+        background: Item {
+            Rectangle {
+                anchors.fill: parent
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
+                anchors.topMargin: 2
+                anchors.bottomMargin: 2
+                radius: Theme.radiusCtl
+                color: card.current ? Theme.selected : card.hovered ? Theme.alpha(Theme.hover, 0.7) : Theme.alpha(Theme.hover, 0)
+                Behavior on color {
+                    enabled: !Theme.reducedMotion
+                    ColorAnimation { duration: Theme.durFast }
+                }
             }
-            border.width: 1
-            border.color: Theme.border
         }
-        contentItem: ColumnLayout {
-            id: cardColumn
-            spacing: 6
+        contentItem: RowLayout {
+            spacing: Theme.sp(3)
 
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.sp(2)
+            // unread: a dot beside the first line
+            Item {
+                Layout.alignment: Qt.AlignTop
+                Layout.topMargin: 6
+                implicitWidth: 7
+                implicitHeight: 7
                 Rectangle {
                     visible: !card.read
-                    implicitWidth: 8
-                    implicitHeight: 8
-                    radius: 4
+                    anchors.fill: parent
+                    radius: 3.5
                     color: Theme.download
                 }
+            }
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
                 Text {
                     Layout.fillWidth: true
                     text: card.title
-                    color: Theme.text
+                    color: card.read && !card.current ? Theme.alpha(Theme.text, 0.72) : Theme.text
                     font.family: Theme.fontText
                     font.pixelSize: Theme.textSm
                     font.weight: card.read ? Font.Normal : Font.DemiBold
-                    elide: Text.ElideRight
-                    maximumLineCount: 2
+                    lineHeight: 1.2
                     wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
                 }
                 Text {
-                    Layout.alignment: Qt.AlignTop
-                    text: card.date && !isNaN(card.date) ? page.ago(card.date) : ""
-                    color: card.current ? Theme.text : Theme.textDim
+                    visible: card.snippet !== ""
+                    Layout.fillWidth: true
+                    text: card.snippet
+                    color: Theme.textDim
                     font.family: Theme.fontText
                     font.pixelSize: Theme.textXs
+                    maximumLineCount: 1
+                    elide: Text.ElideRight
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 2
+                    spacing: 6
+                    Text {
+                        text: [card.feedName, card.date && !isNaN(card.date) ? page.ago(card.date) : ""].filter(t => t !== "").join("  ·  ")
+                        color: Theme.textFaint
+                        font.family: Theme.fontText
+                        font.pixelSize: Theme.textXs
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                    Icon {
+                        visible: card.hasTorrent && !card.hovered
+                        path: Icons.magnet
+                        size: 12
+                        strokeWidth: 1.75
+                        color: Theme.textFaint
+                        Accessible.name: qsTr("torrent")
+                    }
                 }
             }
-            Text {
-                visible: card.snippet !== ""
-                Layout.fillWidth: true
-                text: card.snippet
-                color: Theme.textDim
-                font.family: Theme.fontText
-                font.pixelSize: Theme.textXs + 1
-                lineHeight: 1.25
-                wrapMode: Text.Wrap
-                maximumLineCount: 2
-                elide: Text.ElideRight
-            }
-            RowLayout {
-                spacing: 6
-                UiBadge {
-                    text: card.feedName
-                    variant: "secondary"
-                    implicitHeight: 20
+            // download right here
+            UiButton {
+                visible: card.hasTorrent && card.hovered
+                Layout.alignment: Qt.AlignVCenter
+                size: "iconSm"
+                variant: "secondary"
+                iconPath: Icons.download
+                focusPolicy: Qt.NoFocus
+                Accessible.name: qsTr("Download torrent")
+                onClicked: {
+                    if (RssManager.download(card.index))
+                        toast.show(qsTr("Added “%1”").arg(card.title), false)
+                    else
+                        toast.show(qsTr("This article has no torrent."), true)
                 }
-                UiBadge {
-                    visible: card.torrentUrl !== "" || card.link.indexOf("magnet:") === 0
-                    text: qsTr("torrent")
-                    implicitHeight: 20
+                UiTooltip {
+                    text: qsTr("Download torrent")
+                    shown: parent.hovered
                 }
             }
         }
     }
+
 
     // "5 min ago", "3 h ago", "2 d ago", then the date
     function ago(date) {

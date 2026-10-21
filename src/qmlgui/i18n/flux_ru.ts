@@ -801,6 +801,14 @@
         <source>Ep. %1</source>
         <translation>Серия %1</translation>
     </message>
+    <message numerus="yes">
+        <source>%n episode(s)</source>
+        <translation>
+            <numerusform>%n серия</numerusform>
+            <numerusform>%n серии</numerusform>
+            <numerusform>%n серий</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Sort</source>
         <translation>Сортировка</translation>
@@ -881,6 +889,14 @@
         <source>%1% · downloading</source>
         <translation>%1% · загружается</translation>
     </message>
+    <message numerus="yes">
+        <source>%n ep.</source>
+        <translation>
+            <numerusform>%n сер.</numerusform>
+            <numerusform>%n сер.</numerusform>
+            <numerusform>%n сер.</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Play %1</source>
         <translation>Воспроизвести %1</translation>
@@ -912,6 +928,22 @@
     <message>
         <source>Show in folder</source>
         <translation>Показать в папке</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Сезон %1</translation>
+    </message>
+    <message>
+        <source>Episode %1</source>
+        <translation>Серия %1</translation>
+    </message>
+    <message>
+        <source>%1% downloaded</source>
+        <translation>загружено %1%</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Подробности</translation>
     </message>
     <message>
         <source>Downloaded</source>
@@ -1192,8 +1224,8 @@
         <translation>Все ленты</translation>
     </message>
     <message>
-        <source>Search articles…</source>
-        <translation>Поиск по статьям…</translation>
+        <source>Search…</source>
+        <translation>Поиск…</translation>
     </message>
     <message>
         <source>All</source>

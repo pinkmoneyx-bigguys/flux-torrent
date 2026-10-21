@@ -28,9 +28,12 @@
 
 #include "medialibrary.h"
 
+#include <algorithm>
+
 #include <QCollator>
 #include <QDesktopServices>
 #include <QDir>
+#include <QHash>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -44,6 +47,7 @@
 #include "base/bittorrent/torrent.h"
 #include "base/global.h"
 #include "base/path.h"
+#include "posters.h"
 
 namespace
 {
@@ -446,6 +450,114 @@ void MediaLibraryModel::applyFilter()
     if (counts != m_counts)
         m_counts = counts;
     emit countsChanged();
+    groupTitles();
+}
+
+QVariantList MediaLibraryModel::titles() const
+{
+    return m_titles;
+}
+
+QVariantMap MediaLibraryModel::title(const QString &key) const
+{
+    for (const QVariant &t : m_titles)
+    {
+        if (t.toMap().value(u"key"_s).toString() == key)
+            return t.toMap();
+    }
+    return {};
+}
+
+void MediaLibraryModel::groupTitles()
+{
+    static const QStringList qualityOrder {u"2160p"_s, u"1080p"_s, u"720p"_s, u"576p"_s, u"480p"_s};
+    const auto better = [](const QString &a, const QString &b)
+    {
+        const qsizetype ia = qualityOrder.indexOf(a);
+        const qsizetype ib = qualityOrder.indexOf(b);
+        return (ia >= 0) && ((ib < 0) || (ia < ib));
+    };
+
+    struct Title
+    {
+        QVariantMap map;
+        QList<const MediaItem *> items;
+    };
+    QList<Title> titles;
+    QHash<QString, qsizetype> indexOf;
+    for (const MediaItem &m : std::as_const(m_visible))
+    {
+        const bool series = (m.season > 0) || (m.episode > 0);
+        // what the torrent is called says the film best (its local title too); a file name, else
+        FilmInfo film = FilmInfo::parse(m.torrentName.isEmpty() ? m.fileName : m.torrentName);
+        if (film.title.isEmpty())
+            film.title = m.title;
+        if (film.year <= 0)
+            film.year = m.year;
+        // a series is one title whatever its seasons' years; a film is one of its year
+        const QString posterKey = FilmInfo::keyOf(film.title, film.original, series ? 0 : film.year);
+        const QString key = (series ? u"series:"_s : u"film:"_s) + posterKey;
+
+        qsizetype i = indexOf.value(key, -1);
+        if (i < 0)
+        {
+            i = titles.size();
+            indexOf.insert(key, i);
+            titles.append({QVariantMap {
+                {u"key"_s, key}, {u"posterKey"_s, posterKey}, {u"title"_s, film.title}, {u"original"_s, film.original},
+                {u"year"_s, film.year}, {u"series"_s, series}}, {}});
+        }
+        titles[i].items.append(&m);
+    }
+
+    m_titles.clear();
+    for (Title &t : titles)
+    {
+        // the episodes in order; a film's files, largest first
+        const bool series = t.map.value(u"series"_s).toBool();
+        std::stable_sort(t.items.begin(), t.items.end(), [series](const MediaItem *a, const MediaItem *b)
+        {
+            if (series)
+                return (a->season != b->season) ? (a->season < b->season) : (a->episode < b->episode);
+            return a->size > b->size;
+        });
+
+        QString quality;
+        QList<int> seasons;
+        qint64 size = 0;
+        double done = 0;
+        bool downloading = false;
+        QVariantList items;
+        for (const MediaItem *m : std::as_const(t.items))
+        {
+            if (better(m->quality, quality))
+                quality = m->quality;
+            if ((m->season > 0) && !seasons.contains(m->season))
+                seasons.append(m->season);
+            size += m->size;
+            done += m->size * m->progress;
+            downloading = downloading || (m->progress < 1);
+            items.append(QVariantMap {
+                {u"key"_s, m->key}, {u"season"_s, m->season}, {u"episode"_s, m->episode}, {u"quality"_s, m->quality},
+                {u"size"_s, m->size}, {u"progress"_s, m->progress}, {u"complete"_s, m->progress >= 1},
+                {u"fileName"_s, m->fileName}});
+        }
+        std::sort(seasons.begin(), seasons.end());
+        QVariantList seasonList;
+        for (const int s : std::as_const(seasons))
+            seasonList.append(s);
+
+        t.map.insert(u"quality"_s, quality);
+        t.map.insert(u"count"_s, t.items.size());
+        t.map.insert(u"seasons"_s, seasonList);
+        t.map.insert(u"size"_s, size);
+        t.map.insert(u"progress"_s, (size > 0) ? (done / size) : 1.0);
+        t.map.insert(u"downloading"_s, downloading);
+        t.map.insert(u"main"_s, t.items.first()->key);
+        t.map.insert(u"items"_s, items);
+        m_titles.append(t.map);
+    }
+    emit titlesChanged();
 }
 
 void MediaLibraryModel::loadDemo(const QVariantList &list)
