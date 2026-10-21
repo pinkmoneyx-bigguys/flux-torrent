@@ -82,6 +82,8 @@ Popup {
         ColumnLayout {
             id: bodyColumn
             Layout.fillWidth: true
+            // a dialog given a height (a long list in it) shares it out here
+            Layout.fillHeight: true
             spacing: Theme.sp(3)
         }
 

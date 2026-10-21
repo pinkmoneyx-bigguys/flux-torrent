@@ -32,6 +32,7 @@
 #include <chrono>
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -89,7 +90,10 @@ namespace
 FilmInfo FilmInfo::parse(const QString &name)
 {
     FilmInfo film;
-    const QString text = name.simplified();
+    QString text = name.simplified();
+    // tags before the titles: "[sub] Киберпанк: …", "[AniLibria.TV] …"
+    static const QRegularExpression leadingTags {u"^(\\[[^\\]]{1,24}\\]\\s*)+"_s};
+    text.remove(leadingTags);
 
     static const QRegularExpression qualityRe {u"\\b(2160p|4K|UHD|1080p|1080i|720p|576p|480p)\\b"_s, QRegularExpression::CaseInsensitiveOption};
     if (const QRegularExpressionMatch m = qualityRe.match(text); m.hasMatch())
@@ -101,13 +105,15 @@ FilmInfo FilmInfo::parse(const QString &name)
     film.series = text.contains(seriesRe);
 
     // tracker style: "Title / Original (people) [year, …] …" — the titles end at the first bracket
+    // (some trackers write "Original | Title [year, …]")
     static const QRegularExpression trackerYear {u"[\\[\\(]\\s*((?:19|20)\\d\\d)\\b"_s};
+    static const QRegularExpression titleSeparator {u" [/|] "_s};
     const qsizetype bracket = text.indexOf(QRegularExpression(u"\\s[\\(\\[]"_s));
+    const QString head = (bracket > 0) ? text.left(bracket) : text;
     if (text.contains(u" / "_s) || ((bracket > 0) && text.contains(trackerYear)))
     {
-        const QString head = (bracket > 0) ? text.left(bracket) : text;
         QStringList titles;
-        for (const QString &part : head.split(u" / "_s))
+        for (const QString &part : head.split(titleSeparator))
         {
             const QString t = withoutTags(part.trimmed());
             if (!t.isEmpty() && !isSeriesNote(t))
@@ -142,11 +148,16 @@ FilmInfo FilmInfo::parse(const QString &name)
         film.series = film.series || parsed.contains(u"season"_s);
     }
 
-    QString keyTitle = (film.original.isEmpty() ? film.title : film.original).toCaseFolded();
+    film.key = keyOf(film.title, film.original, film.year);
+    return film;
+}
+
+QString FilmInfo::keyOf(const QString &title, const QString &original, const int year)
+{
+    QString keyTitle = (original.isEmpty() ? title : original).toCaseFolded();
     static const QRegularExpression punctuation {u"[^\\w]+"_s, QRegularExpression::UseUnicodePropertiesOption};
     keyTitle.replace(punctuation, u" "_s);
-    film.key = keyTitle.simplified() + u'|' + QString::number(film.year);
-    return film;
+    return keyTitle.simplified() + u'|' + QString::number(year);
 }
 
 QString FilmInfo::comparable(const QString &title)
@@ -172,6 +183,11 @@ Posters::Posters(const QString &cachePath, QObject *parent)
     m_writeTimer.setInterval(3000);
     connect(&m_writeTimer, &QTimer::timeout, this, &Posters::write);
     load();
+    if (!m_cachePath.isEmpty())
+    {
+        m_imageDir = QFileInfo(m_cachePath).absolutePath() + u"/posters"_s;
+        pruneImages();
+    }
 }
 
 Posters::~Posters()
@@ -217,6 +233,72 @@ QVariantMap Posters::film(const QString &name) const
 QString Posters::poster(const QString &key) const
 {
     return m_posters.value(m_aliases.value(key, key));
+}
+
+QString Posters::image(const QString &key)
+{
+    const QString url = poster(key);
+    if (url.isEmpty() || m_imageDir.isEmpty())
+        return url;
+    const QString file = fileOf(url);
+    if (QFileInfo::exists(file))
+        return QUrl::fromLocalFile(file).toString();
+    if (!m_fetching.contains(url) && !m_failed.contains(url))
+        fetchImage(url);
+    return {};
+}
+
+QString Posters::fileOf(const QString &url) const
+{
+    const QByteArray hash = QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Sha1).toHex();
+    return m_imageDir + u'/' + QString::fromLatin1(hash) + u".img"_s;
+}
+
+void Posters::fetchImage(const QString &url, const int attempt)
+{
+    auto *manager = Net::DownloadManager::instance();
+    if (!manager)
+        return;
+    m_fetching.insert(url);
+    const Net::DownloadRequest request = Net::DownloadRequest(url).userAgent(USER_AGENT).limit(8 * 1024 * 1024)
+        .http2Allowed(false).transferTimeout(TIMEOUT);
+    manager->download(request, true, this, [this, url, attempt](const Net::DownloadResult &result)
+    {
+        // a picture: JPEG, PNG, WebP or GIF, not an error page
+        const QByteArray &data = result.data;
+        const bool picture = data.startsWith("\xFF\xD8\xFF") || data.startsWith("\x89PNG") || data.startsWith("GIF8")
+            || (data.startsWith("RIFF") && (data.mid(8, 4) == "WEBP"));
+        if ((result.status != Net::DownloadStatus::Success) || !picture)
+        {
+            if (attempt < RETRIES)
+            {
+                QTimer::singleShot(std::chrono::milliseconds(1500 * (attempt + 1)), this, [this, url, attempt]
+                {
+                    fetchImage(url, attempt + 1);
+                });
+                return;
+            }
+            m_fetching.remove(url);
+            m_failed.insert(url);
+            return;
+        }
+        QDir().mkpath(m_imageDir);
+        QSaveFile file {fileOf(url)};
+        if (file.open(QIODevice::WriteOnly) && (file.write(data) == data.size()))
+            file.commit();
+        m_fetching.remove(url);
+        ++m_revision;
+        emit revisionChanged();
+    });
+}
+
+void Posters::pruneImages()
+{
+    const int keep = 600;
+    QDir dir {m_imageDir};
+    const QFileInfoList files = dir.entryInfoList({u"*.img"_s}, QDir::Files, QDir::Time);  // newest first
+    for (qsizetype i = keep; i < files.size(); ++i)
+        QFile::remove(files.at(i).absoluteFilePath());
 }
 
 void Posters::alias(const QString &key, const QString &target)
@@ -344,6 +426,22 @@ QString Posters::pickShikimori(const QByteArray &json, const QString &title, con
 
 void Posters::request(const QString &key, const QString &title, const QString &original, const int year, const bool series)
 {
+    if (!key.isEmpty() && m_looking.contains(key))
+    {
+        // a card on screen asks: its film goes first in the queue it waits in
+        for (QList<Job> &queue : m_queues)
+        {
+            const auto it = std::find_if(queue.begin(), queue.end(), [&key](const Job &job) { return job.key == key; });
+            if (it != queue.end())
+            {
+                const Job job = *it;
+                queue.erase(it);
+                queue.prepend(job);
+                break;
+            }
+        }
+        return;
+    }
     if (key.isEmpty() || m_asked.contains(key) || m_aliases.contains(key))
         return;
     m_asked.insert(key);
@@ -359,7 +457,26 @@ void Posters::request(const QString &key, const QString &title, const QString &o
     job.year = year;
     job.series = series;
     job.source = -1;
+    m_looking.insert(key);
     enqueueNext(job);
+}
+
+void Posters::retry(const QString &key, const QString &title, const QString &original, const int year, const bool series)
+{
+    const QString target = m_aliases.value(key, key);
+    if (key.isEmpty() || m_posters.contains(target) || m_looking.contains(target))
+        return;
+    m_missed.remove(target);
+    m_asked.remove(target);
+    request(target, title, original, year, series);
+}
+
+void Posters::offer(const QString &key, const QString &url)
+{
+    const QString target = m_aliases.value(key, key);
+    if (url.isEmpty() || m_posters.contains(target))
+        return;
+    found(target, url);
 }
 
 QString Posters::queryOf(const Job &job)
@@ -417,7 +534,10 @@ void Posters::enqueueNext(Job job)
 
     if (job.source >= SourceCount)
     {
-        // none had it: don't ask again for a few days
+        m_looking.remove(job.key);
+        // none had it: don't ask again for a few days (unless none answered at all: the network, then)
+        if (!job.answered)
+            return;
         m_missed.insert(job.key, QDateTime::currentDateTimeUtc());
         if (!m_writeTimer.isActive())
             m_writeTimer.start();
@@ -491,9 +611,16 @@ void Posters::finished(const Job &job, const bool ok, const QByteArray &data)
         break;
     }
     if (url.isEmpty())
-        enqueueNext(job);
+    {
+        Job next = job;
+        next.answered = true;
+        enqueueNext(next);
+    }
     else
+    {
+        m_looking.remove(job.key);
         found(job.key, url);
+    }
 }
 
 void Posters::found(const QString &key, const QString &url)

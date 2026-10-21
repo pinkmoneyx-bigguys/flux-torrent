@@ -39,6 +39,7 @@
 #include <QStringList>
 #include <QtQmlIntegration/qqmlintegration.h>
 
+#include "jacredsearch.h"
 #include "posters.h"
 
 struct SearchResult;
@@ -56,6 +57,7 @@ struct SearchRow
     qint64 leechers = -1;
     QDateTime published;
     bool downloaded = false;
+    ReleaseMeta meta;   // what the source knows beyond the name (JacRed)
 };
 
 // Results of the current tracker search, in arrival order
@@ -92,6 +94,7 @@ public:
     const SearchRow *rowAt(int i) const;
     void clear();
     void append(const QList<SearchResult> &results);
+    void append(const QList<JacRedResult> &results);
     // Tests and the demo file: rows as {name, fileUrl, descrLink, engine, siteUrl, size, seeds, leechers, publishedSecsAgo}
     Q_INVOKABLE void setRows(const QVariantList &rows);
     void markDownloaded(int row);
@@ -119,8 +122,9 @@ class SearchResultsFilter : public QSortFilterProxyModel
     Q_PROPERTY(bool descending READ descending WRITE setDescending NOTIFY sortChanged FINAL)
     Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
     // The shown results by film (FilmInfo), in the current order: [{key, title, original, year, series,
-    // qualities, count, seeds, minSize, maxSize, releases: [{row, name, size, seeds, leechers, engine,
-    // fileUrl, published, downloaded, quality}]}]. Rebuilt shortly after the results change.
+    // qualities, count, seeds, minSize, maxSize, voices, releases: [{row, name, size, seeds, leechers,
+    // engine, fileUrl, published, downloaded, quality, voices, tags}]}]. `voices` of a film: every voice-over
+    // of its releases, the most common first. Rebuilt shortly after the results change.
     Q_PROPERTY(QVariantList groups READ groups NOTIFY groupsChanged FINAL)
 
 public:
@@ -144,6 +148,18 @@ public:
     // Builds the groups now (tests)
     Q_INVOKABLE void regroup();
 
+    // What a release is, for the chips beside its name, in this order: {kind, text} with kind "quality"
+    // ("4K", "1080p"), "hdr" ("HDR", "Dolby Vision"), "source" ("WEB-DL", "BDRip"…), "codec" ("HEVC"),
+    // "season" (text "1" or "1–2"), "episodes" (text "1–10/10"), "audio" (text "dub", "mvo", "dvo", "avo",
+    // "pro", "amateur", "sub", "original": the kinds of voice-over the name gives)
+    static QVariantList tagsOf(const QString &name, const ReleaseMeta &meta = {});
+    // The kind ("dub", "mvo"… as in tagsOf) a source's voice-over names rather than a studio, or ""
+    static QString voiceKind(const QString &voice);
+    // The studios among a source's voice-overs (the kinds go to the tags)
+    static QStringList studiosOf(const QStringList &voices);
+    // The film of a release from its name, with what its source knows put first
+    static FilmInfo filmOfRelease(const QString &name, const ReleaseMeta &meta);
+
 signals:
     void filterChanged();
     void sortChanged();
@@ -163,8 +179,8 @@ private:
     bool m_postersOnly = false;
     // works out every release's film (shown or not; see regroup) and asks Posters about them
     void resolveFilms();
-    // the film of a release: parsed from its name, then joined as resolveFilms decided
-    FilmInfo filmOf(const QString &name) const;
+    // the film of a release (filmOfRelease), then joined as resolveFilms decided
+    FilmInfo filmOf(const SearchRow &row) const;
     QHash<QString, FilmInfo> m_resolved;  // key as parsed → the film
     QString m_sortKey;
     bool m_descending = false;

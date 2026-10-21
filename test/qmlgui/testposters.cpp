@@ -29,7 +29,9 @@
 #include <QObject>
 #include <QTest>
 
+#include "qmlgui/backend/filmdetails.h"
 #include "qmlgui/backend/posters.h"
+#include "qmlgui/backend/searchresults.h"
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -93,6 +95,115 @@ private slots:
         QCOMPARE(a, b);
         QCOMPARE(a, c);
         QVERIFY(a != FilmInfo::parse(u"Interstellar (1971) TVRip"_s).key);
+    }
+
+    void pipesAndLeadingTags()
+    {
+        // "Original | Local [year, …]" and a tag before the titles
+        const FilmInfo a = FilmInfo::parse(u"Cyberpunk: Edgerunners | Киберпанк: Бегущие по краю [2022, Web, 10 эп.] WebRip 1080p raw"_s);
+        QCOMPARE(a.title, u"Cyberpunk: Edgerunners"_s);
+        QCOMPARE(a.original, u"Cyberpunk: Edgerunners"_s);
+        QCOMPARE(a.year, 2022);
+        const FilmInfo b = FilmInfo::parse(u"[sub] Киберпанк: Бегущие по краю / Cyberpunk: Edgerunners [2022, приключения, фантастика]"_s);
+        QCOMPARE(b.title, u"Киберпанк: Бегущие по краю"_s);
+        QCOMPARE(b.original, u"Cyberpunk: Edgerunners"_s);
+        QCOMPARE(a.key, b.key);
+        // the voice-overs after the brackets stay out of the titles
+        const FilmInfo c = FilmInfo::parse(u"Киберпанк: Бегущие по краю / Cyberpunk: Edgerunners [S01] (2022) WEB-DL 1080p | D | Flarrow Films"_s);
+        QCOMPARE(c.key, a.key);
+    }
+
+    void whatTheSourceKnowsComesFirst()
+    {
+        ReleaseMeta meta;
+        meta.title = u"Киберпанк: Бегущие по краю"_s;
+        meta.original = u"Cyberpunk: Edgerunners"_s;
+        meta.year = 2022;
+        meta.seasons = {2};
+        // a name the parser can't read the original title from
+        const FilmInfo f = SearchResultsFilter::filmOfRelease(u"Киберпанк: Бегушие по краю (Cyberpunk: Edgerunners) Сезон 2 Серии 01-10 (HD1080p WEBRip)"_s, meta);
+        QCOMPARE(f.original, u"Cyberpunk: Edgerunners"_s);
+        QCOMPARE(f.year, 2022);
+        QVERIFY(f.series);
+        QCOMPARE(f.key, FilmInfo::parse(u"Киберпанк: Бегущие по краю / Cyberpunk: Edgerunners [2022]"_s).key);
+
+        // what a source sometimes gets wrong: the whole name as the original title, the titles swapped
+        ReleaseMeta junk;
+        junk.title = u"Киберпанк: Бегушие по краю"_s;
+        junk.original = u"Киберпанк: Бегушие по краю / Cyberpunk: Edgerunners [ONA] [10 из 10] [2022, WEB-DL] [1080p]"_s;
+        junk.year = 2022;
+        QCOMPARE(SearchResultsFilter::filmOfRelease(u"Киберпанк: Бегушие по краю / Cyberpunk: Edgerunners [ONA] [10 из 10] [2022, WEB-DL] [1080p]"_s, junk).key, f.key);
+        ReleaseMeta swapped;
+        swapped.title = u"Cyberpunk: Edgerunners"_s;
+        swapped.original = u"Киберпанк: Бегушие по краю"_s;
+        swapped.year = 2022;
+        const FilmInfo s = SearchResultsFilter::filmOfRelease(u"Cyberpunk: Edgerunners | Киберпанк: Бегушие по краю [2022, TV]"_s, swapped);
+        QCOMPARE(s.title, u"Киберпанк: Бегушие по краю"_s);
+        QCOMPARE(s.key, f.key);
+    }
+
+    void releaseTags()
+    {
+        const auto tags = [](const QString &name, const ReleaseMeta &meta = {})
+        {
+            QStringList list;
+            for (const QVariant &tag : SearchResultsFilter::tagsOf(name, meta))
+                list.append(tag.toMap().value(u"kind"_s).toString() + u':' + tag.toMap().value(u"text"_s).toString());
+            return list;
+        };
+        QCOMPARE(tags(u"Киберпанк: Бегущие по краю / Cyberpunk: Edgerunners [S01] (2022) BDRip-HEVC 1080p | D, P, L | Flarrow Films, LostFilm"_s),
+                 QStringList({u"quality:1080p"_s, u"source:BDRip"_s, u"codec:HEVC"_s, u"season:1"_s, u"audio:dub"_s, u"audio:pro"_s, u"audio:amateur"_s}));
+        QCOMPARE(tags(u"Разделение / Severance / Сезон: 2 / Серии: 1-10 из 10 [2025, США, WEB-DL 2160p, HDR10, Dolby Vision] MVO + Sub"_s),
+                 QStringList({u"quality:4K"_s, u"hdr:Dolby Vision"_s, u"source:WEB-DL"_s, u"season:2"_s, u"episodes:1–10/10"_s, u"audio:mvo"_s, u"audio:sub"_s}));
+        ReleaseMeta hdr;
+        hdr.video = u"hdr"_s;
+        hdr.seasons = {1, 2, 3};
+        QCOMPARE(tags(u"Something 1080p"_s, hdr), QStringList({u"quality:1080p"_s, u"hdr:HDR"_s, u"season:1–3"_s}));
+        QVERIFY(tags(u"Big Buck Bunny"_s).isEmpty());
+        QCOMPARE(tags(u"Something 2 xMVO (LostFilm) + AVO"_s), QStringList({u"audio:mvo"_s, u"audio:avo"_s}));
+
+        // a source's "Дубляж" is a kind of voice-over, not a studio
+        ReleaseMeta voices;
+        voices.voices = {u"LostFilm"_s, u"Дубляж"_s, u"Субтитры"_s};
+        QCOMPARE(tags(u"Something"_s, voices), QStringList({u"audio:dub"_s, u"audio:sub"_s}));
+        QCOMPARE(SearchResultsFilter::studiosOf(voices.voices), QStringList({u"LostFilm"_s}));
+    }
+
+    void findsTheArticle()
+    {
+        const QByteArray search =
+            "{\"query\":{\"pages\":["
+            "{\"index\":2,\"title\":\"Rebecca (Cyberpunk: Edgerunners)\",\"description\":\"Cyberpunk 2077 character\"},"
+            "{\"index\":1,\"title\":\"Cyberpunk: Edgerunners\",\"description\":\"2022 anime series\"},"
+            "{\"index\":3,\"title\":\"Cyberpunk: Edgerunners 2\",\"description\":\"2026 anime series\"}]}}";
+        QCOMPARE(FilmDetails::pickArticle(search, u"Cyberpunk: Edgerunners"_s, 2022, true), u"Cyberpunk: Edgerunners"_s);
+        const QByteArray book = "{\"query\":{\"pages\":[{\"index\":1,\"title\":\"Dune\",\"description\":\"1965 novel by Frank Herbert\"}]}}";
+        QVERIFY(FilmDetails::pickArticle(book, u"Dune"_s, 2021, false).isEmpty());
+        const QByteArray films = QString(
+            u"{\"query\":{\"pages\":["
+            "{\"index\":1,\"title\":\"Дюна (фильм, 1984)\",\"description\":\"фильм Дэвида Линча\"},"
+            "{\"index\":2,\"title\":\"Дюна (фильм, 2021)\",\"description\":\"фильм Дени Вильнёва\"}]}}"_s).toUtf8();
+        QCOMPARE(FilmDetails::pickArticle(films, u"Дюна"_s, 2021, false), u"Дюна (фильм, 2021)"_s);
+    }
+
+    void readsTheArticle()
+    {
+        const QByteArray json = QString(
+            u"{\"query\":{\"pages\":[{\"title\":\"Cyberpunk: Edgerunners\",\"extract\":\"An anime series.\\n\\nIt premiered in 2022.\","
+            "\"fullurl\":\"https://en.wikipedia.org/wiki/Cyberpunk:_Edgerunners\","
+            "\"original\":{\"source\":\"https://upload.example/poster.jpg\",\"width\":250,\"height\":375},"
+            "\"langlinks\":[{\"lang\":\"uk\",\"title\":\"Кіберпанк: Бігуни краєм\"}]}]}}"_s).toUtf8();
+        const QVariantMap article = FilmDetails::readArticle(json);
+        QCOMPARE(article.value(u"url"_s).toString(), u"https://en.wikipedia.org/wiki/Cyberpunk:_Edgerunners"_s);
+        QCOMPARE(article.value(u"langlink"_s).toString(), u"Кіберпанк: Бігуни краєм"_s);
+        QVERIFY(article.value(u"portrait"_s).toBool());
+        QVERIFY(FilmDetails::readArticle("{\"query\":{\"pages\":[{\"title\":\"X\",\"missing\":true}]}}").isEmpty());
+
+        QCOMPARE(FilmDetails::shorten(u"One.\n\n\nTwo."_s), u"One.\nTwo."_s);
+        const QString longText = u"First sentence here. "_s.repeated(60);
+        const QString cut = FilmDetails::shorten(longText, 100);
+        QVERIFY(cut.size() <= 100);
+        QVERIFY(cut.endsWith(u'.'));
     }
 
     void picksThePosterOfThatYear()

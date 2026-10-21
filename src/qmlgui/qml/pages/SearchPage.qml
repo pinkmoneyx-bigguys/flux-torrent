@@ -498,7 +498,8 @@ Surface {
     component Poster: Rectangle {
         id: poster
         property var film: ({})
-        readonly property string url: Posters.revision >= 0 && film.key ? Posters.poster(film.key) : ""
+        // the picture kept on disk (Posters fetches it the first time)
+        readonly property string url: Posters.revision >= 0 && film.key ? Posters.image(film.key) : ""
         readonly property real hue: {
             let h = 0
             const t = film.title || ""
@@ -1035,110 +1036,555 @@ Surface {
         }
     }
 
-    // The releases of one film, best seeded first, to download or watch
+    // A film's card: its poster, what it is about (Wikipedia, in the interface language) and a trailer, then
+    // every release of it with its full name and what it is (quality, source, season, voice-overs), to narrow
+    // down by quality, voice-over or words and to download or watch. The film's part scrolls away with the
+    // list and comes back when scrolling up, so a long list gets the whole height.
     component ReleasesDialog: UiDialog {
         id: rd
         objectName: "releasesDialog"
-        property var film: ({ releases: [] })
-        function show(f) {
-            film = f
-            open()
+
+        property string filmKey
+        property var snapshot: ({ releases: [], voices: [], qualities: [] })
+        // the film as the results have it now (a download marks its release), else as it was opened
+        readonly property var film: {
+            for (const g of resultsFilter.groups) {
+                if (g.key === filmKey)
+                    return g
+            }
+            return snapshot
         }
-        preferredWidth: 860
+        readonly property var about: FilmDetails.revision >= 0 && filmKey !== "" ? FilmDetails.details(filmKey) : ({})
+        property string quality: "all"
+        property string voice: ""
+        property string order: "seeds"
+        property string words: ""
+        property bool expanded: false
+        // not scrolled yet: the film's part growing (its description arriving) keeps the list under it
+        property bool atTop: true
+        // another film: the filter box empties
+        signal reset()
+
+        function show(f) {
+            snapshot = f
+            filmKey = f.key
+            quality = "all"
+            voice = ""
+            order = "seeds"
+            words = ""
+            expanded = false
+            reset()
+            FilmDetails.request(f.key, f.title, f.original, f.year, f.series)
+            // opened: worth asking again for a poster none was found for a while ago
+            Posters.retry(f.key, f.title, f.original, f.year, f.series)
+            open()
+            atTop = true
+            releaseList.positionViewAtBeginning()
+        }
+        function trailer() {
+            const local = Qt.locale().name.startsWith("ru") || Qt.locale().name.startsWith("uk")
+            const name = local || !film.original ? film.title : film.original
+            const query = [name, film.year > 0 ? String(film.year) : "", qsTr("trailer")].filter(t => t !== "").join(" ")
+            Qt.openUrlExternally("https://www.youtube.com/results?search_query=" + encodeURIComponent(query))
+        }
+        function qualityLabel(q) {
+            return q === "2160p" ? "4K" : q
+        }
+        function audioLabel(kind) {
+            switch (kind) {
+            case "dub": return qsTr("Dubbing")
+            case "mvo": return qsTr("Multi-voice")
+            case "dvo": return qsTr("Two-voice")
+            case "avo": return qsTr("Single-voice")
+            case "pro": return qsTr("Professional")
+            case "amateur": return qsTr("Amateur")
+            case "sub": return qsTr("Subtitles")
+            case "original": return qsTr("Original audio")
+            }
+            return kind
+        }
+        function tagLabel(tag) {
+            switch (tag.kind) {
+            case "season": return qsTr("Season %1").arg(tag.text)
+            case "episodes": return qsTr("Episodes %1").arg(tag.text)
+            case "audio": return audioLabel(tag.text)
+            }
+            return tag.text
+        }
+
+        // the releases as narrowed down and ordered
+        readonly property var shown: {
+            const want = words.toLowerCase().split(/\s+/).filter(w => w !== "")
+            const v = voice.toLowerCase()
+            const list = (film.releases || []).filter(r => {
+                if (quality === "other" ? r.quality !== "" : (quality !== "all" && r.quality !== quality))
+                    return false
+                if (v !== "" && (r.voices || []).every(x => x.toLowerCase() !== v) && r.name.toLowerCase().indexOf(v) < 0)
+                    return false
+                const hay = (r.name + " " + (r.voices || []).join(" ") + " " + page.trackerName(r.engine)).toLowerCase()
+                return want.every(w => hay.indexOf(w) >= 0)
+            })
+            const time = d => d && !isNaN(d) ? d.getTime() : 0
+            switch (order) {
+            case "newest": return list.sort((a, b) => time(b.published) - time(a.published))
+            case "largest": return list.sort((a, b) => b.size - a.size)
+            case "smallest": return list.sort((a, b) => (a.size < 0 ? Infinity : a.size) - (b.size < 0 ? Infinity : b.size))
+            default: return list.sort((a, b) => b.seeds - a.seeds)
+            }
+        }
+        readonly property var qualityTabs: {
+            const releases = film.releases || []
+            const count = q => releases.filter(r => r.quality === q).length
+            const tabs = [{ key: "all", label: qsTr("All"), count: releases.length }]
+            for (const q of film.qualities || [])
+                tabs.push({ key: q, label: qualityLabel(q), count: count(q) })
+            const other = count("")
+            if (other > 0 && tabs.length > 1)
+                tabs.push({ key: "other", label: qsTr("Other"), count: other })
+            return tabs
+        }
+
+        preferredWidth: 1040
+        height: Math.min(implicitHeight, (parent ? parent.height : implicitHeight) - 48)
         title: film.title || ""
         description: [film.original && film.original !== film.title ? film.original : "",
                       film.year > 0 ? String(film.year) : "",
-                      qsTr("%n release(s)", "", film.count || 0)].filter(t => t !== "").join(" · ")
+                      film.series ? qsTr("Series") : ""].filter(t => t !== "").join(" · ")
 
-        RowLayout {
+        ListView {
+            id: releaseList
+            objectName: "releaseList"
             Layout.fillWidth: true
-            spacing: Theme.sp(5)
-
-            Poster {
-                Layout.alignment: Qt.AlignTop
-                Layout.preferredWidth: 150
-                Layout.preferredHeight: 225
-                radius: 8
-                film: rd.film
+            Layout.fillHeight: true
+            Layout.preferredHeight: contentHeight
+            Layout.minimumHeight: 240
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar {}
+            model: rd.shown
+            headerPositioning: ListView.PullBackHeader
+            onMovementStarted: rd.atTop = false
+            onModelChanged: {
+                if (rd.atTop)
+                    Qt.callLater(positionViewAtBeginning)
             }
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: Math.min(420, releaseList.contentHeight + 2)
-                radius: Theme.radiusCtl + 2
-                color: "transparent"
-                border.width: 1
-                border.color: Theme.border
-                clip: true
 
-                ListView {
-                    id: releaseList
-                    objectName: "releaseList"
-                    anchors.fill: parent
-                    anchors.margins: 1
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    ScrollBar.vertical: ScrollBar {}
-                    model: [...rd.film.releases].sort((a, b) => b.seeds - a.seeds)
-                    delegate: Item {
-                        id: rel
-                        required property var modelData
-                        required property int index
-                        width: releaseList.width
-                        height: 54
+            header: Rectangle {
+                z: 2
+                width: releaseList.width
+                height: headerColumn.implicitHeight + Theme.sp(3)
+                onHeightChanged: {
+                    if (rd.atTop)
+                        Qt.callLater(releaseList.positionViewAtBeginning)
+                }
+                // the dialog's own colour: rows pass under it when it comes back
+                color: Theme.glass ? "#17151F" : Theme.background
 
-                        Rectangle {
-                            visible: rel.index > 0
-                            width: parent.width
-                            height: 1
-                            color: Theme.border
+                ColumnLayout {
+                    id: headerColumn
+                    width: parent.width
+                    spacing: Theme.sp(4)
+
+                    // --- What it is ---------------------------------------------------------------
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(5)
+
+                        Poster {
+                            objectName: "releasesPoster"
+                            Layout.alignment: Qt.AlignTop
+                            Layout.preferredWidth: 120
+                            Layout.preferredHeight: 180
+                            radius: 8
+                            film: rd.film
                         }
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: Theme.sp(4)
-                            anchors.rightMargin: Theme.sp(2)
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignTop
                             spacing: Theme.sp(3)
-                            ColumnLayout {
+
+                            Text {
+                                id: aboutText
+                                objectName: "filmAbout"
                                 Layout.fillWidth: true
-                                spacing: 2
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: rel.modelData.name
-                                    color: rel.modelData.downloaded ? Theme.textDim : Theme.text
-                                    font.family: Theme.fontText
-                                    font.pixelSize: Theme.textSm
-                                    elide: Text.ElideRight
+                                visible: rd.about.state === "ready"
+                                text: rd.about.text || ""
+                                color: Theme.text
+                                font.family: Theme.fontText
+                                font.pixelSize: Theme.textSm
+                                lineHeight: 1.35
+                                wrapMode: Text.Wrap
+                                maximumLineCount: rd.expanded ? 40 : 4
+                                elide: Text.ElideRight
+                                TapHandler {
+                                    enabled: parent.truncated || rd.expanded
+                                    onTapped: rd.expanded = !rd.expanded
                                 }
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: [page.trackerName(rel.modelData.engine),
-                                           rel.modelData.size >= 0 ? Format.size(rel.modelData.size) : "",
-                                           rel.modelData.quality === "2160p" ? "4K" : rel.modelData.quality].filter(t => t !== "").join(" · ")
-                                    color: Theme.textDim
-                                    font.family: Theme.fontText
-                                    font.pixelSize: Theme.textXs
-                                    elide: Text.ElideRight
+                                HoverHandler {
+                                    enabled: parent.truncated || rd.expanded
+                                    cursorShape: Qt.PointingHandCursor
+                                }
+                            }
+                            // a quiet placeholder while the article is looked up
+                            Column {
+                                visible: rd.about.state === "loading"
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Repeater {
+                                    model: [1, 0.92, 0.6]
+                                    Rectangle {
+                                        required property real modelData
+                                        width: parent.width * modelData
+                                        height: 10
+                                        radius: 5
+                                        color: Theme.muted
+                                        opacity: 0.7
+                                    }
                                 }
                             }
                             Text {
-                                Layout.preferredWidth: 72
-                                horizontalAlignment: Text.AlignRight
-                                text: rel.modelData.seeds >= 0 ? "↑ " + rel.modelData.seeds : "—"
-                                color: rel.modelData.seeds > 0 ? Theme.upload : Theme.textFaint
-                                font.family: Theme.fontMono
-                                font.pixelSize: 12
+                                visible: rd.about.state === "none"
+                                Layout.fillWidth: true
+                                text: qsTr("No description found for this title.")
+                                color: Theme.textFaint
+                                font.family: Theme.fontText
+                                font.pixelSize: Theme.textSm
                             }
-                            ReleaseActions {
-                                row: rel.modelData.row
-                                fileUrl: rel.modelData.fileUrl
-                                name: rel.modelData.name
-                                downloaded: rel.modelData.downloaded
-                                showPage: true
+
+                            RowLayout {
+                                spacing: Theme.sp(2)
+                                UiButton {
+                                    objectName: "filmTrailer"
+                                    variant: "secondary"
+                                    iconPath: Icons.play
+                                    text: qsTr("Trailer")
+                                    onClicked: rd.trailer()
+                                    UiTooltip {
+                                        text: qsTr("Search YouTube for the trailer")
+                                        shown: parent.hovered
+                                    }
+                                }
+                                UiButton {
+                                    visible: rd.about.state === "ready" && (rd.about.url || "") !== ""
+                                    variant: "ghost"
+                                    iconPath: Icons.externalLink
+                                    text: qsTr("Wikipedia")
+                                    onClicked: Qt.openUrlExternally(rd.about.url)
+                                    UiTooltip {
+                                        text: qsTr("The description is from Wikipedia (CC BY-SA)")
+                                        shown: parent.hovered
+                                    }
+                                }
+                                UiButton {
+                                    objectName: "filmAboutMore"
+                                    visible: rd.expanded || aboutText.truncated
+                                    variant: "ghost"
+                                    text: rd.expanded ? qsTr("Show less") : qsTr("Read more")
+                                    onClicked: rd.expanded = !rd.expanded
+                                }
+                            }
+
+                            // the voice-overs on offer, the most common first: a click picks the releases with one
+                            Flow {
+                                visible: (rd.film.voices || []).length > 0
+                                Layout.fillWidth: true
+                                spacing: 6
+                                Text {
+                                    height: 24
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: qsTr("Voice-overs:")
+                                    color: Theme.textDim
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textXs
+                                }
+                                Repeater {
+                                    model: (rd.film.voices || []).slice(0, 10)
+                                    AbstractButton {
+                                        id: voiceChip
+                                        required property string modelData
+                                        readonly property bool on: rd.voice === modelData
+                                        height: 24
+                                        leftPadding: 9
+                                        rightPadding: 9
+                                        hoverEnabled: true
+                                        focusPolicy: Qt.NoFocus
+                                        text: modelData
+                                        Accessible.role: Accessible.CheckBox
+                                        Accessible.checked: on
+                                        onClicked: rd.voice = on ? "" : modelData
+                                        background: Rectangle {
+                                            radius: height / 2
+                                            color: voiceChip.on ? Theme.primary : voiceChip.hovered ? Theme.hover : "transparent"
+                                            border.width: voiceChip.on ? 0 : 1
+                                            border.color: Theme.border
+                                        }
+                                        contentItem: Text {
+                                            text: voiceChip.text
+                                            color: voiceChip.on ? Theme.primaryText : Theme.text
+                                            font.family: Theme.fontText
+                                            font.pixelSize: Theme.textXs
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                    }
+                                }
+                                Text {
+                                    visible: (rd.film.voices || []).length > 10
+                                    height: 24
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: qsTr("+%1 more").arg((rd.film.voices || []).length - 10)
+                                    color: Theme.textDim
+                                    font.family: Theme.fontText
+                                    font.pixelSize: Theme.textXs
+                                }
                             }
                         }
+                    }
+
+                    // --- Narrowing the releases down ---------------------------------------------
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(2)
+
+                        UiTabs {
+                            objectName: "releaseQuality"
+                            visible: rd.qualityTabs.length > 1
+                            model: rd.qualityTabs
+                            currentKey: rd.quality
+                            onActivated: key => rd.quality = key
+                        }
+                        Item { Layout.fillWidth: true }
+                        // gives way when the qualities take room
+                        UiInput {
+                            id: releaseFilter
+                            objectName: "releaseFilter"
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 120
+                            Layout.maximumWidth: 240
+                            iconPath: Icons.search
+                            placeholderText: qsTr("Voice-over, tracker, season…")
+                            onTextChanged: rd.words = text
+                            Connections {
+                                target: rd
+                                function onReset() {
+                                    releaseFilter.text = ""
+                                }
+                            }
+                        }
+                        UiSelect {
+                            visible: (rd.film.voices || []).length > 0
+                            Layout.preferredWidth: 160
+                            model: [{ key: "", label: qsTr("Any voice-over") }].concat((rd.film.voices || []).map(v => ({ key: v, label: v })))
+                            currentKey: rd.voice
+                            onActivated: key => rd.voice = key
+                            Accessible.name: qsTr("Voice-over")
+                        }
+                        UiSelect {
+                            Layout.preferredWidth: 150
+                            model: [
+                                { key: "seeds", label: qsTr("Most seeds") },
+                                { key: "newest", label: qsTr("Newest") },
+                                { key: "largest", label: qsTr("Largest") },
+                                { key: "smallest", label: qsTr("Smallest") }
+                            ]
+                            currentKey: rd.order
+                            onActivated: key => rd.order = key
+                            Accessible.name: qsTr("Order")
+                        }
+                    }
+                }
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 1
+                    color: Theme.border
+                }
+            }
+
+            footer: Item {
+                width: releaseList.width
+                height: rd.shown.length === 0 ? 96 : 0
+                Text {
+                    anchors.centerIn: parent
+                    visible: rd.shown.length === 0
+                    text: qsTr("No releases match.")
+                    color: Theme.textDim
+                    font.family: Theme.fontText
+                    font.pixelSize: Theme.textSm
+                }
+            }
+
+            delegate: Item {
+                id: rel
+                required property var modelData
+                required property int index
+                width: releaseList.width
+                height: relRow.implicitHeight + 2 * Theme.sp(3)
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.topMargin: 1
+                    radius: Theme.radiusCtl
+                    color: relHover.hovered ? Theme.alpha(Theme.hover, 0.6) : "transparent"
+                }
+                HoverHandler { id: relHover }
+                Rectangle {
+                    visible: rel.index > 0
+                    width: parent.width
+                    height: 1
+                    color: Theme.border
+                }
+                RowLayout {
+                    id: relRow
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: Theme.sp(3)
+                    anchors.rightMargin: Theme.sp(2)
+                    spacing: Theme.sp(3)
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        // the whole name: the voice-overs and the rest are in it
+                        Text {
+                            objectName: "releaseName"
+                            Layout.fillWidth: true
+                            text: rel.modelData.name
+                            color: rel.modelData.downloaded ? Theme.textDim : Theme.text
+                            font.family: Theme.fontText
+                            font.pixelSize: Theme.textSm
+                            lineHeight: 1.25
+                            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                        }
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            visible: tagRepeater.count > 0 || voiceRepeater.count > 0
+                            Repeater {
+                                id: tagRepeater
+                                model: rel.modelData.tags || []
+                                Rectangle {
+                                    id: tag
+                                    required property var modelData
+                                    readonly property color tone: modelData.kind === "quality" ? Theme.download
+                                                                : modelData.kind === "hdr" ? Theme.warn
+                                                                : modelData.kind === "audio" ? Theme.upload
+                                                                : Theme.textDim
+                                    readonly property bool strong: modelData.kind === "quality" || modelData.kind === "hdr" || modelData.kind === "audio"
+                                    implicitWidth: tagText.implicitWidth + 12
+                                    implicitHeight: 20
+                                    radius: 5
+                                    color: strong ? Theme.alpha(tone, 0.14) : "transparent"
+                                    border.width: strong ? 0 : 1
+                                    border.color: Theme.border
+                                    Text {
+                                        id: tagText
+                                        anchors.centerIn: parent
+                                        text: rd.tagLabel(tag.modelData)
+                                        color: tag.strong ? tag.tone : Theme.textDim
+                                        font.family: Theme.fontText
+                                        font.pixelSize: 11
+                                        font.weight: tag.strong ? Font.Medium : Font.Normal
+                                    }
+                                }
+                            }
+                            Repeater {
+                                id: voiceRepeater
+                                model: (rel.modelData.voices || []).slice(0, 6)
+                                Rectangle {
+                                    id: voiceTag
+                                    required property string modelData
+                                    readonly property bool picked: rd.voice.toLowerCase() === modelData.toLowerCase()
+                                    implicitWidth: voiceRow.implicitWidth + 12
+                                    implicitHeight: 20
+                                    radius: 5
+                                    color: picked ? Theme.alpha(Theme.primary, 0.2) : Theme.muted
+                                    Row {
+                                        id: voiceRow
+                                        anchors.centerIn: parent
+                                        spacing: 4
+                                        Icon {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            path: Icons.mic
+                                            size: 11
+                                            strokeWidth: 2
+                                            color: Theme.textDim
+                                        }
+                                        Text {
+                                            text: voiceTag.modelData
+                                            color: Theme.text
+                                            font.family: Theme.fontText
+                                            font.pixelSize: 11
+                                        }
+                                    }
+                                }
+                            }
+                            Text {
+                                visible: (rel.modelData.voices || []).length > 6
+                                height: 20
+                                verticalAlignment: Text.AlignVCenter
+                                text: "+" + ((rel.modelData.voices || []).length - 6)
+                                color: Theme.textDim
+                                font.family: Theme.fontText
+                                font.pixelSize: 11
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: [page.trackerName(rel.modelData.engine),
+                                   rel.modelData.size >= 0 ? Format.size(rel.modelData.size) : "",
+                                   rel.modelData.published && !isNaN(rel.modelData.published)
+                                       ? rel.modelData.published.toLocaleDateString(Qt.locale(), Locale.ShortFormat) : ""]
+                                  .filter(t => t !== "").join(" · ")
+                            color: Theme.textDim
+                            font.family: Theme.fontText
+                            font.pixelSize: Theme.textXs
+                            elide: Text.ElideRight
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.preferredWidth: 64
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 2
+                        Text {
+                            Layout.alignment: Qt.AlignRight
+                            text: rel.modelData.seeds >= 0 ? "↑ " + rel.modelData.seeds : "—"
+                            color: rel.modelData.seeds > 0 ? Theme.upload : Theme.textFaint
+                            font.family: Theme.fontMono
+                            font.pixelSize: 12
+                            Accessible.name: qsTr("%1 seeds").arg(rel.modelData.seeds)
+                        }
+                        Text {
+                            visible: rel.modelData.leechers >= 0
+                            Layout.alignment: Qt.AlignRight
+                            text: "↓ " + rel.modelData.leechers
+                            color: Theme.textFaint
+                            font.family: Theme.fontMono
+                            font.pixelSize: 11
+                            Accessible.name: qsTr("%1 peers").arg(rel.modelData.leechers)
+                        }
+                    }
+                    ReleaseActions {
+                        Layout.alignment: Qt.AlignVCenter
+                        row: rel.modelData.row
+                        fileUrl: rel.modelData.fileUrl
+                        name: rel.modelData.name
+                        downloaded: rel.modelData.downloaded
+                        showPage: true
                     }
                 }
             }
         }
+        footerLeftItems: [
+            Text {
+                text: rd.shown.length === (rd.film.releases || []).length
+                      ? qsTr("%n release(s)", "", rd.shown.length)
+                      : qsTr("%1 of %2 releases").arg(rd.shown.length).arg((rd.film.releases || []).length)
+                color: Theme.textDim
+                font.family: Theme.fontText
+                font.pixelSize: Theme.textXs
+            }
+        ]
         footerItems: [
             UiButton {
                 variant: "outline"

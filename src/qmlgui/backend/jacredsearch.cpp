@@ -66,10 +66,10 @@ bool JacRedSearch::covers(const QString &category)
     return category.isEmpty() || (category == u"all") || !typesOf(category).isEmpty();
 }
 
-QList<SearchResult> JacRedSearch::parse(const QByteArray &json, const QString &category, const QString &baseUrl)
+QList<JacRedResult> JacRedSearch::parse(const QByteArray &json, const QString &category, const QString &baseUrl)
 {
     const QSet<QString> wanted = typesOf(category);
-    QList<SearchResult> results;
+    QList<JacRedResult> results;
     const QJsonArray items = QJsonDocument::fromJson(json).array();
     results.reserve(items.size());
     for (const QJsonValue &value : items)
@@ -99,7 +99,20 @@ QList<SearchResult> JacRedSearch::parse(const QByteArray &json, const QString &c
         r.siteUrl = baseUrl;
         r.descrLink = item.value(u"url"_s).toString();
         r.pubDate = QDateTime::fromString(item.value(u"createTime"_s).toString(), Qt::ISODate);
-        results.append(r);
+
+        ReleaseMeta meta;
+        meta.title = item.value(u"name"_s).toString().simplified();
+        meta.original = item.value(u"originalname"_s).toString().simplified();
+        meta.year = item.value(u"relased"_s).toInt();  // (sic)
+        for (const QJsonValue &voice : item.value(u"voices"_s).toArray())
+        {
+            if (const QString v = voice.toString().simplified(); !v.isEmpty() && !meta.voices.contains(v, Qt::CaseInsensitive))
+                meta.voices.append(v);
+        }
+        for (const QJsonValue &season : item.value(u"seasons"_s).toArray())
+            meta.seasons.append(season.toInt());
+        meta.video = item.value(u"videotype"_s).toString().toLower();
+        results.append({r, meta});
     }
     return results;
 }
@@ -144,7 +157,7 @@ void JacRedSearch::start(const QString &baseUrl, const QString &pattern, const Q
             emit finished(tr("JacRed did not answer: %1").arg(result.errorString));
             return;
         }
-        const QList<SearchResult> results = parse(result.data, category, base);
+        const QList<JacRedResult> results = parse(result.data, category, base);
         if (!results.isEmpty())
             emit newResults(results);
         emit finished({});

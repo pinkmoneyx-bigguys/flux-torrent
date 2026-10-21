@@ -32,8 +32,26 @@
 #include <QList>
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
 #include "base/search/searchhandler.h"
+
+// What a source knows of a release beyond its name (JacRed has it; a Python plugin's result has none)
+struct ReleaseMeta
+{
+    QString title;          // the local title, clean ("Киберпанк: Бегущие по краю")
+    QString original;       // the original one
+    int year = 0;
+    QStringList voices;     // the voice-overs: studios ("LostFilm", "AniLibria") and kinds
+    QList<int> seasons;
+    QString video;          // "hdr", "dv", "sdr" or ""
+};
+
+struct JacRedResult
+{
+    SearchResult result;
+    ReleaseMeta meta;
+};
 
 // One search on a JacRed server: the public aggregator of Russian trackers (rutracker, rutor, kinozal,
 // nnmclub, megapeer…) that TV apps such as NUM and Lampa search through. It answers a plain HTTP query
@@ -55,12 +73,12 @@ public:
     bool isActive() const;
 
     // The JSON answer as results, kept to `category`; the server's tracker names go in engineName
-    static QList<SearchResult> parse(const QByteArray &json, const QString &category, const QString &baseUrl);
+    static QList<JacRedResult> parse(const QByteArray &json, const QString &category, const QString &baseUrl);
     // Whether this source has anything for `category`
     static bool covers(const QString &category);
 
 signals:
-    void newResults(const QList<SearchResult> &results);
+    void newResults(const QList<JacRedResult> &results);
     // `error` is empty on success
     void finished(const QString &error);
 

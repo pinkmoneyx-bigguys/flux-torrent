@@ -68,7 +68,7 @@ SearchEngine::SearchEngine(QObject *parent)
     , m_results {new SearchResultsModel(this)}
     , m_jacred {new JacRedSearch(this)}
 {
-    connect(m_jacred, &JacRedSearch::newResults, this, [this](const QList<SearchResult> &results)
+    connect(m_jacred, &JacRedSearch::newResults, this, [this](const QList<JacRedResult> &results)
     {
         m_results->append(results);
     });

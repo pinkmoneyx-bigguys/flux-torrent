@@ -52,7 +52,9 @@ private:
             "{\"tracker\":\"rutor\",\"url\":\"http://rutor.info/torrent/2\",\"title\":\"Tears of Steel 1080p\",\"size\":1200000000,"
             "\"createTime\":\"2022-03-01T00:00:00\",\"sid\":12,\"pir\":3,\"magnet\":\"magnet:?xt=urn:btih:AAAA\",\"types\":[\"movie\"]},"
             "{\"tracker\":\"kinozal\",\"url\":\"https://kinozal.tv/details.php?id=3\",\"title\":\"Severance S02\",\"size\":30000000000,"
-            "\"createTime\":\"2025-01-17T10:00:00\",\"sid\":250,\"pir\":40,\"magnet\":\"magnet:?xt=urn:btih:BBBB\",\"types\":[\"serial\"]},"
+            "\"createTime\":\"2025-01-17T10:00:00\",\"sid\":250,\"pir\":40,\"magnet\":\"magnet:?xt=urn:btih:BBBB\",\"types\":[\"serial\"],"
+            "\"name\":\"Разделение\",\"originalname\":\"Severance\",\"relased\":2025,\"voices\":[\"LostFilm\",\"HDRezka\",\"lostfilm\"],"
+            "\"seasons\":[2],\"videotype\":\"HDR\"},"
             "{\"tracker\":\"nnmclub\",\"url\":\"https://nnmclub.to/4\",\"title\":\"No magnet\",\"size\":1,\"sid\":1,\"pir\":1,\"types\":[\"movie\"]},"
             "{\"tracker\":\"megapeer\",\"url\":\"https://megapeer.vip/5\",\"title\":\"Big Buck Bunny\",\"size\":700000000,"
             "\"createTime\":\"2020-05-05T00:00:00\",\"sid\":7,\"pir\":0,\"magnet\":\"magnet:?xt=urn:btih:CCCC\",\"types\":[\"multfilm\"]}"
@@ -62,10 +64,10 @@ private:
 private slots:
     void parsesEverything()
     {
-        const QList<SearchResult> all = JacRedSearch::parse(sample(), u"all"_s, u"https://jac.red"_s);
+        const QList<JacRedResult> all = JacRedSearch::parse(sample(), u"all"_s, u"https://jac.red"_s);
         QCOMPARE(all.size(), 4);  // the one without a magnet is left out
 
-        const SearchResult &first = all.first();
+        const SearchResult &first = all.first().result;
         QCOMPARE(first.fileName, u"Sintel (2010) 4K"_s);
         QVERIFY(first.fileUrl.startsWith(u"magnet:"));
         QCOMPARE(first.fileSize, 5486820720LL);
@@ -77,12 +79,25 @@ private slots:
         QCOMPARE(first.pubDate.date(), QDate(2021, 1, 24));
     }
 
+    void readsWhatTheReleaseIs()
+    {
+        const QList<JacRedResult> all = JacRedSearch::parse(sample(), u"all"_s, {});
+        const ReleaseMeta &series = all.at(2).meta;
+        QCOMPARE(series.title, u"Разделение"_s);
+        QCOMPARE(series.original, u"Severance"_s);
+        QCOMPARE(series.year, 2025);
+        QCOMPARE(series.voices, QStringList({u"LostFilm"_s, u"HDRezka"_s}));  // once each
+        QCOMPARE(series.seasons, QList<int>({2}));
+        QCOMPARE(series.video, u"hdr"_s);
+        QVERIFY(all.first().meta.voices.isEmpty());
+    }
+
     void keepsToCategory()
     {
         QCOMPARE(JacRedSearch::parse(sample(), u"movies"_s, {}).size(), 3);  // films and the cartoon
-        const QList<SearchResult> tv = JacRedSearch::parse(sample(), u"tv"_s, {});
+        const QList<JacRedResult> tv = JacRedSearch::parse(sample(), u"tv"_s, {});
         QCOMPARE(tv.size(), 1);
-        QCOMPARE(tv.first().fileName, u"Severance S02"_s);
+        QCOMPARE(tv.first().result.fileName, u"Severance S02"_s);
         QCOMPARE(JacRedSearch::parse(sample(), u"anime"_s, {}).size(), 0);
     }
 

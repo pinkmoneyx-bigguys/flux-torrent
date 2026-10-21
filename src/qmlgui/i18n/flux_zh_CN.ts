@@ -1797,6 +1797,146 @@
         <translation>最多 %1 个做种</translation>
     </message>
     <message>
+        <source>trailer</source>
+        <translation>预告片</translation>
+    </message>
+    <message>
+        <source>Dubbing</source>
+        <translation>配音</translation>
+    </message>
+    <message>
+        <source>Multi-voice</source>
+        <translation>多人配音</translation>
+    </message>
+    <message>
+        <source>Two-voice</source>
+        <translation>双人配音</translation>
+    </message>
+    <message>
+        <source>Single-voice</source>
+        <translation>单人配音</translation>
+    </message>
+    <message>
+        <source>Professional</source>
+        <translation>专业配音</translation>
+    </message>
+    <message>
+        <source>Amateur</source>
+        <translation>业余配音</translation>
+    </message>
+    <message>
+        <source>Subtitles</source>
+        <translation>字幕</translation>
+    </message>
+    <message>
+        <source>Original audio</source>
+        <translation>原声</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>第 %1 季</translation>
+    </message>
+    <message>
+        <source>Episodes %1</source>
+        <translation>第 %1 集</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>全部</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>其他</translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation>剧集</translation>
+    </message>
+    <message>
+        <source>No description found for this title.</source>
+        <translation>未找到简介。</translation>
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation>预告片</translation>
+    </message>
+    <message>
+        <source>Search YouTube for the trailer</source>
+        <translation>在 YouTube 上搜索预告片</translation>
+    </message>
+    <message>
+        <source>Wikipedia</source>
+        <translation>维基百科</translation>
+    </message>
+    <message>
+        <source>The description is from Wikipedia (CC BY-SA)</source>
+        <translation>简介来自维基百科（CC BY-SA）</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>收起</translation>
+    </message>
+    <message>
+        <source>Read more</source>
+        <translation>展开</translation>
+    </message>
+    <message>
+        <source>Voice-overs:</source>
+        <translation>配音：</translation>
+    </message>
+    <message>
+        <source>+%1 more</source>
+        <translation>另有 %1 个</translation>
+    </message>
+    <message>
+        <source>Voice-over, tracker, season…</source>
+        <translation>配音、站点、季…</translation>
+    </message>
+    <message>
+        <source>Any voice-over</source>
+        <translation>任意配音</translation>
+    </message>
+    <message>
+        <source>Voice-over</source>
+        <translation>配音</translation>
+    </message>
+    <message>
+        <source>Most seeds</source>
+        <translation>做种最多</translation>
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation>最新</translation>
+    </message>
+    <message>
+        <source>Largest</source>
+        <translation>最大</translation>
+    </message>
+    <message>
+        <source>Smallest</source>
+        <translation>最小</translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation>排序</translation>
+    </message>
+    <message>
+        <source>No releases match.</source>
+        <translation>没有匹配的资源。</translation>
+    </message>
+    <message>
+        <source>%1 seeds</source>
+        <translation>%1 个做种</translation>
+    </message>
+    <message>
+        <source>%1 peers</source>
+        <translation>%1 个用户</translation>
+    </message>
+    <message>
+        <source>%1 of %2 releases</source>
+        <translation>%1 / %2 个资源</translation>
+    </message>
+    <message>
         <source>Close</source>
         <translation>关闭</translation>
     </message>

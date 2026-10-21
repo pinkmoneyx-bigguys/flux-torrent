@@ -1807,6 +1807,146 @@
         <translation>bis zu %1 Seeds</translation>
     </message>
     <message>
+        <source>trailer</source>
+        <translation>Trailer</translation>
+    </message>
+    <message>
+        <source>Dubbing</source>
+        <translation>Synchronisation</translation>
+    </message>
+    <message>
+        <source>Multi-voice</source>
+        <translation>Mehrstimmig</translation>
+    </message>
+    <message>
+        <source>Two-voice</source>
+        <translation>Zweistimmig</translation>
+    </message>
+    <message>
+        <source>Single-voice</source>
+        <translation>Einstimmig</translation>
+    </message>
+    <message>
+        <source>Professional</source>
+        <translation>Professionell</translation>
+    </message>
+    <message>
+        <source>Amateur</source>
+        <translation>Amateur</translation>
+    </message>
+    <message>
+        <source>Subtitles</source>
+        <translation>Untertitel</translation>
+    </message>
+    <message>
+        <source>Original audio</source>
+        <translation>Originalton</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Staffel %1</translation>
+    </message>
+    <message>
+        <source>Episodes %1</source>
+        <translation>Folgen %1</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Alle</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Andere</translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation>Serie</translation>
+    </message>
+    <message>
+        <source>No description found for this title.</source>
+        <translation>Keine Beschreibung gefunden.</translation>
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation>Trailer</translation>
+    </message>
+    <message>
+        <source>Search YouTube for the trailer</source>
+        <translation>Trailer auf YouTube suchen</translation>
+    </message>
+    <message>
+        <source>Wikipedia</source>
+        <translation>Wikipedia</translation>
+    </message>
+    <message>
+        <source>The description is from Wikipedia (CC BY-SA)</source>
+        <translation>Die Beschreibung stammt aus Wikipedia (CC BY-SA)</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Weniger anzeigen</translation>
+    </message>
+    <message>
+        <source>Read more</source>
+        <translation>Weiterlesen</translation>
+    </message>
+    <message>
+        <source>Voice-overs:</source>
+        <translation>Synchronfassungen:</translation>
+    </message>
+    <message>
+        <source>+%1 more</source>
+        <translation>+%1 weitere</translation>
+    </message>
+    <message>
+        <source>Voice-over, tracker, season…</source>
+        <translation>Synchronfassung, Tracker, Staffel…</translation>
+    </message>
+    <message>
+        <source>Any voice-over</source>
+        <translation>Jede Synchronfassung</translation>
+    </message>
+    <message>
+        <source>Voice-over</source>
+        <translation>Synchronfassung</translation>
+    </message>
+    <message>
+        <source>Most seeds</source>
+        <translation>Meiste Seeds</translation>
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation>Neueste zuerst</translation>
+    </message>
+    <message>
+        <source>Largest</source>
+        <translation>Größte zuerst</translation>
+    </message>
+    <message>
+        <source>Smallest</source>
+        <translation>Kleinste zuerst</translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation>Reihenfolge</translation>
+    </message>
+    <message>
+        <source>No releases match.</source>
+        <translation>Keine passenden Releases.</translation>
+    </message>
+    <message>
+        <source>%1 seeds</source>
+        <translation>%1 Seeds</translation>
+    </message>
+    <message>
+        <source>%1 peers</source>
+        <translation>%1 Peers</translation>
+    </message>
+    <message>
+        <source>%1 of %2 releases</source>
+        <translation>%1 von %2 Releases</translation>
+    </message>
+    <message>
         <source>Close</source>
         <translation>Schließen</translation>
     </message>

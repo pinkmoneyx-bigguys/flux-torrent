@@ -1813,6 +1813,146 @@
         <translation>до %1 сидов</translation>
     </message>
     <message>
+        <source>trailer</source>
+        <translation>трейлер</translation>
+    </message>
+    <message>
+        <source>Dubbing</source>
+        <translation>Дубляж</translation>
+    </message>
+    <message>
+        <source>Multi-voice</source>
+        <translation>Многоголосая</translation>
+    </message>
+    <message>
+        <source>Two-voice</source>
+        <translation>Двухголосая</translation>
+    </message>
+    <message>
+        <source>Single-voice</source>
+        <translation>Одноголосая</translation>
+    </message>
+    <message>
+        <source>Professional</source>
+        <translation>Профессиональная</translation>
+    </message>
+    <message>
+        <source>Amateur</source>
+        <translation>Любительская</translation>
+    </message>
+    <message>
+        <source>Subtitles</source>
+        <translation>Субтитры</translation>
+    </message>
+    <message>
+        <source>Original audio</source>
+        <translation>Оригинальная дорожка</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Сезон %1</translation>
+    </message>
+    <message>
+        <source>Episodes %1</source>
+        <translation>Серии %1</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Все</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Другое</translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation>Сериал</translation>
+    </message>
+    <message>
+        <source>No description found for this title.</source>
+        <translation>Описание не нашлось.</translation>
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation>Трейлер</translation>
+    </message>
+    <message>
+        <source>Search YouTube for the trailer</source>
+        <translation>Найти трейлер на YouTube</translation>
+    </message>
+    <message>
+        <source>Wikipedia</source>
+        <translation>Википедия</translation>
+    </message>
+    <message>
+        <source>The description is from Wikipedia (CC BY-SA)</source>
+        <translation>Описание из Википедии (CC BY-SA)</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Свернуть</translation>
+    </message>
+    <message>
+        <source>Read more</source>
+        <translation>Читать дальше</translation>
+    </message>
+    <message>
+        <source>Voice-overs:</source>
+        <translation>Озвучки:</translation>
+    </message>
+    <message>
+        <source>+%1 more</source>
+        <translation>ещё %1</translation>
+    </message>
+    <message>
+        <source>Voice-over, tracker, season…</source>
+        <translation>Озвучка, трекер, сезон…</translation>
+    </message>
+    <message>
+        <source>Any voice-over</source>
+        <translation>Любая озвучка</translation>
+    </message>
+    <message>
+        <source>Voice-over</source>
+        <translation>Озвучка</translation>
+    </message>
+    <message>
+        <source>Most seeds</source>
+        <translation>Больше сидов</translation>
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation>Сначала новые</translation>
+    </message>
+    <message>
+        <source>Largest</source>
+        <translation>Сначала крупные</translation>
+    </message>
+    <message>
+        <source>Smallest</source>
+        <translation>Сначала мелкие</translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation>Порядок</translation>
+    </message>
+    <message>
+        <source>No releases match.</source>
+        <translation>Подходящих раздач нет.</translation>
+    </message>
+    <message>
+        <source>%1 seeds</source>
+        <translation>Сидов: %1</translation>
+    </message>
+    <message>
+        <source>%1 peers</source>
+        <translation>Пиров: %1</translation>
+    </message>
+    <message>
+        <source>%1 of %2 releases</source>
+        <translation>%1 из %2 раздач</translation>
+    </message>
+    <message>
         <source>Close</source>
         <translation>Закрыть</translation>
     </message>

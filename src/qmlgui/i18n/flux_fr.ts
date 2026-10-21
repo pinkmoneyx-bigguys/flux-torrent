@@ -730,7 +730,7 @@
     </message>
     <message>
         <source>Settings: tray &amp; notifications</source>
-        <translation>Paramètres : zone de notification et alertes</translation>
+        <translation>Paramètres&#xa0;: zone de notification et alertes</translation>
     </message>
     <message>
         <source>The video did not show up in the library.</source>
@@ -1807,6 +1807,146 @@
         <translation>jusqu&apos;à %1 sources</translation>
     </message>
     <message>
+        <source>trailer</source>
+        <translation>bande-annonce</translation>
+    </message>
+    <message>
+        <source>Dubbing</source>
+        <translation>Doublage</translation>
+    </message>
+    <message>
+        <source>Multi-voice</source>
+        <translation>Multivoix</translation>
+    </message>
+    <message>
+        <source>Two-voice</source>
+        <translation>Deux voix</translation>
+    </message>
+    <message>
+        <source>Single-voice</source>
+        <translation>Voix unique</translation>
+    </message>
+    <message>
+        <source>Professional</source>
+        <translation>Professionnel</translation>
+    </message>
+    <message>
+        <source>Amateur</source>
+        <translation>Amateur</translation>
+    </message>
+    <message>
+        <source>Subtitles</source>
+        <translation>Sous-titres</translation>
+    </message>
+    <message>
+        <source>Original audio</source>
+        <translation>Audio original</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Saison %1</translation>
+    </message>
+    <message>
+        <source>Episodes %1</source>
+        <translation>Épisodes %1</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Toutes</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Autres</translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation>Série</translation>
+    </message>
+    <message>
+        <source>No description found for this title.</source>
+        <translation>Aucune description trouvée.</translation>
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation>Bande-annonce</translation>
+    </message>
+    <message>
+        <source>Search YouTube for the trailer</source>
+        <translation>Chercher la bande-annonce sur YouTube</translation>
+    </message>
+    <message>
+        <source>Wikipedia</source>
+        <translation>Wikipédia</translation>
+    </message>
+    <message>
+        <source>The description is from Wikipedia (CC BY-SA)</source>
+        <translation>La description vient de Wikipédia (CC BY-SA)</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Afficher moins</translation>
+    </message>
+    <message>
+        <source>Read more</source>
+        <translation>Lire la suite</translation>
+    </message>
+    <message>
+        <source>Voice-overs:</source>
+        <translation>Doublages&#xa0;:</translation>
+    </message>
+    <message>
+        <source>+%1 more</source>
+        <translation>+%1 autres</translation>
+    </message>
+    <message>
+        <source>Voice-over, tracker, season…</source>
+        <translation>Doublage, tracker, saison…</translation>
+    </message>
+    <message>
+        <source>Any voice-over</source>
+        <translation>Tout doublage</translation>
+    </message>
+    <message>
+        <source>Voice-over</source>
+        <translation>Doublage</translation>
+    </message>
+    <message>
+        <source>Most seeds</source>
+        <translation>Plus de sources</translation>
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation>Plus récentes</translation>
+    </message>
+    <message>
+        <source>Largest</source>
+        <translation>Plus grandes</translation>
+    </message>
+    <message>
+        <source>Smallest</source>
+        <translation>Plus petites</translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation>Ordre</translation>
+    </message>
+    <message>
+        <source>No releases match.</source>
+        <translation>Aucune version ne correspond.</translation>
+    </message>
+    <message>
+        <source>%1 seeds</source>
+        <translation>%1 sources</translation>
+    </message>
+    <message>
+        <source>%1 peers</source>
+        <translation>%1 pairs</translation>
+    </message>
+    <message>
+        <source>%1 of %2 releases</source>
+        <translation>%1 sur %2 versions</translation>
+    </message>
+    <message>
         <source>Close</source>
         <translation>Fermer</translation>
     </message>
@@ -2525,7 +2665,7 @@
     </message>
     <message>
         <source>An icon by the clock with the speeds and a menu; a click opens or hides the window.</source>
-        <translation>Une icône près de l&apos;horloge avec les vitesses et un menu ; un clic ouvre ou masque la fenêtre.</translation>
+        <translation>Une icône près de l&apos;horloge avec les vitesses et un menu&#xa0;; un clic ouvre ou masque la fenêtre.</translation>
     </message>
     <message>
         <source>Keep running when the window is closed</source>
@@ -2533,7 +2673,7 @@
     </message>
     <message>
         <source>Downloads and seeding go on; Flux exits from the icon&apos;s menu.</source>
-        <translation>Les téléchargements et le partage continuent ; Flux se quitte depuis le menu de l&apos;icône.</translation>
+        <translation>Les téléchargements et le partage continuent&#xa0;; Flux se quitte depuis le menu de l&apos;icône.</translation>
     </message>
     <message>
         <source>Minimize to the notification area</source>

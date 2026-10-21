@@ -1807,6 +1807,146 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>trailer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dubbing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Multi-voice</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Two-voice</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Single-voice</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Professional</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Amateur</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Subtitles</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Original audio</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Episodes %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No description found for this title.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search YouTube for the trailer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Wikipedia</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The description is from Wikipedia (CC BY-SA)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Read more</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Voice-overs:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>+%1 more</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Voice-over, tracker, season…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Any voice-over</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Voice-over</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Most seeds</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Largest</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Smallest</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No releases match.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 seeds</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 peers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 of %2 releases</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Close</source>
         <translation type="unfinished"></translation>
     </message>

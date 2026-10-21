@@ -56,6 +56,8 @@ struct FilmInfo
 
     static FilmInfo parse(const QString &name);
     QVariantMap toMap() const;
+    // the key of a film of this title (the original one when there is one) and year
+    static QString keyOf(const QString &title, const QString &original, int year);
 
     // a title to compare with another one: folded case, ё as е, words only ("Faster Than Light: the
     // Dream…" and "Faster than light. The dream…" are the same)
@@ -87,8 +89,17 @@ public:
     Q_INVOKABLE QVariantMap film(const QString &name) const;
     // The poster URL found for `key`, or "" (not looked up yet, or none)
     Q_INVOKABLE QString poster(const QString &key) const;
+    // The poster of `key` to show: a file kept on disk, fetched through the app's download manager the
+    // first time ("" until it is there; the web address itself without a profile, in tests). Pictures
+    // asked for straight from QML went missing now and then when many came from one server at once.
+    Q_INVOKABLE QString image(const QString &key);
     // Looks the film up unless it was already (or is being)
     Q_INVOKABLE void request(const QString &key, const QString &title, const QString &original, int year, bool series = false);
+    // Looks a film without a poster up again now, even one no source had a little while ago (its card was
+    // opened: worth another try)
+    Q_INVOKABLE void retry(const QString &key, const QString &title, const QString &original, int year, bool series = false);
+    // A poster from elsewhere (the film's Wikipedia page) for a film that has none
+    void offer(const QString &key, const QString &url);
 
     // `key` is another name of the film `target`: it has that film's poster (and isn't looked up itself)
     void alias(const QString &key, const QString &target);
@@ -129,6 +140,8 @@ private:
         bool series = false;
         int source = ImdbOriginal;
         int attempt = 0;
+        // a source answered (without the film): only then is "none anywhere" worth remembering
+        bool answered = false;
     };
 
     // the query `job` makes at its source, or "" when that source can't look this film up
@@ -141,12 +154,21 @@ private:
 
     void load();
     void write();
+    // the file a poster address is kept in
+    QString fileOf(const QString &url) const;
+    void fetchImage(const QString &url, int attempt = 0);
+    // keeps the folder of pictures to the newest few hundred
+    void pruneImages();
 
     QString m_cachePath;
     QHash<QString, QString> m_posters;
     QHash<QString, QString> m_aliases;
     QHash<QString, QDateTime> m_missed;
     QSet<QString> m_asked;
+    QSet<QString> m_looking;  // keys being looked up now
+    QString m_imageDir;       // the pictures, beside the cache file ("" without a profile)
+    QSet<QString> m_fetching; // poster addresses being downloaded
+    QSet<QString> m_failed;   // addresses that would not come this session
     QList<Job> m_queues[SourceCount];
     int m_running[SourceCount] = {};
     int m_revision = 0;

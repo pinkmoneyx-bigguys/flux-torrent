@@ -28,7 +28,11 @@
 
 #include "searchresults.h"
 
+#include <algorithm>
+#include <utility>
+
 #include <QCollator>
+#include <QRegularExpression>
 
 #include "base/global.h"
 #include "base/search/searchhandler.h"
@@ -120,6 +124,18 @@ void SearchResultsModel::append(const QList<SearchResult> &results)
     endInsertRows();
 }
 
+void SearchResultsModel::append(const QList<JacRedResult> &results)
+{
+    QList<SearchResult> plain;
+    plain.reserve(results.size());
+    for (const JacRedResult &r : results)
+        plain.append(r.result);
+    const qsizetype first = m_rows.size();
+    append(plain);
+    for (qsizetype i = 0; (i < results.size()) && ((first + i) < m_rows.size()); ++i)
+        m_rows[first + i].meta = results.at(i).meta;
+}
+
 void SearchResultsModel::setRows(const QVariantList &rows)
 {
     beginResetModel();
@@ -138,6 +154,14 @@ void SearchResultsModel::setRows(const QVariantList &rows)
         row.leechers = map.value(u"leechers"_s, -1).toLongLong();
         if (map.contains(u"publishedSecsAgo"_s))
             row.published = QDateTime::currentDateTime().addSecs(-map.value(u"publishedSecsAgo"_s).toLongLong());
+        // what JacRed would know
+        row.meta.title = map.value(u"metaTitle"_s).toString();
+        row.meta.original = map.value(u"metaOriginal"_s).toString();
+        row.meta.year = map.value(u"metaYear"_s).toInt();
+        row.meta.voices = map.value(u"voices"_s).toStringList();
+        for (const QVariant &season : map.value(u"seasons"_s).toList())
+            row.meta.seasons.append(season.toInt());
+        row.meta.video = map.value(u"video"_s).toString();
         m_rows.append(row);
     }
     endResetModel();
@@ -339,10 +363,16 @@ void SearchResultsFilter::resolveFilms()
     // every release, shown or not: the films don't change with the switches
     QList<FilmInfo> films;
     films.reserve(results->rowCount());
+    QHash<QString, QString> nameKeys;  // a release's key from its name alone → from what its source knows
     for (int i = 0; i < results->rowCount(); ++i)
     {
         if (const SearchRow *r = results->rowAt(i))
-            films.append(FilmInfo::parse(r->name));
+        {
+            films.append(filmOfRelease(r->name, r->meta));
+            // the list view asks for posters by the name alone
+            if (const QString byName = FilmInfo::parse(r->name).key; byName != films.last().key)
+                nameKeys.insert(byName, films.last().key);
+        }
     }
 
     // A release that names no year joins the film of the same title that does (the year most of its
@@ -429,6 +459,11 @@ void SearchResultsFilter::resolveFilms()
             posters->alias(it.key(), film.key);
         m_resolved.insert(it.key(), film);
     }
+    for (auto it = nameKeys.cbegin(); it != nameKeys.cend(); ++it)
+    {
+        if (!m_resolved.contains(it.key()))
+            posters->alias(it.key(), m_resolved.value(it.value()).key);
+    }
     for (const FilmInfo &film : std::as_const(m_resolved))
     {
         if (!posters->hasAlias(film.key))
@@ -436,9 +471,38 @@ void SearchResultsFilter::resolveFilms()
     }
 }
 
-FilmInfo SearchResultsFilter::filmOf(const QString &name) const
+FilmInfo SearchResultsFilter::filmOfRelease(const QString &name, const ReleaseMeta &meta)
 {
     FilmInfo film = FilmInfo::parse(name);
+    static const QRegularExpression latin {u"[A-Za-z]"_s};
+    static const QRegularExpression cyrillic {u"[\\x{0400}-\\x{04FF}]"_s};
+    // a source's titles are sometimes the release's whole name ("… [ONA] [10 из 10] …"): only a title
+    const auto plausible = [](const QString &t)
+    {
+        return !t.isEmpty() && (t.size() <= 80) && !t.contains(u'[') && !t.contains(u'|');
+    };
+    QString local = plausible(meta.title) ? meta.title : QString();
+    QString original = plausible(meta.original) ? meta.original : QString();
+    // and now and then the other way round
+    if (local.contains(latin) && !local.contains(cyrillic) && original.contains(cyrillic))
+        std::swap(local, original);
+    if (!local.isEmpty())
+        film.title = local;
+    if (original.contains(latin) && !original.contains(cyrillic))
+        film.original = original;
+    else if (film.original.isEmpty() && local.contains(latin) && !local.contains(cyrillic))
+        film.original = local;
+    if (meta.year > 0)
+        film.year = meta.year;
+    if (!meta.seasons.isEmpty())
+        film.series = true;
+    film.key = FilmInfo::keyOf(film.title, film.original, film.year);
+    return film;
+}
+
+FilmInfo SearchResultsFilter::filmOf(const SearchRow &row) const
+{
+    FilmInfo film = filmOfRelease(row.name, row.meta);
     if (const auto it = m_resolved.constFind(film.key); it != m_resolved.cend())
     {
         film.key = it->key;
@@ -469,12 +533,13 @@ void SearchResultsFilter::regroup()
         FilmInfo film;
     };
     QList<Parsed> parsed;
+    QHash<QString, QHash<QString, int>> voiceCounts;  // film → voice-over → releases with it
     for (int i = 0; results && (i < rowCount()); ++i)
     {
         const int source = mapToSource(index(i, 0)).row();
         const SearchRow *r = results->rowAt(source);
         if (r)
-            parsed.append({source, r, filmOf(r->name)});
+            parsed.append({source, r, filmOf(*r)});
     }
 
     for (const Parsed &p : std::as_const(parsed))
@@ -494,6 +559,7 @@ void SearchResultsFilter::regroup()
             group.insert(u"minSize"_s, -1);
             group.insert(u"maxSize"_s, -1);
             group.insert(u"qualities"_s, QStringList {});
+            group.insert(u"voices"_s, QStringList {});
             group.insert(u"releases"_s, QVariantList {});
             groups.append(group);
         }
@@ -519,17 +585,198 @@ void SearchResultsFilter::regroup()
                 group[u"qualities"_s] = qualities;
             }
         }
+        const QStringList studios = studiosOf(r->meta.voices);
         QVariantList releases = group.value(u"releases"_s).toList();
         releases.append(QVariantMap {
             {u"row"_s, source}, {u"name"_s, r->name}, {u"size"_s, r->size}, {u"seeds"_s, r->seeds},
             {u"leechers"_s, r->leechers}, {u"engine"_s, r->engine}, {u"fileUrl"_s, r->fileUrl},
-            {u"published"_s, r->published}, {u"downloaded"_s, r->downloaded}, {u"quality"_s, film.quality}
+            {u"published"_s, r->published}, {u"downloaded"_s, r->downloaded}, {u"quality"_s, film.quality},
+            {u"voices"_s, studios}, {u"tags"_s, tagsOf(r->name, r->meta)}
         });
         group[u"releases"_s] = releases;
+        for (const QString &voice : studios)
+            ++voiceCounts[film.key][voice];
+    }
+
+    // a film's voice-overs, the most common first
+    for (QVariantMap &group : groups)
+    {
+        const QHash<QString, int> counts = voiceCounts.value(group.value(u"key"_s).toString());
+        QStringList voices = counts.keys();
+        std::sort(voices.begin(), voices.end(), [&counts](const QString &a, const QString &b)
+        {
+            const int ca = counts.value(a);
+            const int cb = counts.value(b);
+            return (ca != cb) ? (ca > cb) : (a.compare(b, Qt::CaseInsensitive) < 0);
+        });
+        group[u"voices"_s] = voices;
     }
 
     m_groups.clear();
     for (const QVariantMap &group : std::as_const(groups))
         m_groups.append(group);
     emit groupsChanged();
+}
+
+QVariantList SearchResultsFilter::tagsOf(const QString &name, const ReleaseMeta &meta)
+{
+    QVariantList tags;
+    const auto add = [&tags](const QString &kind, const QString &text)
+    {
+        tags.append(QVariantMap {{u"kind"_s, kind}, {u"text"_s, text}});
+    };
+    const auto first = [&name](const QList<std::pair<QRegularExpression, QString>> &table) -> QString
+    {
+        for (const auto &[pattern, text] : table)
+        {
+            if (name.contains(pattern))
+                return text;
+        }
+        return {};
+    };
+    const auto re = [](const char16_t *pattern)
+    {
+        return QRegularExpression(QString::fromUtf16(pattern), QRegularExpression::CaseInsensitiveOption
+            | QRegularExpression::UseUnicodePropertiesOption);
+    };
+
+    if (const QString quality = FilmInfo::parse(name).quality; !quality.isEmpty())
+        add(u"quality"_s, (quality == u"2160p") ? u"4K"_s : quality);
+
+    static const QList<std::pair<QRegularExpression, QString>> hdr {
+        {re(u"dolby\\s*vision|\\bDV\\b|\\bDoVi\\b"), u"Dolby Vision"_s},
+        {re(u"\\bHDR(10\\+?)?\\b"), u"HDR"_s}
+    };
+    QString video = first(hdr);
+    if (meta.video == u"dv")
+        video = u"Dolby Vision"_s;
+    else if ((meta.video == u"hdr") && video.isEmpty())
+        video = u"HDR"_s;
+    if (!video.isEmpty())
+        add(u"hdr"_s, video);
+
+    static const QList<std::pair<QRegularExpression, QString>> sources {
+        {re(u"\\bremux\\b"), u"Remux"_s},
+        {re(u"\\bWEB[- ]?DLRip\\b"), u"WEB-DLRip"_s},
+        {re(u"\\bWEB[- ]?DL\\b"), u"WEB-DL"_s},
+        {re(u"\\bWEB[- ]?Rip\\b|\\bWeb\\b"), u"WEBRip"_s},
+        {re(u"\\bBD[- ]?Rip\\b|\\bBR[- ]?Rip\\b"), u"BDRip"_s},
+        {re(u"\\bBlu[- ]?Ray\\b|\\bBDMV\\b|\\bBD\\d{2}\\b"), u"Blu-ray"_s},
+        {re(u"\\bHDTV(Rip)?\\b"), u"HDTV"_s},
+        {re(u"\\bDVD(Rip|5|9)?\\b"), u"DVD"_s},
+        {re(u"\\b(SAT|TV)Rip\\b"), u"TVRip"_s},
+        {re(u"\\bCAM(Rip)?\\b|\\bTS\\b|\\bTelesync\\b"), u"CAM"_s}
+    };
+    if (const QString source = first(sources); !source.isEmpty())
+        add(u"source"_s, source);
+
+    static const QList<std::pair<QRegularExpression, QString>> codecs {
+        {re(u"\\bHEVC\\b|\\bx\\.?265\\b|\\bH\\.?265\\b"), u"HEVC"_s},
+        {re(u"\\bAV1\\b"), u"AV1"_s}
+    };
+    if (const QString codec = first(codecs); !codec.isEmpty())
+        add(u"codec"_s, codec);
+
+    // seasons: what the source knows, else the name ("Сезон: 2", "2 сезон", "S02", "Season 2")
+    QList<int> seasons = meta.seasons;
+    if (seasons.isEmpty())
+    {
+        static const QRegularExpression seasonRe = re(u"(?:сезон[:\\s]*|season\\s*|\\bS)(\\d{1,2})(?![\\d])|(\\d{1,2})\\s*-?\\s*(?:й\\s*)?сезон");
+        for (auto it = seasonRe.globalMatch(name); it.hasNext();)
+        {
+            const QRegularExpressionMatch m = it.next();
+            const int n = (m.captured(1).isEmpty() ? m.captured(2) : m.captured(1)).toInt();
+            if ((n > 0) && !seasons.contains(n))
+                seasons.append(n);
+        }
+    }
+    if (!seasons.isEmpty())
+    {
+        std::sort(seasons.begin(), seasons.end());
+        const bool run = (seasons.size() > 2) && ((seasons.last() - seasons.first()) == (seasons.size() - 1));
+        QStringList texts;
+        for (const int n : std::as_const(seasons))
+            texts.append(QString::number(n));
+        add(u"season"_s, run ? (texts.first() + u'–' + texts.last()) : texts.join(u", "_s));
+    }
+
+    // episodes: "Серии: 1-10 из 10", "10 из 10", "[+10 серия]"
+    static const QRegularExpression episodesRe = re(u"(?:серии|эпизоды|episodes?)[:\\s]*(\\d{1,4})\\s*[-–]\\s*(\\d{1,4})(?:\\s*(?:из|of)\\s*(\\d{1,4}))?"
+                                                    "|(\\d{1,4})\\s*(?:из|of)\\s*(\\d{1,4})");
+    if (const QRegularExpressionMatch m = episodesRe.match(name); m.hasMatch())
+    {
+        if (!m.captured(1).isEmpty())
+            add(u"episodes"_s, m.captured(1) + u'–' + m.captured(2) + (m.captured(3).isEmpty() ? QString() : (u'/' + m.captured(3))));
+        else
+            add(u"episodes"_s, m.captured(4) + u'/' + m.captured(5));
+    }
+
+    // the kinds of voice-over: words, and rutor's letters ("| D, P, L |": dubbing, professional, amateur)
+    static const QList<std::pair<QRegularExpression, QString>> audio {
+        {re(u"\\bdub\\b|дубл|\\bdubbed\\b"), u"dub"_s},
+        // ("2 x MVO", "2xMVO")
+        {re(u"\\b(\\d\\s*)?x?MVO\\b|многоголос"), u"mvo"_s},
+        {re(u"\\b(\\d\\s*)?x?DVO\\b|двухголос"), u"dvo"_s},
+        {re(u"\\b(\\d\\s*)?x?AVO\\b|авторск|одноголос|\\bVO\\b"), u"avo"_s},
+        {re(u"\\bsubs?\\b|субтитр"), u"sub"_s},
+        {re(u"\\boriginal\\b|оригинал|\\braw\\b"), u"original"_s}
+    };
+    QStringList kinds;
+    for (const auto &[pattern, kind] : audio)
+    {
+        if (name.contains(pattern))
+            kinds.append(kind);
+    }
+    static const QRegularExpression letters {u"\\|\\s*([DPLA](?:\\s*,\\s*[DPLA])*)\\s*(?:\\||$)"_s};
+    if (const QRegularExpressionMatch m = letters.match(name); m.hasMatch())
+    {
+        for (const QString &letter : m.captured(1).split(u',', Qt::SkipEmptyParts))
+        {
+            const QString t = letter.trimmed();
+            const QString kind = (t == u"D") ? u"dub"_s : (t == u"P") ? u"pro"_s : (t == u"L") ? u"amateur"_s : u"avo"_s;
+            if (!kinds.contains(kind))
+                kinds.append(kind);
+        }
+    }
+    // a source's voice-over that is a kind, not a studio ("Дубляж")
+    for (const QString &voice : meta.voices)
+    {
+        if (const QString kind = voiceKind(voice); !kind.isEmpty() && !kinds.contains(kind))
+            kinds.append(kind);
+    }
+    for (const QString &kind : std::as_const(kinds))
+        add(u"audio"_s, kind);
+    return tags;
+}
+
+QString SearchResultsFilter::voiceKind(const QString &voice)
+{
+    static const QList<std::pair<QRegularExpression, QString>> kinds {
+        {QRegularExpression(u"^(дубл|dub)"_s, QRegularExpression::CaseInsensitiveOption), u"dub"_s},
+        {QRegularExpression(u"^(многоголос|mvo)"_s, QRegularExpression::CaseInsensitiveOption), u"mvo"_s},
+        {QRegularExpression(u"^(двухголос|dvo)"_s, QRegularExpression::CaseInsensitiveOption), u"dvo"_s},
+        {QRegularExpression(u"^(одноголос|авторск|avo)"_s, QRegularExpression::CaseInsensitiveOption), u"avo"_s},
+        {QRegularExpression(u"^(профессиональн)"_s, QRegularExpression::CaseInsensitiveOption), u"pro"_s},
+        {QRegularExpression(u"^(любительск)"_s, QRegularExpression::CaseInsensitiveOption), u"amateur"_s},
+        {QRegularExpression(u"^(субтитр|sub)"_s, QRegularExpression::CaseInsensitiveOption), u"sub"_s},
+        {QRegularExpression(u"^(оригинал|original)"_s, QRegularExpression::CaseInsensitiveOption), u"original"_s}
+    };
+    const QString v = voice.trimmed();
+    for (const auto &[pattern, kind] : kinds)
+    {
+        if (v.contains(pattern))
+            return kind;
+    }
+    return {};
+}
+
+QStringList SearchResultsFilter::studiosOf(const QStringList &voices)
+{
+    QStringList studios;
+    for (const QString &voice : voices)
+    {
+        if (voiceKind(voice).isEmpty())
+            studios.append(voice);
+    }
+    return studios;
 }

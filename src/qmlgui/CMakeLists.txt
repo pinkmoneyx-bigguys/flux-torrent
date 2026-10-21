@@ -168,6 +168,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/updater.cpp
         backend/tray.h
         backend/tray.cpp
+        backend/filmdetails.h
+        backend/filmdetails.cpp
         backend/torrentlistmodel.h
         backend/torrentlistmodel.cpp
         backend/torrentfiltermodel.h

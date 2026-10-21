@@ -1817,6 +1817,146 @@
         <translation>до %1 сідів</translation>
     </message>
     <message>
+        <source>trailer</source>
+        <translation>трейлер</translation>
+    </message>
+    <message>
+        <source>Dubbing</source>
+        <translation>Дубляж</translation>
+    </message>
+    <message>
+        <source>Multi-voice</source>
+        <translation>Багатоголоса</translation>
+    </message>
+    <message>
+        <source>Two-voice</source>
+        <translation>Двоголоса</translation>
+    </message>
+    <message>
+        <source>Single-voice</source>
+        <translation>Одноголоса</translation>
+    </message>
+    <message>
+        <source>Professional</source>
+        <translation>Професійна</translation>
+    </message>
+    <message>
+        <source>Amateur</source>
+        <translation>Аматорська</translation>
+    </message>
+    <message>
+        <source>Subtitles</source>
+        <translation>Субтитри</translation>
+    </message>
+    <message>
+        <source>Original audio</source>
+        <translation>Оригінальна доріжка</translation>
+    </message>
+    <message>
+        <source>Season %1</source>
+        <translation>Сезон %1</translation>
+    </message>
+    <message>
+        <source>Episodes %1</source>
+        <translation>Серії %1</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Усі</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Інше</translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation>Серіал</translation>
+    </message>
+    <message>
+        <source>No description found for this title.</source>
+        <translation>Опису не знайшлося.</translation>
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation>Трейлер</translation>
+    </message>
+    <message>
+        <source>Search YouTube for the trailer</source>
+        <translation>Знайти трейлер на YouTube</translation>
+    </message>
+    <message>
+        <source>Wikipedia</source>
+        <translation>Вікіпедія</translation>
+    </message>
+    <message>
+        <source>The description is from Wikipedia (CC BY-SA)</source>
+        <translation>Опис із Вікіпедії (CC BY-SA)</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>Згорнути</translation>
+    </message>
+    <message>
+        <source>Read more</source>
+        <translation>Читати далі</translation>
+    </message>
+    <message>
+        <source>Voice-overs:</source>
+        <translation>Озвучення:</translation>
+    </message>
+    <message>
+        <source>+%1 more</source>
+        <translation>ще %1</translation>
+    </message>
+    <message>
+        <source>Voice-over, tracker, season…</source>
+        <translation>Озвучення, трекер, сезон…</translation>
+    </message>
+    <message>
+        <source>Any voice-over</source>
+        <translation>Будь-яке озвучення</translation>
+    </message>
+    <message>
+        <source>Voice-over</source>
+        <translation>Озвучення</translation>
+    </message>
+    <message>
+        <source>Most seeds</source>
+        <translation>Більше сідів</translation>
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation>Спершу нові</translation>
+    </message>
+    <message>
+        <source>Largest</source>
+        <translation>Спершу більші</translation>
+    </message>
+    <message>
+        <source>Smallest</source>
+        <translation>Спершу менші</translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation>Порядок</translation>
+    </message>
+    <message>
+        <source>No releases match.</source>
+        <translation>Відповідних роздач немає.</translation>
+    </message>
+    <message>
+        <source>%1 seeds</source>
+        <translation>Сідів: %1</translation>
+    </message>
+    <message>
+        <source>%1 peers</source>
+        <translation>Пірів: %1</translation>
+    </message>
+    <message>
+        <source>%1 of %2 releases</source>
+        <translation>%1 з %2 роздач</translation>
+    </message>
+    <message>
         <source>Close</source>
         <translation>Закрити</translation>
     </message>
