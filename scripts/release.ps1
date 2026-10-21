@@ -64,6 +64,8 @@ Set-Content -Path (Join-Path $dist 'SHA256SUMS.txt') -Value $sums -Encoding asci
 $changelog = Get-Content (Join-Path $root 'CHANGELOG.md') -Raw -Encoding UTF8
 $section = [regex]::Match($changelog, "(?ms)^## \[?v?$([regex]::Escape($version))\]?.*?$\r?\n(.*?)(?=^## |\z)")
 $notes = if ($section.Success) { $section.Groups[1].Value.Trim() } else { "Flux $version" }
+# GitHub shows every line break of a release's text, so a paragraph wrapped in the file becomes one line again
+$notes = [regex]::Replace($notes, '(?<=\S)[ \t]*\r?\n[ \t]*(?=[^\s\-#|*>])', ' ')
 $setupMb = [math]::Round((Get-Item $setupExe).Length / 1MB, 1)
 $zipMb = [math]::Round((Get-Item $zip).Length / 1MB, 1)
 @"
