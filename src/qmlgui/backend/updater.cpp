@@ -114,9 +114,19 @@ Updater::Updater(QObject *parent)
                 .arg(code, QDir::toNativeSeparators(work.filePath(u"apply.log"_s)));
             failed.remove();
         }
-        else
+        else if (!QDir(work).removeRecursively())
         {
-            QDir(work).removeRecursively();
+            // the installer that started this Flux is still closing: its file goes a few seconds later
+            auto *retry = new QTimer(this);
+            retry->setInterval(5000);
+            connect(retry, &QTimer::timeout, this, [this, retry, tries = 0]() mutable
+            {
+                // not while a new update is on its way into the same folder
+                const bool busy = !m_installState.isEmpty() && (m_installState != u"failed");
+                if (busy || QDir(workDir()).removeRecursively() || (++tries >= 12))
+                    retry->deleteLater();
+            });
+            retry->start();
         }
     }
 }
