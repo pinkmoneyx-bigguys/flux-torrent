@@ -22,6 +22,7 @@ Surface {
         { key: "connection", label: qsTr("Connection"), icon: Icons.network },
         { key: "bittorrent", label: qsTr("BitTorrent"), icon: Icons.bittorrent },
         { key: "streaming", label: qsTr("Streaming"), icon: Icons.play },
+        { key: "tray", label: qsTr("Tray & notifications"), icon: Icons.bell },
         { key: "language", label: qsTr("Language"), icon: Icons.language },
         { key: "advanced", label: qsTr("Advanced"), icon: Icons.settings },
         { key: "about", label: qsTr("About Flux"), icon: Icons.info }
@@ -628,6 +629,43 @@ Surface {
                                 key: "hardwareDecoding"
                                 label: qsTr("Hardware decoding")
                                 description: qsTr("Decodes video on the graphics card. Turn off if the picture breaks up.")
+                            }
+                        }
+                    }
+
+                    // ===== Tray & notifications =====
+                    ColumnLayout {
+                        visible: root.section === "tray"
+                        Layout.fillWidth: true
+                        spacing: Theme.sp(8)
+
+                        SettingsGroup {
+                            title: qsTr("Notification area")
+                            SettingRow {
+                                key: "trayEnabled"
+                                label: qsTr("Show Flux in the notification area")
+                                description: qsTr("An icon by the clock with the speeds and a menu; a click opens or hides the window.")
+                            }
+                            SettingRow {
+                                visible: root.on("trayEnabled")
+                                key: "closeToTray"
+                                label: qsTr("Keep running when the window is closed")
+                                description: qsTr("Downloads and seeding go on; Flux exits from the icon's menu.")
+                            }
+                            SettingRow {
+                                visible: root.on("trayEnabled")
+                                key: "minimizeToTray"
+                                label: qsTr("Minimize to the notification area")
+                                description: qsTr("A minimized window leaves the taskbar.")
+                            }
+                        }
+                        SettingsGroup {
+                            visible: root.on("trayEnabled")
+                            title: qsTr("Notifications")
+                            SettingRow {
+                                key: "notifyFinished"
+                                label: qsTr("When a download finishes")
+                                description: qsTr("A Windows notification with the torrent's name, unless Flux is the window in front.")
                             }
                         }
                     }

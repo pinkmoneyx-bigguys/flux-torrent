@@ -107,7 +107,12 @@ namespace
             {u"additionalTrackers"_s, QString()},
             // Watching (Flux's own, kept in the profile)
             {u"afterWatching"_s, u"ask"_s},
-            {u"hardwareDecoding"_s, true}
+            {u"hardwareDecoding"_s, true},
+            // Notification area (qBittorrent's own keys, so a moved profile keeps them)
+            {u"trayEnabled"_s, true},
+            {u"closeToTray"_s, true},
+            {u"minimizeToTray"_s, false},
+            {u"notifyFinished"_s, true}
         };
         return map;
     }
@@ -641,6 +646,12 @@ void AppSettings::registerLive()
     };
     storedEntry(u"afterWatching"_s, u"Flux/Player/AfterWatching"_s, u"ask"_s, {u"ask"_s, u"keep"_s, u"delete"_s});
     storedEntry(u"hardwareDecoding"_s, u"Flux/Player/HardwareDecoding"_s, true, {});
+
+    // Notification area
+    boolEntry(u"trayEnabled"_s, [prefs] { return prefs->systemTrayEnabled(); }, [prefs](bool b) { prefs->setSystemTrayEnabled(b); });
+    boolEntry(u"closeToTray"_s, [prefs] { return prefs->closeToTray(); }, [prefs](bool b) { prefs->setCloseToTray(b); });
+    boolEntry(u"minimizeToTray"_s, [prefs] { return prefs->minimizeToTray(); }, [prefs](bool b) { prefs->setMinimizeToTray(b); });
+    storedEntry(u"notifyFinished"_s, u"Flux/Notifications/DownloadFinished"_s, true, {});
 }
 
 QVariantList AppSettings::advancedSettings() const

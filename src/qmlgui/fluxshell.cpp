@@ -31,6 +31,7 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QFontDatabase>
+#include <QGuiApplication>
 #include <QLocale>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
@@ -148,9 +149,14 @@ bool FluxShell::show()
         qCritical("Failed to load the %s.%s QML component.", qUtf8Printable(m_module), qUtf8Printable(m_type));
         return false;
     }
-    // Streams a crashed run left open are rolled back at every start, not only when the player is used
     if (m_type == u"Main")
+    {
+        // Streams a crashed run left open are rolled back at every start, not only when the player is used
         m_engine->singletonInstance<StreamManager *>(m_module, u"StreamManager"_s);
+        // Main.qml quits when its window closes for good; with the window hidden in the notification area,
+        // the tray menu (a window of its own) closing must not end Flux
+        QGuiApplication::setQuitOnLastWindowClosed(false);
+    }
     return true;
 }
 

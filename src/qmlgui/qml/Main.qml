@@ -29,6 +29,48 @@ ApplicationWindow {
     onYChanged: _rememberNormal()
     onWidthChanged: _rememberNormal()
     onHeightChanged: _rememberNormal()
+
+    // --- Notification area: the window hides there and comes back as it was ----------------------
+    TrayIcon {
+        id: trayIcon
+        target: window
+    }
+    // windowed or maximized: what a window hidden from the minimized state comes back to
+    property int _shownVisibility: Window.Windowed
+    property bool _trayMaximized: false
+    onVisibilityChanged: {
+        if (visibility === Window.Windowed || visibility === Window.Maximized)
+            _shownVisibility = visibility
+        else if (visibility === Window.Minimized && trayIcon.minimizesToTray)
+            Qt.callLater(hideToTray)
+    }
+    function hideToTray() {
+        _trayMaximized = _shownVisibility === Window.Maximized
+        hide()
+        if (Tray.takeHideNotice())
+            trayIcon.notice()
+    }
+    function showFromTray() {
+        if (_trayMaximized)
+            showMaximized()
+        else
+            showNormal()
+        raise()
+        requestActivate()
+    }
+    // with the icon there, closing only hides the window; otherwise it is the end of Flux
+    // (FluxShell turns off Qt's quitting with the last window: the tray menu is a window too).
+    // While Flux quits, Qt closes every window first: then the window really closes.
+    onClosing: close => {
+        if (Tray.isQuitting())
+            return
+        if (trayIcon.keepsRunning) {
+            close.accepted = false
+            hideToTray()
+        } else {
+            Qt.quit()
+        }
+    }
     // The sidebar folded to a rail of icons (the logo or Ctrl+B); remembered in the profile
     property bool sidebarCollapsed: UiSettings.layoutValue("sidebarCollapsed", false)
     function toggleSidebar() {
@@ -171,7 +213,9 @@ ApplicationWindow {
             { group: qsTr("Go to"), id: "settings", arg: "connection", label: qsTr("Settings: connection"), icon: Icons.settings, keywords: "port proxy upnp" },
             { group: qsTr("Go to"), id: "settings", arg: "bittorrent", label: qsTr("Settings: BitTorrent"), icon: Icons.settings, keywords: "dht queue ratio seeding" },
             { group: qsTr("Go to"), id: "settings", arg: "advanced", label: qsTr("Settings: advanced"), icon: Icons.settings, keywords: "libtorrent disk network" },
-            { group: qsTr("Go to"), id: "settings", arg: "language", label: qsTr("Settings: language"), icon: Icons.language, keywords: "language translation locale" }
+            { group: qsTr("Go to"), id: "settings", arg: "language", label: qsTr("Settings: language"), icon: Icons.language, keywords: "language translation locale" },
+            { group: qsTr("Go to"), id: "settings", arg: "tray", label: qsTr("Settings: tray & notifications"), icon: Icons.bell,
+              keywords: "notification area background minimize close" }
         ]
         onTriggered: (id, arg) => window.runCommand(id, arg)
     }

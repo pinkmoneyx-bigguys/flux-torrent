@@ -729,6 +729,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Settings: tray &amp; notifications</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>The video did not show up in the library.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1852,6 +1856,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Tray &amp; notifications</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Language</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2505,6 +2513,46 @@
     </message>
     <message>
         <source>Decodes video on the graphics card. Turn off if the picture breaks up.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Notification area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Flux in the notification area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>An icon by the clock with the speeds and a menu; a click opens or hides the window.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keep running when the window is closed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on; Flux exits from the icon&apos;s menu.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Minimize to the notification area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>A minimized window leaves the taskbar.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When a download finishes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>A Windows notification with the torrent&apos;s name, unless Flux is the window in front.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3313,6 +3361,56 @@
     </message>
     <message>
         <source>Errors</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>TrayIcon</name>
+    <message>
+        <source>Flux keeps running</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on in the background. Click the icon to open Flux, or exit from its menu.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Download finished</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>TrayMenu</name>
+    <message>
+        <source>Hide Flux</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Open Flux</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add a torrent file…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add a magnet link…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Start all torrents</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop all torrents</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Alternative speed limits</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Exit Flux</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

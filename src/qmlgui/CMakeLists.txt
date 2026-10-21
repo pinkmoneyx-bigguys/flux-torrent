@@ -30,6 +30,10 @@ set_source_files_properties(qml/shell/TitleBar.qml PROPERTIES QT_RESOURCE_ALIAS 
 set_source_files_properties(qml/shell/Sidebar.qml PROPERTIES QT_RESOURCE_ALIAS shell/Sidebar.qml)
 set_source_files_properties(qml/shell/EmptyPage.qml PROPERTIES QT_RESOURCE_ALIAS shell/EmptyPage.qml)
 set_source_files_properties(qml/shell/CommandPalette.qml PROPERTIES QT_RESOURCE_ALIAS shell/CommandPalette.qml)
+set_source_files_properties(qml/shell/TrayIcon.qml PROPERTIES QT_RESOURCE_ALIAS shell/TrayIcon.qml)
+set_source_files_properties(qml/shell/TrayMenu.qml PROPERTIES QT_RESOURCE_ALIAS shell/TrayMenu.qml)
+# the icon in the notification area: the program's own, every size Windows may ask for
+set_source_files_properties(${PROJECT_SOURCE_DIR}/src/icons/flux.ico PROPERTIES QT_RESOURCE_ALIAS icons/flux.ico)
 set_source_files_properties(qml/player/PlayerView.qml PROPERTIES QT_RESOURCE_ALIAS player/PlayerView.qml)
 set_source_files_properties(qml/firstrun/FirstRunWindow.qml PROPERTIES QT_RESOURCE_ALIAS firstrun/FirstRunWindow.qml)
 set_source_files_properties(qml/pages/TransfersPage.qml PROPERTIES QT_RESOURCE_ALIAS pages/TransfersPage.qml)
@@ -128,7 +132,10 @@ qt_add_qml_module(qbt_qmlgui
         qml/pages/rss/RulesDialog.qml
         qml/pages/settings/SettingRow.qml
         qml/pages/settings/SettingsGroup.qml
+        qml/shell/TrayIcon.qml
+        qml/shell/TrayMenu.qml
     RESOURCES
+        ${PROJECT_SOURCE_DIR}/src/icons/flux.ico
         fonts/Onest-Variable.ttf
         fonts/Unbounded-Variable.ttf
         fonts/JetBrainsMono-Variable.ttf
@@ -159,6 +166,8 @@ qt_add_qml_module(qbt_qmlgui
         backend/uisettings.cpp
         backend/updater.h
         backend/updater.cpp
+        backend/tray.h
+        backend/tray.cpp
         backend/torrentlistmodel.h
         backend/torrentlistmodel.cpp
         backend/torrentfiltermodel.h
@@ -218,6 +227,10 @@ target_link_libraries(qbt_qmlgui
     PRIVATE
         qbt_base
 )
+if (WIN32)
+    # Tray::decorate: the tray menu's corners and border
+    target_link_libraries(qbt_qmlgui PRIVATE Dwmapi)
+endif()
 
 # FLUX_VERSION and FLUX_GITHUB_REPO come from src/CMakeLists.txt
 execute_process(COMMAND git rev-parse --short HEAD

@@ -731,6 +731,10 @@
         <translation>Налаштування: мова</translation>
     </message>
     <message>
+        <source>Settings: tray &amp; notifications</source>
+        <translation>Налаштування: трей і сповіщення</translation>
+    </message>
+    <message>
         <source>The video did not show up in the library.</source>
         <translation>Відео не з&apos;явилося в медіатеці.</translation>
     </message>
@@ -1862,6 +1866,10 @@
         <translation>Стримінг</translation>
     </message>
     <message>
+        <source>Tray &amp; notifications</source>
+        <translation>Трей і сповіщення</translation>
+    </message>
+    <message>
         <source>Language</source>
         <translation>Мова</translation>
     </message>
@@ -2516,6 +2524,46 @@
     <message>
         <source>Decodes video on the graphics card. Turn off if the picture breaks up.</source>
         <translation>Декодує відео на відеокарті. Вимкніть, якщо зображення розсипається.</translation>
+    </message>
+    <message>
+        <source>Notification area</source>
+        <translation>Область сповіщень</translation>
+    </message>
+    <message>
+        <source>Show Flux in the notification area</source>
+        <translation>Показувати Flux в області сповіщень</translation>
+    </message>
+    <message>
+        <source>An icon by the clock with the speeds and a menu; a click opens or hides the window.</source>
+        <translation>Значок біля годинника зі швидкостями й меню; клацання відкриває або ховає вікно.</translation>
+    </message>
+    <message>
+        <source>Keep running when the window is closed</source>
+        <translation>Не закриватися разом із вікном</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on; Flux exits from the icon&apos;s menu.</source>
+        <translation>Завантаження й роздачі тривають; вийти з Flux можна через меню значка.</translation>
+    </message>
+    <message>
+        <source>Minimize to the notification area</source>
+        <translation>Згортати в область сповіщень</translation>
+    </message>
+    <message>
+        <source>A minimized window leaves the taskbar.</source>
+        <translation>Згорнуте вікно зникає з панелі завдань.</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Сповіщення</translation>
+    </message>
+    <message>
+        <source>When a download finishes</source>
+        <translation>Коли завантаження завершено</translation>
+    </message>
+    <message>
+        <source>A Windows notification with the torrent&apos;s name, unless Flux is the window in front.</source>
+        <translation>Сповіщення Windows з назвою торрента, якщо вікно Flux не на передньому плані.</translation>
     </message>
     <message>
         <source>Version %1</source>
@@ -3328,6 +3376,56 @@
     <message>
         <source>Errors</source>
         <translation>З помилками</translation>
+    </message>
+</context>
+<context>
+    <name>TrayIcon</name>
+    <message>
+        <source>Flux keeps running</source>
+        <translation>Flux продовжує працювати</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on in the background. Click the icon to open Flux, or exit from its menu.</source>
+        <translation>Завантаження й роздачі тривають у фоні. Натисніть на значок, щоб відкрити Flux, або вийдіть через його меню.</translation>
+    </message>
+    <message>
+        <source>Download finished</source>
+        <translation>Завантаження завершено</translation>
+    </message>
+</context>
+<context>
+    <name>TrayMenu</name>
+    <message>
+        <source>Hide Flux</source>
+        <translation>Сховати Flux</translation>
+    </message>
+    <message>
+        <source>Open Flux</source>
+        <translation>Відкрити Flux</translation>
+    </message>
+    <message>
+        <source>Add a torrent file…</source>
+        <translation>Додати торрент-файл…</translation>
+    </message>
+    <message>
+        <source>Add a magnet link…</source>
+        <translation>Додати magnet-посилання…</translation>
+    </message>
+    <message>
+        <source>Start all torrents</source>
+        <translation>Запустити всі торренти</translation>
+    </message>
+    <message>
+        <source>Stop all torrents</source>
+        <translation>Зупинити всі торренти</translation>
+    </message>
+    <message>
+        <source>Alternative speed limits</source>
+        <translation>Альтернативні обмеження швидкості</translation>
+    </message>
+    <message>
+        <source>Exit Flux</source>
+        <translation>Вийти з Flux</translation>
     </message>
 </context>
 <context>

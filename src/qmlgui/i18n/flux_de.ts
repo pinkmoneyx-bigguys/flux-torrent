@@ -729,6 +729,10 @@
         <translation>Einstellungen: Sprache</translation>
     </message>
     <message>
+        <source>Settings: tray &amp; notifications</source>
+        <translation>Einstellungen: Infobereich &amp; Benachrichtigungen</translation>
+    </message>
+    <message>
         <source>The video did not show up in the library.</source>
         <translation>Das Video ist nicht in der Mediathek erschienen.</translation>
     </message>
@@ -1852,6 +1856,10 @@
         <translation>Streaming</translation>
     </message>
     <message>
+        <source>Tray &amp; notifications</source>
+        <translation>Infobereich &amp; Benachrichtigungen</translation>
+    </message>
+    <message>
         <source>Language</source>
         <translation>Sprache</translation>
     </message>
@@ -2506,6 +2514,46 @@
     <message>
         <source>Decodes video on the graphics card. Turn off if the picture breaks up.</source>
         <translation>Decodiert Videos auf der Grafikkarte. Schalten Sie das aus, wenn das Bild zerfällt.</translation>
+    </message>
+    <message>
+        <source>Notification area</source>
+        <translation>Infobereich</translation>
+    </message>
+    <message>
+        <source>Show Flux in the notification area</source>
+        <translation>Flux im Infobereich anzeigen</translation>
+    </message>
+    <message>
+        <source>An icon by the clock with the speeds and a menu; a click opens or hides the window.</source>
+        <translation>Ein Symbol neben der Uhr mit den Geschwindigkeiten und einem Menü; ein Klick öffnet oder verbirgt das Fenster.</translation>
+    </message>
+    <message>
+        <source>Keep running when the window is closed</source>
+        <translation>Beim Schließen des Fensters weiterlaufen</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on; Flux exits from the icon&apos;s menu.</source>
+        <translation>Downloads und Seeding laufen weiter; Flux wird über das Menü des Symbols beendet.</translation>
+    </message>
+    <message>
+        <source>Minimize to the notification area</source>
+        <translation>In den Infobereich minimieren</translation>
+    </message>
+    <message>
+        <source>A minimized window leaves the taskbar.</source>
+        <translation>Ein minimiertes Fenster verschwindet aus der Taskleiste.</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Benachrichtigungen</translation>
+    </message>
+    <message>
+        <source>When a download finishes</source>
+        <translation>Wenn ein Download abgeschlossen ist</translation>
+    </message>
+    <message>
+        <source>A Windows notification with the torrent&apos;s name, unless Flux is the window in front.</source>
+        <translation>Eine Windows-Benachrichtigung mit dem Namen des Torrents, außer Flux ist das Fenster im Vordergrund.</translation>
     </message>
     <message>
         <source>Version %1</source>
@@ -3314,6 +3362,56 @@
     <message>
         <source>Errors</source>
         <translation>Fehler</translation>
+    </message>
+</context>
+<context>
+    <name>TrayIcon</name>
+    <message>
+        <source>Flux keeps running</source>
+        <translation>Flux läuft weiter</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on in the background. Click the icon to open Flux, or exit from its menu.</source>
+        <translation>Downloads und Seeding laufen im Hintergrund weiter. Klicken Sie auf das Symbol, um Flux zu öffnen, oder beenden Sie es über sein Menü.</translation>
+    </message>
+    <message>
+        <source>Download finished</source>
+        <translation>Download abgeschlossen</translation>
+    </message>
+</context>
+<context>
+    <name>TrayMenu</name>
+    <message>
+        <source>Hide Flux</source>
+        <translation>Flux ausblenden</translation>
+    </message>
+    <message>
+        <source>Open Flux</source>
+        <translation>Flux öffnen</translation>
+    </message>
+    <message>
+        <source>Add a torrent file…</source>
+        <translation>Torrent-Datei hinzufügen…</translation>
+    </message>
+    <message>
+        <source>Add a magnet link…</source>
+        <translation>Magnet-Link hinzufügen…</translation>
+    </message>
+    <message>
+        <source>Start all torrents</source>
+        <translation>Alle Torrents starten</translation>
+    </message>
+    <message>
+        <source>Stop all torrents</source>
+        <translation>Alle Torrents stoppen</translation>
+    </message>
+    <message>
+        <source>Alternative speed limits</source>
+        <translation>Alternative Geschwindigkeitslimits</translation>
+    </message>
+    <message>
+        <source>Exit Flux</source>
+        <translation>Flux beenden</translation>
     </message>
 </context>
 <context>

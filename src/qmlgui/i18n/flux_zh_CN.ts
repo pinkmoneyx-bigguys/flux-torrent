@@ -727,6 +727,10 @@
         <translation>设置：语言</translation>
     </message>
     <message>
+        <source>Settings: tray &amp; notifications</source>
+        <translation>设置：托盘和通知</translation>
+    </message>
+    <message>
         <source>The video did not show up in the library.</source>
         <translation>视频没有出现在媒体库中。</translation>
     </message>
@@ -1842,6 +1846,10 @@
         <translation>流媒体</translation>
     </message>
     <message>
+        <source>Tray &amp; notifications</source>
+        <translation>托盘和通知</translation>
+    </message>
+    <message>
         <source>Language</source>
         <translation>语言</translation>
     </message>
@@ -2496,6 +2504,46 @@
     <message>
         <source>Decodes video on the graphics card. Turn off if the picture breaks up.</source>
         <translation>使用显卡解码视频。如果画面出现花屏，请关闭此项。</translation>
+    </message>
+    <message>
+        <source>Notification area</source>
+        <translation>通知区域</translation>
+    </message>
+    <message>
+        <source>Show Flux in the notification area</source>
+        <translation>在通知区域显示 Flux</translation>
+    </message>
+    <message>
+        <source>An icon by the clock with the speeds and a menu; a click opens or hides the window.</source>
+        <translation>时钟旁的图标显示速度并提供菜单；单击可打开或隐藏窗口。</translation>
+    </message>
+    <message>
+        <source>Keep running when the window is closed</source>
+        <translation>关闭窗口后继续运行</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on; Flux exits from the icon&apos;s menu.</source>
+        <translation>下载和做种会继续；可从图标菜单退出 Flux。</translation>
+    </message>
+    <message>
+        <source>Minimize to the notification area</source>
+        <translation>最小化到通知区域</translation>
+    </message>
+    <message>
+        <source>A minimized window leaves the taskbar.</source>
+        <translation>最小化的窗口不再显示在任务栏上。</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>通知</translation>
+    </message>
+    <message>
+        <source>When a download finishes</source>
+        <translation>下载完成时</translation>
+    </message>
+    <message>
+        <source>A Windows notification with the torrent&apos;s name, unless Flux is the window in front.</source>
+        <translation>显示带有种子名称的 Windows 通知，除非 Flux 是前台窗口。</translation>
     </message>
     <message>
         <source>Version %1</source>
@@ -3300,6 +3348,56 @@
     <message>
         <source>Errors</source>
         <translation>出错</translation>
+    </message>
+</context>
+<context>
+    <name>TrayIcon</name>
+    <message>
+        <source>Flux keeps running</source>
+        <translation>Flux 仍在运行</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on in the background. Click the icon to open Flux, or exit from its menu.</source>
+        <translation>下载和做种会在后台继续。点击图标打开 Flux，或从其菜单退出。</translation>
+    </message>
+    <message>
+        <source>Download finished</source>
+        <translation>下载完成</translation>
+    </message>
+</context>
+<context>
+    <name>TrayMenu</name>
+    <message>
+        <source>Hide Flux</source>
+        <translation>隐藏 Flux</translation>
+    </message>
+    <message>
+        <source>Open Flux</source>
+        <translation>打开 Flux</translation>
+    </message>
+    <message>
+        <source>Add a torrent file…</source>
+        <translation>添加 Torrent 文件…</translation>
+    </message>
+    <message>
+        <source>Add a magnet link…</source>
+        <translation>添加磁力链接…</translation>
+    </message>
+    <message>
+        <source>Start all torrents</source>
+        <translation>开始所有 Torrent</translation>
+    </message>
+    <message>
+        <source>Stop all torrents</source>
+        <translation>停止所有 Torrent</translation>
+    </message>
+    <message>
+        <source>Alternative speed limits</source>
+        <translation>备用速度限制</translation>
+    </message>
+    <message>
+        <source>Exit Flux</source>
+        <translation>退出 Flux</translation>
     </message>
 </context>
 <context>

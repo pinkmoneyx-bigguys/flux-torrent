@@ -723,6 +723,10 @@
         <translation>Настройки: язык</translation>
     </message>
     <message>
+        <source>Settings: tray &amp; notifications</source>
+        <translation>Настройки: трей и уведомления</translation>
+    </message>
+    <message>
         <source>The video did not show up in the library.</source>
         <translation>Видео не появилось в медиатеке.</translation>
     </message>
@@ -1862,6 +1866,10 @@
         <translation>Стриминг</translation>
     </message>
     <message>
+        <source>Tray &amp; notifications</source>
+        <translation>Трей и уведомления</translation>
+    </message>
+    <message>
         <source>Language</source>
         <translation>Язык</translation>
     </message>
@@ -2380,6 +2388,46 @@
     <message>
         <source>Stop after seeding for a while</source>
         <translation>Остановить по времени раздачи</translation>
+    </message>
+    <message>
+        <source>Notification area</source>
+        <translation>Область уведомлений</translation>
+    </message>
+    <message>
+        <source>Show Flux in the notification area</source>
+        <translation>Показывать Flux в области уведомлений</translation>
+    </message>
+    <message>
+        <source>An icon by the clock with the speeds and a menu; a click opens or hides the window.</source>
+        <translation>Значок у часов со скоростями и меню; щелчок открывает или скрывает окно.</translation>
+    </message>
+    <message>
+        <source>Keep running when the window is closed</source>
+        <translation>Не закрываться вместе с окном</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on; Flux exits from the icon&apos;s menu.</source>
+        <translation>Загрузки и раздачи продолжаются; выйти из Flux можно через меню значка.</translation>
+    </message>
+    <message>
+        <source>Minimize to the notification area</source>
+        <translation>Сворачивать в область уведомлений</translation>
+    </message>
+    <message>
+        <source>A minimized window leaves the taskbar.</source>
+        <translation>Свёрнутое окно пропадает с панели задач.</translation>
+    </message>
+    <message>
+        <source>Notifications</source>
+        <translation>Уведомления</translation>
+    </message>
+    <message>
+        <source>When a download finishes</source>
+        <translation>Когда загрузка завершена</translation>
+    </message>
+    <message>
+        <source>A Windows notification with the torrent&apos;s name, unless Flux is the window in front.</source>
+        <translation>Уведомление Windows с именем торрента, если окно Flux не на переднем плане.</translation>
     </message>
     <message>
         <source>Every time Flux starts.</source>
@@ -3328,6 +3376,56 @@
     <message>
         <source>Errors</source>
         <translation>С ошибками</translation>
+    </message>
+</context>
+<context>
+    <name>TrayIcon</name>
+    <message>
+        <source>Flux keeps running</source>
+        <translation>Flux продолжает работать</translation>
+    </message>
+    <message>
+        <source>Downloads and seeding go on in the background. Click the icon to open Flux, or exit from its menu.</source>
+        <translation>Загрузки и раздачи идут в фоне. Нажмите на значок, чтобы открыть Flux, или выйдите через его меню.</translation>
+    </message>
+    <message>
+        <source>Download finished</source>
+        <translation>Загрузка завершена</translation>
+    </message>
+</context>
+<context>
+    <name>TrayMenu</name>
+    <message>
+        <source>Hide Flux</source>
+        <translation>Скрыть Flux</translation>
+    </message>
+    <message>
+        <source>Open Flux</source>
+        <translation>Открыть Flux</translation>
+    </message>
+    <message>
+        <source>Add a torrent file…</source>
+        <translation>Добавить торрент-файл…</translation>
+    </message>
+    <message>
+        <source>Add a magnet link…</source>
+        <translation>Добавить magnet-ссылку…</translation>
+    </message>
+    <message>
+        <source>Start all torrents</source>
+        <translation>Запустить все торренты</translation>
+    </message>
+    <message>
+        <source>Stop all torrents</source>
+        <translation>Остановить все торренты</translation>
+    </message>
+    <message>
+        <source>Alternative speed limits</source>
+        <translation>Альтернативные лимиты скорости</translation>
+    </message>
+    <message>
+        <source>Exit Flux</source>
+        <translation>Выйти из Flux</translation>
     </message>
 </context>
 <context>

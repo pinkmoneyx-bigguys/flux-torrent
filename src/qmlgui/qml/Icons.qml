@@ -34,6 +34,8 @@ QtObject {
     readonly property string data: "M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"
     readonly property string audio: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
     readonly property string app: "M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"
+    // Tray and notifications (lucide bell)
+    readonly property string bell: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"
 
     // Window buttons: the mockup draws them on a 10x10 grid (minimize "M1 5h8", close "M1.5 1.5l7 7M8.5 1.5l-7 7",
     // maximize a rect 1,1,8x8 r2.5); here the same shapes are scaled by 2.4 onto the 24 grid, so at size 10
