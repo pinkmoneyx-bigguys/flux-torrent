@@ -67,6 +67,7 @@ Surface {
 
         // shadcn Alert: RSS processing is off in a fresh qBittorrent profile
         Rectangle {
+            id: rssOff
             objectName: "rssOffAlert"
             visible: !RssManager.processingEnabled
             Layout.fillWidth: true
@@ -122,21 +123,15 @@ Surface {
             }
         }
 
-        // --- Three panes --------------------------------------------------------------------------
-        Rectangle {
+        // --- Three panes, edge to edge under the header (no frame of their own: no room lost) -------
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.margins: Theme.sp(6)
-            Layout.topMargin: Theme.sp(4)
-            radius: Theme.radiusCtl + 2
-            color: "transparent"
-            border.width: 1
-            border.color: Theme.border
+            Layout.topMargin: rssOff.visible ? Theme.sp(4) : 0
             clip: true
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 1
                 spacing: 0
 
                 // Feeds ---------------------------------------------------------------------------
