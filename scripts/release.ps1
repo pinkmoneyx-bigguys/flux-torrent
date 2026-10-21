@@ -29,6 +29,11 @@ if ($LASTEXITCODE -ne 0) { throw "build.ps1 failed ($LASTEXITCODE)" }
 # leftovers of other builds have no place in a release
 Get-ChildItem $app -Filter 'qbittorrent*.exe' | Remove-Item -Force
 Get-ChildItem $app -Filter '*.pdb' -Recurse | Remove-Item -Force
+# a program that calls itself older than its release would be offered that release again and again
+foreach ($exe in (Join-Path $app 'Flux.exe'), (Join-Path $root 'build\src\installer\FluxSetup.exe')) {
+    $built = (Get-Item $exe).VersionInfo.ProductVersion
+    if ($built -ne $version) { throw "$(Split-Path $exe -Leaf) says version $built, the release is $version" }
+}
 
 $installerDir = Join-Path $root 'build\src\installer'
 foreach ($tool in 'fluxpack.exe', 'flux_setup_stub.exe', 'FluxSetup.exe') {

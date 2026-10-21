@@ -3,6 +3,22 @@
 All notable changes to Flux Torrent. Flux follows [semantic versioning](https://semver.org); releases are tagged
 `v<version>` on GitHub.
 
+## [0.1.1]
+
+### New
+
+- **Flux in the notification area.** An icon by the clock shows the download and upload speeds; a click opens or
+  hides the window, and its menu — in Flux's own look — adds a torrent file or a magnet link, starts or stops all
+  torrents, switches the alternative speed limits and exits Flux.
+- **Closing the window keeps Flux running**, as qBittorrent does: downloads and seeding go on in the background.
+  Optionally, minimizing sends the window there too. *Settings → Tray & notifications* turns each of these off.
+- **A notification when a download finishes**, unless Flux is the window in front.
+
+### Fixed
+
+- An update left the downloaded installer in the temporary folder until the next start of Flux.
+- Switches and checkboxes changed by a screen reader now save the setting, as a click does.
+
 ## [0.1.0] — first public release
 
 Flux Torrent is a new Windows interface for the qBittorrent 5.2.4 engine (libtorrent 2.0.11), with streaming and a
