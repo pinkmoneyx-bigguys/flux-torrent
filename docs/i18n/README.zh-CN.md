@@ -128,16 +128,16 @@ Flux 对这个引擎**原封不动**（基于 libtorrent 2.0 的 qBittorrent 5.2
 
 ## 🚀 快速上手
 
-1. 从[最新发布版](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest)下载 **`Flux-<version>-win64.zip`**。
-2. 解压到任意位置，例如 `C:\Program Files\Flux` 或用户目录下的某个文件夹。
-3. 运行 **`Flux.exe`**。
+从[最新发布版](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest)中任选其一下载：
+
+| | |
+|---|---|
+| 📦 **`Flux-<version>-setup.exe`**（*推荐*） | 安装程序，采用 Flux 自己的界面风格。仅为你安装，因此无需管理员权限；会创建“开始”菜单和桌面快捷方式，用 Flux 打开 `.torrent` 文件和磁力链接，并出现在 *已安装的应用* 中，方便卸载。新版本会直接覆盖安装。 |
+| 🧳 **`Flux-<version>-portable-win64.zip`** | 便携版。解压到任意位置（U 盘也可以），然后运行 `Flux.exe`。设置和 Torrent 都保存在它的 `profile` 文件夹中，它同样会自动更新。 |
 
 首次启动时，Flux 会提出**从 qBittorrent 迁移你的 Torrent 和设置**。请先关闭 qBittorrent，然后点击 *迁移*。想从零开始？选择 *全新开始* 即可。
 
-> [!TIP]
-> **便携模式**：在 `Flux.exe` 旁边新建一个名为 `profile` 的空文件夹，Flux 就会把所有设置和 Torrent 都保存在那里——放在 U 盘里随身带着用非常方便。
-
-**系统要求**：Windows 10（1809 或更高版本）或 Windows 11，64 位。
+**系统要求**：Windows 10（1809 或更高版本）或 Windows 11，64 位。无需另外安装任何东西：Flux 自带所需的一切。
 
 ## ⌨️ 快捷键
 
@@ -168,6 +168,18 @@ Flux 对这个引擎**原封不动**（基于 libtorrent 2.0 的 qBittorrent 5.2
 <summary><b>为什么点击“开始”后，Torrent 要过几秒才会提速？</b></summary>
 <br>
 停止 Torrent 会关闭它的所有连接。重新开始后，Flux 会再次连接用户，而何时开始发送数据由对方决定——大多数客户端每 10–15 秒才重新评估一次。在此期间，Flux 会显示<i>“正在连接用户…”</i>。qBittorrent 的表现也完全一样。
+</details>
+
+<details>
+<summary><b>Windows 提示安装程序是“无法识别的应用”，它安全吗？</b></summary>
+<br>
+对于每个还没有付费代码签名证书的新程序，SmartScreen 都会发出警告，而 Flux 目前没有这种证书。点击<i>更多信息</i> → <i>仍要运行</i>。若要确认文件正是这里发布的那一个，请将它的 SHA-256 与发布版中的 <code>SHA256SUMS.txt</code> 进行比对（在 PowerShell 中运行 <code>Get-FileHash Flux-&lt;version&gt;-setup.exe</code>）。
+</details>
+
+<details>
+<summary><b>如何卸载 Flux？</b></summary>
+<br>
+打开<i>设置 → 应用 → 已安装的应用</i>，找到 <b>Flux Torrent</b> 并选择<i>卸载</i>。卸载程序会询问是否保留你的设置和 Torrent 列表；已下载的文件绝不会被改动。便携版只是一个文件夹：直接删除即可。
 </details>
 
 <details>
@@ -206,11 +218,11 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test
 # 3. 在 deploy\ 中生成可直接运行的副本，附带所需的 Qt 和 DLL
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Deploy
 
-# 4. 将 deploy\ 打包为 dist\Flux-<version>-win64.zip，用于发布
-powershell -ExecutionPolicy Bypass -File scripts/package.ps1
+# 4. 在 dist\ 中生成发布文件：安装程序、便携版 zip、校验和以及发布说明
+powershell -ExecutionPolicy Bypass -File scripts/release.ps1
 ```
 
-只要在 GitHub 上发布一个标签为 <code>v&lt;version&gt;</code> 的版本并附上这个 zip，所有已安装的 Flux 就都会提示更新。
+将 <code>dist\</code> 中的文件发布到标签为 <code>v&lt;version&gt;</code> 的 GitHub 发布版中（参见 <a href="../../CHANGELOG.md"><code>CHANGELOG.md</code></a>），所有在用的 Flux 都会提示更新：安装版获取安装程序，便携版获取 zip。
 
 **项目结构**
 
@@ -221,6 +233,7 @@ powershell -ExecutionPolicy Bypass -File scripts/package.ps1
 | `src/qmlgui/backend` | 供界面调用的 C++ 模型（Torrent、搜索、海报、RSS、更新、语言…） |
 | `src/qmlgui/streaming` | 流媒体：预读规划和本地流媒体服务器 |
 | `src/qmlgui/i18n` | 翻译文件（`flux_<code>.ts`） |
+| `src/installer` | 安装程序：无依赖的自解压存根及其 QML 界面 |
 | `test/qmlgui` | C++ 和 QML 测试 |
 
 </details>
@@ -229,11 +242,11 @@ powershell -ExecutionPolicy Bypass -File scripts/package.ps1
 
 Flux 已被翻译成 9 种语言。字符串以 Qt `.ts` 文件的形式存放在 [`src/qmlgui/i18n`](../../src/qmlgui/i18n) 中，每种语言一个文件，可以用 Qt Linguist 或任意文本编辑器打开。
 
-发现了别扭的措辞，或者希望加入你的语言？欢迎[提交 Issue](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) 或发送 Pull Request——测试会检查每份翻译是否完整、占位符是否保留。
+发现了别扭的措辞，或者希望加入你的语言？欢迎[提交 Issue](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) 或发送 Pull Request——[`CONTRIBUTING.md`](../../CONTRIBUTING.md) 介绍了各部分的位置，每个 Pull Request 上的检查都会确认每份翻译是否完整、占位符是否保留。
 
 ## 🤝 参与贡献
 
-欢迎提交 Bug 报告、想法和 Pull Request。提交 Pull Request 之前，请先运行测试：
+欢迎提交 Bug 报告、想法和 Pull Request，详情见 [`CONTRIBUTING.md`](../../CONTRIBUTING.md)。提交 Pull Request 之前，请先运行测试：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test

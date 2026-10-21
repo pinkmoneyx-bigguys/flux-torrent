@@ -128,16 +128,16 @@ E tudo o que você espera do qBittorrent continua lá: download em sequência e 
 
 ## 🚀 Primeiros passos
 
-1. Baixe o **`Flux-<version>-win64.zip`** do [lançamento mais recente](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest).
-2. Descompacte onde quiser — por exemplo, em `C:\Program Files\Flux` ou em uma pasta do seu perfil de usuário.
-3. Execute o **`Flux.exe`**.
+Baixe um dos dois arquivos do [lançamento mais recente](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest):
+
+| | |
+|---|---|
+| 📦 **`Flux-<version>-setup.exe`** — *recomendado* | O instalador, com o visual do próprio Flux. Instala só para você, então não precisa de permissão de administrador; cria atalhos no menu Iniciar e na área de trabalho, abre arquivos `.torrent` e links magnéticos e aparece em *Aplicativos instalados* para ser removido. As novas versões são instaladas por cima da anterior. |
+| 🧳 **`Flux-<version>-portable-win64.zip`** | A versão portátil. Descompacte onde quiser — um pendrive serve — e execute o `Flux.exe`. As configurações e os torrents ficam na pasta `profile` dela, e ela também se atualiza sozinha. |
 
 Na primeira execução, o Flux oferece **trazer seus torrents e configurações do qBittorrent**. Feche o qBittorrent antes e depois clique em *Migrar*. Prefere começar do jeito limpo? Escolha *Começar do zero*.
 
-> [!TIP]
-> **Modo portátil:** crie uma pasta vazia chamada `profile` ao lado do `Flux.exe`, e o Flux guarda ali todas as configurações e torrents — prático para um pendrive.
-
-**Requisitos:** Windows 10 (1809 ou mais recente) ou Windows 11, 64 bits.
+**Requisitos:** Windows 10 (1809 ou mais recente) ou Windows 11, 64 bits. Não precisa instalar mais nada: o Flux traz tudo de que precisa.
 
 ## ⌨️ Atalhos de teclado
 
@@ -168,6 +168,18 @@ Não. O Flux tem o próprio perfil (<code>%APPDATA%\Flux</code> e <code>%LOCALAP
 <summary><b>Por que um torrent leva alguns segundos para ganhar velocidade depois de “Iniciar”?</b></summary>
 <br>
 Parar um torrent fecha as conexões dele. Ao iniciar de novo, o Flux volta a procurar os pares, e cabe a eles decidir quando começar a enviar — a maioria dos clientes reavalia isso a cada 10–15 segundos. Enquanto isso, o Flux mostra <i>“Conectando aos pares…”</i>. O qBittorrent se comporta exatamente da mesma forma.
+</details>
+
+<details>
+<summary><b>O Windows diz que o instalador é um aplicativo “não reconhecido”. É seguro?</b></summary>
+<br>
+O SmartScreen avisa sobre todo programa novo que ainda não tem um certificado pago de assinatura de código, e o Flux não tem um. Clique em <i>Mais informações</i> → <i>Executar assim mesmo</i>. Para ter certeza de que o arquivo é o publicado aqui, compare o SHA-256 dele com o <code>SHA256SUMS.txt</code> do lançamento (<code>Get-FileHash Flux-&lt;version&gt;-setup.exe</code> no PowerShell).
+</details>
+
+<details>
+<summary><b>Como removo o Flux?</b></summary>
+<br>
+Abra <i>Configurações → Aplicativos → Aplicativos instalados</i>, encontre o <b>Flux Torrent</b> e escolha <i>Desinstalar</i>. O desinstalador pergunta se você quer manter suas configurações e a lista de torrents; os arquivos baixados nunca são tocados. A versão portátil é só uma pasta: apague-a.
 </details>
 
 <details>
@@ -206,11 +218,11 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test
 # 3. Coloque uma cópia executável, com o Qt e as DLLs, em deploy\
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Deploy
 
-# 4. Empacote deploy\ em dist\Flux-<version>-win64.zip para um lançamento
-powershell -ExecutionPolicy Bypass -File scripts/package.ps1
+# 4. Gere um lançamento em dist\: o instalador, o zip portátil, as somas de verificação e as notas de versão
+powershell -ExecutionPolicy Bypass -File scripts/release.ps1
 ```
 
-Basta publicar no GitHub um lançamento com a tag <code>v&lt;version&gt;</code> e esse zip anexado para que todo Flux instalado ofereça a atualização.
+Publique os arquivos de <code>dist\</code> em um lançamento do GitHub com a tag <code>v&lt;version&gt;</code> (veja <a href="../../CHANGELOG.md"><code>CHANGELOG.md</code></a>) — todo Flux por aí passa a oferecer a atualização: o instalado usa o instalador; o portátil, o zip.
 
 **Estrutura do projeto**
 
@@ -221,6 +233,7 @@ Basta publicar no GitHub um lançamento com a tag <code>v&lt;version&gt;</code> 
 | `src/qmlgui/backend` | Modelos em C++ com que a interface conversa (torrents, busca, pôsteres, RSS, atualizações, idiomas…) |
 | `src/qmlgui/streaming` | Streaming: planejamento da leitura antecipada e o servidor de stream local |
 | `src/qmlgui/i18n` | Traduções (`flux_<code>.ts`) |
+| `src/installer` | O instalador: um stub autoextraível sem dependências e a interface dele em QML |
 | `test/qmlgui` | Testes em C++ e QML |
 
 </details>
@@ -229,11 +242,11 @@ Basta publicar no GitHub um lançamento com a tag <code>v&lt;version&gt;</code> 
 
 O Flux está traduzido para 9 idiomas. Os textos ficam em [`src/qmlgui/i18n`](../../src/qmlgui/i18n) como arquivos `.ts` do Qt, um por idioma, e abrem no Qt Linguist ou em qualquer editor de texto.
 
-Achou alguma frase estranha ou quer ver o seu idioma aqui? [Abra uma issue](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) ou envie um pull request — um teste confere se cada tradução está completa e mantém os seus marcadores.
+Achou alguma frase estranha ou quer ver o seu idioma aqui? [Abra uma issue](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) ou envie um pull request — o [`CONTRIBUTING.md`](../../CONTRIBUTING.md) mostra onde fica cada coisa, e uma verificação em cada pull request confere se cada tradução está completa e mantém os seus marcadores.
 
 ## 🤝 Como contribuir
 
-Relatos de bugs, ideias e pull requests são bem-vindos. Antes de abrir um pull request, rode os testes:
+Relatos de bugs, ideias e pull requests são bem-vindos — os detalhes estão no [`CONTRIBUTING.md`](../../CONTRIBUTING.md). Antes de abrir um pull request, rode os testes:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test

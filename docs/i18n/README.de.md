@@ -128,16 +128,16 @@ Und alles, was Sie von qBittorrent erwarten, ist weiterhin da: sequenzieller Dow
 
 ## 🚀 Erste Schritte
 
-1. Laden Sie **`Flux-<version>-win64.zip`** aus dem [neuesten Release](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest) herunter.
-2. Entpacken Sie das Archiv an einen beliebigen Ort – zum Beispiel nach `C:\Program Files\Flux` oder in einen Ordner in Ihrem Benutzerprofil.
-3. Starten Sie **`Flux.exe`**.
+Laden Sie eine der beiden Dateien aus dem [neuesten Release](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest) herunter:
+
+| | |
+|---|---|
+| 📦 **`Flux-<version>-setup.exe`** – *empfohlen* | Das Setup im eigenen Look von Flux. Es installiert nur für Sie, daher sind keine Administratorrechte nötig; legt Verknüpfungen im Startmenü und auf dem Desktop an, öffnet `.torrent`-Dateien und Magnet-Links und erscheint unter *Installierte Apps*, wo Sie es wieder entfernen können. Neue Versionen werden direkt an Ort und Stelle aktualisiert. |
+| 🧳 **`Flux-<version>-portable-win64.zip`** | Die portable Version. Entpacken Sie sie an einen beliebigen Ort – auch ein USB-Stick geht – und starten Sie `Flux.exe`. Einstellungen und Torrents bleiben in ihrem Ordner `profile`, und auch sie aktualisiert sich selbst. |
 
 Beim ersten Start bietet Flux an, **Ihre Torrents und Einstellungen aus qBittorrent zu übernehmen**. Schließen Sie zuerst qBittorrent und klicken Sie dann auf *Übernehmen*. Lieber ganz von vorn? Wählen Sie *Neu beginnen*.
 
-> [!TIP]
-> **Portabler Modus:** Legen Sie neben `Flux.exe` einen leeren Ordner namens `profile` an, und Flux speichert alle Einstellungen und Torrents dort – praktisch für einen USB-Stick.
-
-**Systemvoraussetzungen:** Windows 10 (1809 oder neuer) oder Windows 11, 64-Bit.
+**Systemvoraussetzungen:** Windows 10 (1809 oder neuer) oder Windows 11, 64-Bit. Sonst ist nichts zu installieren: Flux bringt alles mit, was es braucht.
 
 ## ⌨️ Tastenkürzel
 
@@ -168,6 +168,18 @@ Nein. Flux nutzt ein eigenes Profil (<code>%APPDATA%\Flux</code> und <code>%LOCA
 <summary><b>Warum dauert es nach „Starten“ ein paar Sekunden, bis ein Torrent Fahrt aufnimmt?</b></summary>
 <br>
 Beim Stoppen eines Torrents werden seine Verbindungen geschlossen. Beim Start nimmt Flux wieder Kontakt zu den Peers auf, und die entscheiden selbst, wann sie mit dem Senden beginnen – die meisten Clients prüfen das alle 10–15 Sekunden neu. Bis dahin zeigt Flux <i>„Verbindet mit Peers…“</i>. qBittorrent verhält sich genauso.
+</details>
+
+<details>
+<summary><b>Windows nennt das Setup eine „unbekannte App“. Ist es sicher?</b></summary>
+<br>
+SmartScreen warnt vor jedem neuen Programm, das noch kein kostenpflichtiges Code-Signing-Zertifikat hat – und Flux hat keins. Klicken Sie auf <i>Weitere Informationen</i> → <i>Trotzdem ausführen</i>. Um sicherzugehen, dass die Datei die hier veröffentlichte ist, vergleichen Sie ihren SHA-256-Hash mit <code>SHA256SUMS.txt</code> im Release (<code>Get-FileHash Flux-&lt;version&gt;-setup.exe</code> in PowerShell).
+</details>
+
+<details>
+<summary><b>Wie entferne ich Flux?</b></summary>
+<br>
+Öffnen Sie <i>Einstellungen → Apps → Installierte Apps</i>, suchen Sie <b>Flux Torrent</b> und wählen Sie <i>Deinstallieren</i>. Das Deinstallationsprogramm fragt, ob Ihre Einstellungen und die Torrent-Liste erhalten bleiben sollen; heruntergeladene Dateien werden nie angerührt. Die portable Version ist nur ein Ordner: Löschen Sie ihn einfach.
 </details>
 
 <details>
@@ -206,11 +218,11 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test
 # 3. Lauffähige Kopie samt Qt und DLLs in deploy\ ablegen
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Deploy
 
-# 4. deploy\ für ein Release in dist\Flux-<version>-win64.zip packen
-powershell -ExecutionPolicy Bypass -File scripts/package.ps1
+# 4. Ein Release in dist\: das Setup, das portable Zip, Prüfsummen und Release Notes
+powershell -ExecutionPolicy Bypass -File scripts/release.ps1
 ```
 
-Sobald auf GitHub ein Release mit dem Tag <code>v&lt;version&gt;</code> und diesem Zip veröffentlicht ist, bietet jedes installierte Flux das Update an.
+Veröffentlichen Sie die Dateien aus <code>dist\</code> in einem GitHub-Release mit dem Tag <code>v&lt;version&gt;</code> (siehe <a href="../../CHANGELOG.md"><code>CHANGELOG.md</code></a>) – dann bietet jedes Flux da draußen das Update an: ein installiertes nimmt das Setup, ein portables das Zip.
 
 **Projektstruktur**
 
@@ -221,6 +233,7 @@ Sobald auf GitHub ein Release mit dem Tag <code>v&lt;version&gt;</code> und dies
 | `src/qmlgui/backend` | C++-Modelle, mit denen die Oberfläche spricht (Torrents, Suche, Poster, RSS, Updates, Sprachen…) |
 | `src/qmlgui/streaming` | Streaming: Planung des Vorausladens und der lokale Stream-Server |
 | `src/qmlgui/i18n` | Übersetzungen (`flux_<code>.ts`) |
+| `src/installer` | Das Setup: ein selbstentpackender Stub ohne Abhängigkeiten und seine QML-Oberfläche |
 | `test/qmlgui` | C++- und QML-Tests |
 
 </details>
@@ -229,11 +242,11 @@ Sobald auf GitHub ein Release mit dem Tag <code>v&lt;version&gt;</code> und dies
 
 Flux ist in 9 Sprachen übersetzt. Die Texte liegen in [`src/qmlgui/i18n`](../../src/qmlgui/i18n) als Qt-`.ts`-Dateien, eine pro Sprache, und lassen sich in Qt Linguist oder jedem Texteditor öffnen.
 
-Eine holprige Formulierung entdeckt oder fehlt Ihre Sprache? [Eröffnen Sie ein Issue](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) oder schicken Sie einen Pull Request – ein Test prüft, dass jede Übersetzung vollständig ist und ihre Platzhalter behält.
+Eine holprige Formulierung entdeckt oder fehlt Ihre Sprache? [Eröffnen Sie ein Issue](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) oder schicken Sie einen Pull Request – [`CONTRIBUTING.md`](../../CONTRIBUTING.md) zeigt, wo was liegt, und eine Prüfung bei jedem Pull Request stellt sicher, dass jede Übersetzung vollständig ist und ihre Platzhalter behält.
 
 ## 🤝 Mitwirken
 
-Fehlerberichte, Ideen und Pull Requests sind willkommen. Bitte führen Sie vor einem Pull Request die Tests aus:
+Fehlerberichte, Ideen und Pull Requests sind willkommen – Details stehen in [`CONTRIBUTING.md`](../../CONTRIBUTING.md). Bitte führen Sie vor einem Pull Request die Tests aus:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test

@@ -128,16 +128,16 @@ A wszystko, czego oczekujesz od qBittorrent, nadal tu jest: pobieranie sekwencyj
 
 ## 🚀 Pierwsze kroki
 
-1. Pobierz **`Flux-<version>-win64.zip`** z [najnowszego wydania](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest).
-2. Rozpakuj archiwum w dowolnym miejscu — na przykład w `C:\Program Files\Flux` albo w folderze w swoim profilu użytkownika.
-3. Uruchom **`Flux.exe`**.
+Pobierz jeden z dwóch plików z [najnowszego wydania](https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest):
+
+| | |
+|---|---|
+| 📦 **`Flux-<version>-setup.exe`** — *zalecany* | Instalator w stylu Flux. Instaluje program tylko dla Ciebie, więc uprawnienia administratora nie są potrzebne; dodaje skróty w menu Start i na pulpicie, otwiera pliki `.torrent` i odnośniki magnet oraz pojawia się na liście *Zainstalowane aplikacje*, skąd można go usunąć. Nowe wersje instalują się w miejsce poprzedniej. |
+| 🧳 **`Flux-<version>-portable-win64.zip`** | Wersja przenośna. Rozpakuj ją w dowolnym miejscu — może to być nawet pendrive — i uruchom `Flux.exe`. Ustawienia i torrenty zostają w jej folderze `profile`, a aktualizuje się ona również sama. |
 
 Przy pierwszym uruchomieniu Flux zaproponuje **przeniesienie torrentów i ustawień z qBittorrent**. Najpierw zamknij qBittorrent, a potem kliknij *Przenieś*. Wolisz zacząć z czystą kartą? Wybierz *Zacznij od nowa*.
 
-> [!TIP]
-> **Tryb przenośny:** utwórz pusty folder o nazwie `profile` obok `Flux.exe`, a Flux będzie trzymać w nim wszystkie swoje ustawienia i torrenty — wygodne na pendrivie.
-
-**Wymagania:** Windows 10 (1809 lub nowszy) albo Windows 11, 64-bitowy.
+**Wymagania:** Windows 10 (1809 lub nowszy) albo Windows 11, 64-bitowy. Niczego więcej nie trzeba instalować: Flux ma ze sobą wszystko, czego potrzebuje.
 
 ## ⌨️ Skróty klawiszowe
 
@@ -168,6 +168,18 @@ Nie. Flux ma własny profil (<code>%APPDATA%\Flux</code> i <code>%LOCALAPPDATA%\
 <summary><b>Dlaczego po kliknięciu „Uruchom” torrent rozpędza się dopiero po kilku sekundach?</b></summary>
 <br>
 Zatrzymanie torrenta zamyka jego połączenia. Po ponownym uruchomieniu Flux znów łączy się z partnerami, a to od nich zależy, kiedy zaczną wysyłać dane — większość klientów podejmuje tę decyzję co 10–15 sekund. W tym czasie Flux pokazuje <i>„Łączenie z partnerami…”</i>. qBittorrent zachowuje się dokładnie tak samo.
+</details>
+
+<details>
+<summary><b>Windows nazywa instalator „nierozpoznaną aplikacją”. Czy to bezpieczne?</b></summary>
+<br>
+SmartScreen ostrzega przed każdym nowym programem, który nie ma jeszcze płatnego certyfikatu podpisywania kodu, a Flux go nie ma. Kliknij <i>Więcej informacji</i> → <i>Uruchom mimo to</i>. Aby upewnić się, że plik jest tym opublikowanym tutaj, porównaj jego SHA-256 z <code>SHA256SUMS.txt</code> w wydaniu (<code>Get-FileHash Flux-&lt;version&gt;-setup.exe</code> w PowerShell).
+</details>
+
+<details>
+<summary><b>Jak usunąć Flux?</b></summary>
+<br>
+Otwórz <i>Ustawienia → Aplikacje → Zainstalowane aplikacje</i>, znajdź <b>Flux Torrent</b> i wybierz <i>Odinstaluj</i>. Deinstalator zapyta, czy zachować Twoje ustawienia i listę torrentów; pobrane pliki nigdy nie są ruszane. Wersja przenośna to po prostu folder: usuń go.
 </details>
 
 <details>
@@ -206,11 +218,11 @@ powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test
 # 3. Umieść w deploy\ gotową do uruchomienia kopię razem z Qt i bibliotekami DLL
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Deploy
 
-# 4. Spakuj deploy\ do dist\Flux-<version>-win64.zip na potrzeby wydania
-powershell -ExecutionPolicy Bypass -File scripts/package.ps1
+# 4. Przygotuj wydanie w dist\: instalator, przenośne archiwum zip, sumy kontrolne i informacje o wydaniu
+powershell -ExecutionPolicy Bypass -File scripts/release.ps1
 ```
 
-Wystarczy opublikować na GitHub wydanie z tagiem <code>v&lt;version&gt;</code> i dołączonym archiwum zip, a każdy zainstalowany Flux zaproponuje aktualizację.
+Opublikuj pliki z <code>dist\</code> w wydaniu na GitHub z tagiem <code>v&lt;version&gt;</code> (zobacz <a href="../../CHANGELOG.md"><code>CHANGELOG.md</code></a>) — a każdy Flux zaproponuje aktualizację: zainstalowany pobierze instalator, przenośny — archiwum zip.
 
 **Struktura projektu**
 
@@ -221,6 +233,7 @@ Wystarczy opublikować na GitHub wydanie z tagiem <code>v&lt;version&gt;</code> 
 | `src/qmlgui/backend` | Modele C++, z których korzysta interfejs (torrenty, wyszukiwanie, plakaty, RSS, aktualizacje, języki…) |
 | `src/qmlgui/streaming` | Strumieniowanie: planowanie odczytu z wyprzedzeniem i lokalny serwer strumieniowy |
 | `src/qmlgui/i18n` | Tłumaczenia (`flux_<code>.ts`) |
+| `src/installer` | Instalator: samorozpakowujący się stub bez zależności i jego interfejs w QML |
 | `test/qmlgui` | Testy C++ i QML |
 
 </details>
@@ -229,11 +242,11 @@ Wystarczy opublikować na GitHub wydanie z tagiem <code>v&lt;version&gt;</code> 
 
 Flux jest przetłumaczony na 9 języków. Teksty znajdują się w [`src/qmlgui/i18n`](../../src/qmlgui/i18n) jako pliki Qt `.ts`, po jednym na język; można je otworzyć w Qt Linguist lub w dowolnym edytorze tekstu.
 
-Trafiłeś na niezręczne sformułowanie albo chcesz dodać swój język? [Zgłoś problem](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) lub wyślij pull request — test sprawdza, czy każde tłumaczenie jest kompletne i zachowuje wszystkie symbole zastępcze.
+Trafiłeś na niezręczne sformułowanie albo chcesz dodać swój język? [Zgłoś problem](https://github.com/pinkmoneyx-bigguys/flux-torrent/issues) lub wyślij pull request — [`CONTRIBUTING.md`](../../CONTRIBUTING.md) pokazuje, gdzie co leży, a kontrola przy każdym pull requeście sprawdza, czy każde tłumaczenie jest kompletne i zachowuje wszystkie symbole zastępcze.
 
 ## 🤝 Współtworzenie
 
-Zgłoszenia błędów, pomysły i pull requesty są mile widziane. Zanim otworzysz pull request, uruchom testy:
+Zgłoszenia błędów, pomysły i pull requesty są mile widziane — szczegóły znajdziesz w [`CONTRIBUTING.md`](../../CONTRIBUTING.md). Zanim otworzysz pull request, uruchom testy:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1 -Gui Qml -Test
