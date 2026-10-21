@@ -1,18 +1,24 @@
-# Security Policy
+# Security policy
 
-qBittorrent takes the security of our software seriously, including all source code repositories managed through our GitHub organisation.
-If you believe you have found a security vulnerability in qBittorrent, please report it to us as described below.
+## Reporting a vulnerability
 
-## Reporting Security Issues
+Please **do not** report security problems in public issues. Use GitHub's
+[private vulnerability reporting](https://github.com/pinkmoneyx-bigguys/flux-torrent/security/advisories/new) instead.
 
-Please do not report security vulnerabilities through public GitHub issues. Instead, please use GitHubs private vulnerability reporting functionality associated to this repository. Additionally, you may email us with all security-related inquiries and notifications at `security@qbittorrent.org`.
+It helps to include:
 
-Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
-1. Type of issue
-2. Step-by-step instructions to reproduce the issue
-3. Proof-of-concept or exploit code (if possible)
-4. Potential impact of the issue, including how an attacker might exploit the issue
+1. what kind of problem it is and which part of Flux it affects (the interface, the updater, the installer, streaming…);
+2. the steps to reproduce it;
+3. a proof of concept, if you have one;
+4. what an attacker could do with it.
 
-This information will help us triage your report more quickly. Any and all CVEs will be requested and issued through GitHubs private vulnerability reporting functionality, which will be published alongside the disclosure.
+You will get an answer as soon as possible, and credit in the release notes if you would like it.
 
-This security policy only applies to the most recent stable branch of qBittorrent. Flaws in old versions that are not present in the current stable branch will not be fixed.
+## Supported versions
+
+Only the latest release gets security fixes — Flux updates itself, so staying current takes one click.
+
+## The engine
+
+Flux runs on the qBittorrent engine (libtorrent). A vulnerability in the engine itself is best reported to
+[qBittorrent](https://github.com/qbittorrent/qBittorrent/security/policy) as well, so every client built on it gets the fix.

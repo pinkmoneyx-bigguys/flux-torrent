@@ -1,5 +1,10 @@
-<!--
-MANDATORY Before submitting your work, make sure you have:
-1. Read https://github.com/qbittorrent/qBittorrent/blob/master/CONTRIBUTING.md#opening-a-pull-request
-2. Delete this comment block
--->
+<!-- Thanks for contributing to Flux! -->
+
+### What this changes
+
+<!-- What and why, in a few sentences. Screenshots for anything visible. -->
+
+### Checklist
+
+- [ ] `scripts/build.ps1 -Gui Qml -Test` passes
+- [ ] New or changed UI strings are in `src/qmlgui/i18n` (`cmake --build build --target flux_lupdate`)

@@ -1,0 +1,24 @@
+name: Checks
+
+# Quick checks on every push and pull request: the translations are complete and keep their placeholders,
+# and the README in every language has working links. (Building Flux needs Qt, libtorrent and libmpv set up
+# by scripts/setup-env.ps1; releases are built with scripts/release.ps1.)
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Translations
+        run: python scripts/check-translations.py
+      - name: README in every language
+        run: python scripts/check-readme.py
