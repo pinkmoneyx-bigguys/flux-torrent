@@ -218,6 +218,7 @@ qt_add_shaders(qbt_qmlgui "flux_shaders"
     PREFIX "/flux"
     FILES
         shaders/glass.frag
+        shaders/poster.frag
 )
 
 target_link_libraries(qbt_qmlgui

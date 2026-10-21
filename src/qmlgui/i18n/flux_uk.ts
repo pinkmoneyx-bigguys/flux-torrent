@@ -1664,6 +1664,26 @@
         <source>Cards</source>
         <translation>Картки</translation>
     </message>
+    <message numerus="yes">
+        <source>Only titles with “%1”: %n result(s) that have it just in their genres or notes are hidden</source>
+        <translation>
+            <numerusform>Лише назви з «%1»: приховано %n результат, де це слово є тільки в жанрах чи примітках</numerusform>
+            <numerusform>Лише назви з «%1»: приховано %n результати, де це слово є тільки в жанрах чи примітках</numerusform>
+            <numerusform>Лише назви з «%1»: приховано %n результатів, де це слово є тільки в жанрах чи примітках</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Showing everything the trackers found for “%1”, genres and notes too</source>
+        <translation>Показано все, що знайшли трекери за «%1», зокрема в жанрах і примітках</translation>
+    </message>
+    <message>
+        <source>Show them</source>
+        <translation>Показати</translation>
+    </message>
+    <message>
+        <source>Hide them</source>
+        <translation>Сховати</translation>
+    </message>
     <message>
         <source>Python is required</source>
         <translation>Потрібен Python</translation>

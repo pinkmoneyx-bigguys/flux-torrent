@@ -25,7 +25,7 @@ Surface {
     property string category: "all"
     property string plugin: "enabled"
     // "list" or "cards"; remembered
-    property string view: UiSettings.layoutValue("searchView", "list")
+    property string view: UiSettings.layoutValue("searchView", "cards")
     function setView(v) {
         view = v
         UiSettings.setLayoutValue("searchView", v)
@@ -81,6 +81,19 @@ Surface {
         }
     }
 
+    // The mouse wheel: a generous step with a short glide (Qt's own steps are small and jump); several
+    // notches add up. Touchpads keep scrolling as they do.
+    function wheelScroll(flickable, glide, event) {
+        const top = flickable.originY
+        const bottom = Math.max(top, flickable.originY + flickable.contentHeight - flickable.height)
+        const from = glide.running ? glide.to : flickable.contentY
+        glide.stop()
+        glide.from = flickable.contentY
+        glide.to = Math.max(top, Math.min(bottom, from - event.angleDelta.y / 120 * 280))
+        glide.start()
+        event.accepted = true
+    }
+
     function trackerName(engine) {
         for (const p of SearchEngine.plugins) {
             if (p.name === engine)
@@ -109,6 +122,17 @@ Surface {
         descending: true
         seededOnly: seededSwitch.checked
         postersOnly: postersSwitch.checked
+        query: SearchEngine.pattern
+        exact: page.exactOnly
+    }
+    // only releases whose titles name what was searched for (a new search starts that way again)
+    property bool exactOnly: true
+    Connections {
+        target: SearchEngine
+        function onStatusChanged() {
+            if (SearchEngine.status === "running")
+                page.exactOnly = true
+        }
     }
 
     Connections {
@@ -240,9 +264,10 @@ Surface {
                         case "running": return qsTr("Searching for “%1”… %n result(s) so far", "", n).arg(SearchEngine.pattern)
                         case "failed": return SearchEngine.error
                         case "cancelled": return qsTr("Stopped. %n result(s) for “%1”", "", n).arg(SearchEngine.pattern)
+                        // (what is shown: the loose matches left out are counted by the button beside)
                         default: return page.view === "cards" && resultsFilter.groups.length > 0
-                                 ? qsTr("%n film(s), %1 release(s) for “%2”", "", resultsFilter.groups.length).arg(n).arg(SearchEngine.pattern)
-                                 : qsTr("%n result(s) for “%1”", "", n).arg(SearchEngine.pattern)
+                                 ? qsTr("%n film(s), %1 release(s) for “%2”", "", resultsFilter.groups.length).arg(n - resultsFilter.looseCount * (page.exactOnly ? 1 : 0)).arg(SearchEngine.pattern)
+                                 : qsTr("%n result(s) for “%1”", "", n - resultsFilter.looseCount * (page.exactOnly ? 1 : 0)).arg(SearchEngine.pattern)
                         }
                     }
                     color: SearchEngine.status === "failed" ? Theme.error : Theme.textDim
@@ -286,6 +311,51 @@ Surface {
             }
         }
 
+        // --- What has the words only in its genres or notes: left out, a click away -----------------
+        Rectangle {
+            objectName: "searchLooseBar"
+            visible: page.hasResults && resultsFilter.looseCount > 0
+            Layout.fillWidth: true
+            implicitHeight: 38
+            color: Theme.alpha(Theme.muted, 0.45)
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.sp(5)
+                anchors.rightMargin: Theme.sp(3)
+                spacing: Theme.sp(2)
+                Icon {
+                    path: Icons.filter
+                    size: 14
+                    strokeWidth: 1.75
+                    color: Theme.textDim
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: page.exactOnly
+                          ? qsTr("Only titles with “%1”: %n result(s) that have it just in their genres or notes are hidden", "", resultsFilter.looseCount).arg(SearchEngine.pattern)
+                          : qsTr("Showing everything the trackers found for “%1”, genres and notes too").arg(SearchEngine.pattern)
+                    color: Theme.textDim
+                    font.family: Theme.fontText
+                    font.pixelSize: Theme.textXs
+                    elide: Text.ElideRight
+                }
+                UiButton {
+                    objectName: "searchLoose"
+                    size: "sm"
+                    variant: "ghost"
+                    text: page.exactOnly ? qsTr("Show them") : qsTr("Hide them")
+                    onClicked: page.exactOnly = !page.exactOnly
+                }
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: 1
+                color: Theme.border
+            }
+        }
+
         // --- Results --------------------------------------------------------------------------------
         Item {
             Layout.fillWidth: true
@@ -302,6 +372,11 @@ Surface {
                 headerPositioning: ListView.OverlayHeader
                 reuseItems: true
                 ScrollBar.vertical: ScrollBar {}
+                WheelHandler {
+                    acceptedDevices: PointerDevice.Mouse
+                    onWheel: event => page.wheelScroll(list, listGlide, event)
+                }
+                NumberAnimation { id: listGlide; target: list; property: "contentY"; duration: 220; easing.type: Easing.OutCubic }
 
                 header: ResultsHeader {
                     width: list.width
@@ -327,6 +402,14 @@ Surface {
                 readonly property int columns: page.gridColumns > 0 ? page.gridColumns : Math.max(2, Math.floor(width / 190))
                 cellWidth: Math.floor(width / columns)
                 cellHeight: cellWidth * 1.5 + 78
+                // cards made a couple of rows ahead and used again, so scrolling doesn't build them on the way
+                cacheBuffer: Math.max(0, cellHeight * 2)
+                reuseItems: true
+                WheelHandler {
+                    acceptedDevices: PointerDevice.Mouse
+                    onWheel: event => page.wheelScroll(grid, gridGlide, event)
+                }
+                NumberAnimation { id: gridGlide; target: grid; property: "contentY"; duration: 220; easing.type: Easing.OutCubic }
                 delegate: FilmCard {
                     width: grid.cellWidth
                     height: grid.cellHeight
@@ -576,33 +659,32 @@ Surface {
                 elide: Text.ElideRight
             }
         }
+        // the picture itself, drawn by the shader below: cropped to fill and with the rounded corners
         Image {
             id: image
-            anchors.fill: parent
+            visible: false
             source: poster.url
             asynchronous: true
-            fillMode: Image.PreserveAspectCrop
+            // decoded at the size it is shown at (twice, for sharp corners on high DPI screens)
             sourceSize.width: Math.ceil(poster.width * 2)
-            opacity: status === Image.Ready ? 1 : 0
+        }
+        ShaderEffect {
+            anchors.fill: parent
+            visible: image.status === Image.Ready
+            opacity: visible ? 1 : 0
             Behavior on opacity {
                 enabled: !Theme.reducedMotion
                 NumberAnimation { duration: Theme.durMed }
             }
-            // the picture takes the poster's rounded corners
-            layer.enabled: status === Image.Ready && poster.radius > 0
-            layer.effect: MultiEffect {
-                maskEnabled: true
-                maskSource: posterMask
-                maskThresholdMin: 0.5
-                maskSpreadAtMin: 1
-            }
-        }
-        Rectangle {
-            id: posterMask
-            anchors.fill: parent
-            radius: poster.radius
-            visible: false
-            layer.enabled: true
+            property variant source: image
+            property size size: Qt.size(width, height)
+            property real radius: poster.radius
+            // the part of the picture that fills the card, per axis
+            readonly property real pictureAspect: image.implicitHeight > 0 ? image.implicitWidth / image.implicitHeight : 1
+            readonly property real cardAspect: height > 0 ? width / height : 1
+            property size crop: pictureAspect > cardAspect ? Qt.size(cardAspect / pictureAspect, 1)
+                                                           : Qt.size(1, pictureAspect / cardAspect)
+            fragmentShader: "qrc:/flux/shaders/poster.frag.qsb"
         }
         // the outline over the picture
         Rectangle {
@@ -1048,11 +1130,8 @@ Surface {
         property var snapshot: ({ releases: [], voices: [], qualities: [] })
         // the film as the results have it now (a download marks its release), else as it was opened
         readonly property var film: {
-            for (const g of resultsFilter.groups) {
-                if (g.key === filmKey)
-                    return g
-            }
-            return snapshot
+            const g = resultsFilter.groups.length >= 0 && filmKey !== "" ? resultsFilter.group(filmKey) : null
+            return g && g.key ? g : snapshot
         }
         readonly property var about: FilmDetails.revision >= 0 && filmKey !== "" ? FilmDetails.details(filmKey) : ({})
         property string quality: "all"
@@ -1066,7 +1145,9 @@ Surface {
         signal reset()
 
         function show(f) {
-            snapshot = f
+            // a card carries no releases: the film with them, as it is now
+            const full = resultsFilter.group(f.key)
+            snapshot = full && full.key ? full : f
             filmKey = f.key
             quality = "all"
             voice = ""
@@ -1161,6 +1242,14 @@ Surface {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar {}
+            WheelHandler {
+                acceptedDevices: PointerDevice.Mouse
+                onWheel: event => {
+                    rd.atTop = false
+                    page.wheelScroll(releaseList, releaseGlide, event)
+                }
+            }
+            NumberAnimation { id: releaseGlide; target: releaseList; property: "contentY"; duration: 220; easing.type: Easing.OutCubic }
             model: rd.shown
             headerPositioning: ListView.PullBackHeader
             onMovementStarted: rd.atTop = false

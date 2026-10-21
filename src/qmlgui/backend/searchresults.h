@@ -121,10 +121,16 @@ class SearchResultsFilter : public QSortFilterProxyModel
     Q_PROPERTY(QString sortKey READ sortKey WRITE setSortKey NOTIFY sortChanged FINAL)
     Q_PROPERTY(bool descending READ descending WRITE setDescending NOTIFY sortChanged FINAL)
     Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
+    // What was searched for: with `exact`, only releases whose titles have its words stay. A tracker also
+    // finds the words in genres and descriptions ("киберпанк" brings "Serial Experiments Lain").
+    Q_PROPERTY(QString query READ query WRITE setQuery NOTIFY filterChanged FINAL)
+    Q_PROPERTY(bool exact READ exact WRITE setExact NOTIFY filterChanged FINAL)
+    // how many results `exact` leaves out
+    Q_PROPERTY(int looseCount READ looseCount NOTIFY looseCountChanged FINAL)
     // The shown results by film (FilmInfo), in the current order: [{key, title, original, year, series,
-    // qualities, count, seeds, minSize, maxSize, voices, releases: [{row, name, size, seeds, leechers,
-    // engine, fileUrl, published, downloaded, quality, voices, tags}]}]. `voices` of a film: every voice-over
-    // of its releases, the most common first. Rebuilt shortly after the results change.
+    // qualities, count, seeds, minSize, maxSize, voices}], for the cards: without the releases (QML would
+    // carry every film's hundreds of them each time it reads the list). Rebuilt shortly after the results
+    // change. `voices` of a film: every voice-over of its releases, the most common first.
     Q_PROPERTY(QVariantList groups READ groups NOTIFY groupsChanged FINAL)
 
 public:
@@ -141,10 +147,22 @@ public:
     bool descending() const;
     void setDescending(bool descending);
     int count() const;
+    QString query() const;
+    void setQuery(const QString &query);
+    bool exact() const;
+    void setExact(bool exact);
+    int looseCount() const;
+
+    // Whether a release's titles (not its genres or notes) have the words of `query`: most of them, each
+    // word by its stem ("киберпанка" finds "Киберпанк"); a query of no real words matches everything
+    static bool titlesMatch(const QString &name, const ReleaseMeta &meta, const QString &query);
 
     // The source row of visible row `row` (for SearchEngine.download), or -1
     Q_INVOKABLE int sourceRow(int row) const;
     QVariantList groups() const;
+    // One film of `groups` with its releases: [{row, name, size, seeds, leechers, engine, fileUrl,
+    // published, downloaded, quality, voices, tags}]; {} when it is not shown
+    Q_INVOKABLE QVariantMap group(const QString &key) const;
     // Builds the groups now (tests)
     Q_INVOKABLE void regroup();
 
@@ -165,6 +183,7 @@ signals:
     void sortChanged();
     void countChanged();
     void groupsChanged();
+    void looseCountChanged();
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
@@ -177,13 +196,22 @@ private:
     QStringList m_words;
     bool m_seededOnly = false;
     bool m_postersOnly = false;
+    QString m_query;
+    bool m_exact = true;
+    int m_looseCount = 0;
+    // counts the results `exact` leaves out
+    void countLoose();
     // works out every release's film (shown or not; see regroup) and asks Posters about them
     void resolveFilms();
+    // whether the query names the release or its film (`exact`)
+    bool matchesQuery(const SearchRow &row) const;
+    QSet<QString> m_namedFilms;  // the films the query names (keys), worked out with the films
     // the film of a release (filmOfRelease), then joined as resolveFilms decided
     FilmInfo filmOf(const SearchRow &row) const;
     QHash<QString, FilmInfo> m_resolved;  // key as parsed → the film
     QString m_sortKey;
     bool m_descending = false;
-    QVariantList m_groups;
+    QVariantList m_groups;                  // without the releases
+    QHash<QString, QVariantMap> m_fullGroups; // key → with them
     QTimer *m_groupTimer = nullptr;
 };

@@ -37,6 +37,16 @@
 #include "base/global.h"
 #include "base/search/searchhandler.h"
 
+namespace
+{
+    // a source's titles are sometimes the release's whole name, genres and all ("… [ONA] [10 из 10]
+    // [2022, киберпанк, …]"): only a title counts as one
+    bool plausibleTitle(const QString &title)
+    {
+        return !title.isEmpty() && (title.size() <= 80) && !title.contains(u'[') && !title.contains(u'|');
+    }
+}
+
 SearchResultsModel::SearchResultsModel(QObject *parent)
     : QAbstractListModel(parent)
 {
@@ -297,6 +307,9 @@ bool SearchResultsFilter::filterAcceptsRow(const int sourceRow, const QModelInde
     if (m_seededOnly && (row->seeds <= 0))
         return false;
 
+    if (m_exact && !matchesQuery(*row))
+        return false;
+
     if (m_postersOnly && Posters::instance()->poster(FilmInfo::parse(row->name).key).isEmpty())
         return false;
 
@@ -464,11 +477,34 @@ void SearchResultsFilter::resolveFilms()
         if (!m_resolved.contains(it.key()))
             posters->alias(it.key(), m_resolved.value(it.value()).key);
     }
+
+    // the films the query names: by the titles of at least one of their releases (a release of one named
+    // only in Russian goes with the rest of its film)
+    QSet<QString> named;
+    for (int i = 0; i < results->rowCount(); ++i)
+    {
+        const SearchRow *r = results->rowAt(i);
+        if (r && titlesMatch(r->name, r->meta, m_query))
+            named.insert(filmOf(*r).key);
+    }
+    const bool namedChanged = (named != m_namedFilms);
+    m_namedFilms = named;
+
     for (const FilmInfo &film : std::as_const(m_resolved))
     {
+        // (a film left out needs no poster while it is)
+        if (m_exact && !m_namedFilms.contains(film.key))
+            continue;
         if (!posters->hasAlias(film.key))
             posters->request(film.key, film.title, film.original, film.year, film.series);
     }
+    if (namedChanged && m_exact)
+        invalidateFilter();
+}
+
+bool SearchResultsFilter::matchesQuery(const SearchRow &row) const
+{
+    return titlesMatch(row.name, row.meta, m_query) || m_namedFilms.contains(filmOf(row).key);
 }
 
 FilmInfo SearchResultsFilter::filmOfRelease(const QString &name, const ReleaseMeta &meta)
@@ -476,13 +512,8 @@ FilmInfo SearchResultsFilter::filmOfRelease(const QString &name, const ReleaseMe
     FilmInfo film = FilmInfo::parse(name);
     static const QRegularExpression latin {u"[A-Za-z]"_s};
     static const QRegularExpression cyrillic {u"[\\x{0400}-\\x{04FF}]"_s};
-    // a source's titles are sometimes the release's whole name ("… [ONA] [10 из 10] …"): only a title
-    const auto plausible = [](const QString &t)
-    {
-        return !t.isEmpty() && (t.size() <= 80) && !t.contains(u'[') && !t.contains(u'|');
-    };
-    QString local = plausible(meta.title) ? meta.title : QString();
-    QString original = plausible(meta.original) ? meta.original : QString();
+    QString local = plausibleTitle(meta.title) ? meta.title : QString();
+    QString original = plausibleTitle(meta.original) ? meta.original : QString();
     // and now and then the other way round
     if (local.contains(latin) && !local.contains(cyrillic) && original.contains(cyrillic))
         std::swap(local, original);
@@ -520,6 +551,7 @@ QVariantList SearchResultsFilter::groups() const
 void SearchResultsFilter::regroup()
 {
     resolveFilms();
+    countLoose();
 
     const auto *results = qobject_cast<const SearchResultsModel *>(sourceModel());
     QList<QVariantMap> groups;
@@ -613,9 +645,117 @@ void SearchResultsFilter::regroup()
     }
 
     m_groups.clear();
+    m_fullGroups.clear();
     for (const QVariantMap &group : std::as_const(groups))
-        m_groups.append(group);
+    {
+        m_fullGroups.insert(group.value(u"key"_s).toString(), group);
+        QVariantMap card = group;
+        card.remove(u"releases"_s);
+        m_groups.append(card);
+    }
     emit groupsChanged();
+}
+
+QVariantMap SearchResultsFilter::group(const QString &key) const
+{
+    return m_fullGroups.value(key);
+}
+
+QString SearchResultsFilter::query() const
+{
+    return m_query;
+}
+
+void SearchResultsFilter::setQuery(const QString &query)
+{
+    if (query == m_query)
+        return;
+    m_query = query;
+    invalidateFilter();
+    countLoose();
+    emit filterChanged();
+}
+
+bool SearchResultsFilter::exact() const
+{
+    return m_exact;
+}
+
+void SearchResultsFilter::setExact(const bool exact)
+{
+    if (exact == m_exact)
+        return;
+    m_exact = exact;
+    invalidateFilter();
+    emit filterChanged();
+}
+
+int SearchResultsFilter::looseCount() const
+{
+    return m_looseCount;
+}
+
+void SearchResultsFilter::countLoose()
+{
+    const auto *results = qobject_cast<const SearchResultsModel *>(sourceModel());
+    int loose = 0;
+    for (int i = 0; results && (i < results->rowCount()); ++i)
+    {
+        const SearchRow *r = results->rowAt(i);
+        if (r && !matchesQuery(*r))
+            ++loose;
+    }
+    if (loose == m_looseCount)
+        return;
+    m_looseCount = loose;
+    emit looseCountChanged();
+}
+
+bool SearchResultsFilter::titlesMatch(const QString &name, const ReleaseMeta &meta, const QString &query)
+{
+    static const QRegularExpression separators {u"[^\\p{L}\\p{N}]+"_s, QRegularExpression::UseUnicodePropertiesOption};
+    const auto wordsOf = [](const QString &text)
+    {
+        QString t = text.toCaseFolded();
+        t.replace(u'ё', u'е');
+        return t.split(separators, Qt::SkipEmptyParts);
+    };
+
+    // the words that say what is looked for: of three letters or more (not "по", "2", "s01")
+    QStringList wanted;
+    for (const QString &word : wordsOf(query))
+    {
+        static const QRegularExpression letters {u"\\p{L}"_s, QRegularExpression::UseUnicodePropertiesOption};
+        if ((word.size() >= 3) && word.contains(letters))
+            wanted.append(word);
+    }
+    if (wanted.isEmpty())
+        return true;
+
+    // the titles: what the source knows, and the name up to its first bracket (the genres, the year and the
+    // notes are in brackets: "Эксперименты Лэйн / Serial Experiments Lain [1998, …, киберпанк, …]")
+    QString head = name;
+    if (const qsizetype bracket = head.indexOf(u'['); bracket > 0)
+        head.truncate(bracket);
+    const QString known = (plausibleTitle(meta.title) ? meta.title : QString()) + u' '
+        + (plausibleTitle(meta.original) ? meta.original : QString());
+    const QStringList titleWords = wordsOf(known + u' ' + head);
+
+    int found = 0;
+    for (const QString &word : std::as_const(wanted))
+    {
+        // the stem: a word's ending changes with its case ("киберпанка", "бегущих")
+        const QString stem = (word.size() >= 5) ? word.left(std::max<qsizetype>(4, word.size() - 2)) : word;
+        // (inside a word too: "ubuntu" in "Kubuntu", "stellar" in "Interstellar")
+        const bool has = std::any_of(titleWords.cbegin(), titleWords.cend(), [&stem](const QString &w)
+        {
+            return w.startsWith(stem) || ((stem.size() >= 4) && w.contains(stem));
+        });
+        if (has)
+            ++found;
+    }
+    // most of the words: a title spelled a little differently ("Бегушие") still counts
+    return (found * 2) >= wanted.size() && (found > 0);
 }
 
 QVariantList SearchResultsFilter::tagsOf(const QString &name, const ReleaseMeta &meta)

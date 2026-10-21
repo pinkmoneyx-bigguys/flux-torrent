@@ -142,6 +142,33 @@ private slots:
         QCOMPARE(s.key, f.key);
     }
 
+    void titlesHaveTheQuery()
+    {
+        const auto match = [](const QString &name, const QString &query)
+        {
+            return SearchResultsFilter::titlesMatch(name, {}, query);
+        };
+        // the genres in brackets don't count
+        QVERIFY(!match(u"Эксперименты Лэйн / Serial Experiments Lain [1998, аниме, киберпанк, BDRip]"_s, u"киберпанк"_s));
+        QVERIFY(match(u"Киберпанк: Бегущие по краю / Cyberpunk: Edgerunners [S01] (2022) WEB-DL"_s, u"киберпанк"_s));
+        // a word's other ending, a title spelled a little differently, short words left aside
+        QVERIFY(match(u"Киберпанк: Бегущие по краю [2022]"_s, u"киберпанка"_s));
+        QVERIFY(match(u"Киберпанк: Бегушие по краю [2022]"_s, u"Киберпанк Бегущие по краю"_s));
+        QVERIFY(match(u"Kubuntu 24.04"_s, u"ubuntu"_s));
+        QVERIFY(!match(u"Дюна: Часть вторая [2024]"_s, u"киберпанк 2"_s));
+        // what the source knows of the titles counts too
+        ReleaseMeta meta;
+        meta.title = u"Киберпанк: Бегущие по краю"_s;
+        QVERIFY(SearchResultsFilter::titlesMatch(u"Cyberpunk.Edgerunners.S01.1080p"_s, meta, u"киберпанк"_s));
+        // but not a source's "title" that is the whole name with the genres
+        ReleaseMeta junk;
+        junk.title = u"Эксперименты Лэйн"_s;
+        junk.original = u"Эксперименты Лэйн / Serial Experiments Lain [TV] [13 из 13] [1998, киберпанк, фантастика, драма, BDRemux]"_s;
+        QVERIFY(!SearchResultsFilter::titlesMatch(junk.original, junk, u"киберпанк"_s));
+        // nothing to look for: everything
+        QVERIFY(match(u"Anything"_s, u"x"_s));
+    }
+
     void releaseTags()
     {
         const auto tags = [](const QString &name, const ReleaseMeta &meta = {})

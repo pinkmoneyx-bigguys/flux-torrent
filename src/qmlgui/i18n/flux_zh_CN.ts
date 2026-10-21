@@ -1650,6 +1650,24 @@
         <source>Cards</source>
         <translation>卡片</translation>
     </message>
+    <message numerus="yes">
+        <source>Only titles with “%1”: %n result(s) that have it just in their genres or notes are hidden</source>
+        <translation>
+            <numerusform>仅显示标题含“%1”的结果：已隐藏 %n 个仅在类型或备注中包含它的结果</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Showing everything the trackers found for “%1”, genres and notes too</source>
+        <translation>显示站点找到的“%1”的全部结果，包括类型和备注</translation>
+    </message>
+    <message>
+        <source>Show them</source>
+        <translation>显示</translation>
+    </message>
+    <message>
+        <source>Hide them</source>
+        <translation>隐藏</translation>
+    </message>
     <message>
         <source>Python is required</source>
         <translation>需要 Python</translation>

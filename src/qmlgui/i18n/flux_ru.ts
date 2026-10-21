@@ -1705,6 +1705,26 @@
         <translation>Карточки</translation>
     </message>
     <message numerus="yes">
+        <source>Only titles with “%1”: %n result(s) that have it just in their genres or notes are hidden</source>
+        <translation>
+            <numerusform>Только названия с «%1»: скрыт %n результат, где это слово есть лишь в жанрах или примечаниях</numerusform>
+            <numerusform>Только названия с «%1»: скрыто %n результата, где это слово есть лишь в жанрах или примечаниях</numerusform>
+            <numerusform>Только названия с «%1»: скрыто %n результатов, где это слово есть лишь в жанрах или примечаниях</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Showing everything the trackers found for “%1”, genres and notes too</source>
+        <translation>Показано всё, что нашли трекеры по «%1», включая жанры и примечания</translation>
+    </message>
+    <message>
+        <source>Show them</source>
+        <translation>Показать</translation>
+    </message>
+    <message>
+        <source>Hide them</source>
+        <translation>Скрыть</translation>
+    </message>
+    <message numerus="yes">
         <source>Type what you are looking for and press Enter. Results arrive as each of %n source(s) answers.</source>
         <translation>
             <numerusform>Введите, что ищете, и нажмите Enter. Результаты приходят по мере ответа %n источника.</numerusform>

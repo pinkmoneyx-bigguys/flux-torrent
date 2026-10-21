@@ -176,6 +176,23 @@ TestCase {
         verify(findChild(page, "searchList").visible)
     }
 
+    // What has the words only in its genres is left out until asked for
+    function test_exactMatchesOnly() {
+        SearchEngine.loadDemo({ python: true, plugins: plugins, pattern: "киберпанк", results: [
+            { name: "Киберпанк: Бегущие по краю / Cyberpunk: Edgerunners [2022, WEB-DL 1080p]", size: 3000, seeds: 50, leechers: 1, engine: "eztv", fileUrl: "magnet:?xt=urn:btih:a" },
+            { name: "Эксперименты Лэйн / Serial Experiments Lain [1998, аниме, киберпанк, BDRip 1080p]", size: 9000, seeds: 9, leechers: 0, engine: "lime", fileUrl: "magnet:?xt=urn:btih:b" }
+        ] })
+        page.setView("list")
+        const list = findChild(page, "searchList")
+        tryCompare(list, "count", 1)
+        const loose = findChild(page, "searchLoose")
+        tryVerify(() => loose.visible, 2000, "offers the loose match")
+        loose.clicked()
+        tryCompare(list, "count", 2)
+        loose.clicked()
+        tryCompare(list, "count", 1)
+    }
+
     // A release named only in Russian joins the film that gives the original title too, and shares its poster
     function test_russianOnlyReleaseJoinsItsFilm() {
         SearchEngine.loadDemo({ python: true, plugins: plugins, pattern: "ella", results: [

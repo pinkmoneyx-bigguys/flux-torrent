@@ -1657,6 +1657,25 @@
         <source>Cards</source>
         <translation type="unfinished"></translation>
     </message>
+    <message numerus="yes">
+        <source>Only titles with “%1”: %n result(s) that have it just in their genres or notes are hidden</source>
+        <translation>
+            <numerusform>Only titles with “%1”: %n result that has it just in its genres or notes is hidden</numerusform>
+            <numerusform>Only titles with “%1”: %n results that have it just in their genres or notes are hidden</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Showing everything the trackers found for “%1”, genres and notes too</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hide them</source>
+        <translation type="unfinished"></translation>
+    </message>
     <message>
         <source>Python is required</source>
         <translation type="unfinished"></translation>
