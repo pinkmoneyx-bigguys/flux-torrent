@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = $Flux.RepoRoot
-$cmake = Get-Content (Join-Path $root 'src\CMakeLists.txt') -Raw
+$cmake = Get-Content (Join-Path $root 'src\CMakeLists.txt') -Raw -Encoding UTF8
 if ($cmake -notmatch 'set\(FLUX_VERSION "([^"]+)"') { throw 'FLUX_VERSION not found in src\CMakeLists.txt' }
 $version = $Matches[1]
 $dist = Join-Path $root 'dist'
@@ -61,7 +61,7 @@ $sums = foreach ($file in $setupExe, $zip) {
 Set-Content -Path (Join-Path $dist 'SHA256SUMS.txt') -Value $sums -Encoding ascii
 
 # 5. Release notes: this version's section of CHANGELOG.md, then the downloads
-$changelog = Get-Content (Join-Path $root 'CHANGELOG.md') -Raw
+$changelog = Get-Content (Join-Path $root 'CHANGELOG.md') -Raw -Encoding UTF8
 $section = [regex]::Match($changelog, "(?ms)^## \[?v?$([regex]::Escape($version))\]?.*?$\r?\n(.*?)(?=^## |\z)")
 $notes = if ($section.Success) { $section.Groups[1].Value.Trim() } else { "Flux $version" }
 $setupMb = [math]::Round((Get-Item $setupExe).Length / 1MB, 1)
