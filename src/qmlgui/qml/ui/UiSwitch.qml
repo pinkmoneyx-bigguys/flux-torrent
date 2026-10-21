@@ -16,7 +16,11 @@ AbstractButton {
     Accessible.role: Accessible.CheckBox
     Accessible.checkable: true
     Accessible.checked: checked
-    Accessible.onPressAction: root.toggle()
+    // as a click does: toggle() alone leaves out the toggled() that the settings commit on
+    Accessible.onPressAction: {
+        root.toggle()
+        root.toggled()
+    }
 
     background: Item {
         Rectangle {
