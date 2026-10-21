@@ -1,0 +1,35 @@
+#pragma code_page(65001) // UTF-8
+
+#include <windows.h>
+
+1 ICON "@FLUX_ICON@"
+@FLUX_MANIFEST_RESOURCE@
+
+1 VERSIONINFO
+FILEVERSION     @FLUX_VERSION_MAJOR@,@FLUX_VERSION_MINOR@,@FLUX_VERSION_PATCH@,0
+PRODUCTVERSION  @FLUX_VERSION_MAJOR@,@FLUX_VERSION_MINOR@,@FLUX_VERSION_PATCH@,0
+FILEFLAGSMASK   0
+FILEFLAGS       0
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      "Flux"
+            VALUE "FileDescription",  "Flux Torrent setup"
+            VALUE "FileVersion",      "@FLUX_VERSION@"
+            VALUE "InternalName",     "@FLUX_INTERNAL_NAME@"
+            VALUE "LegalCopyright",   "Flux contributors. GNU GPL v2 or later."
+            VALUE "OriginalFilename", "@FLUX_INTERNAL_NAME@.exe"
+            VALUE "ProductName",      "Flux Torrent"
+            VALUE "ProductVersion",   "@FLUX_VERSION@"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

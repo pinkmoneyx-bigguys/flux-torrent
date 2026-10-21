@@ -16,6 +16,10 @@ endif()
 
 if (QML_GUI)
     add_subdirectory(qmlgui)
+    # the Windows setup: the stub, its packer and its interface
+    if (WIN32)
+        add_subdirectory(installer)
+    endif()
 endif()
 
 if (WEBUI)
