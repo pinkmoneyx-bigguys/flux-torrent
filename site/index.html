@@ -47,6 +47,14 @@
         </div>
         <p class="fine" data-release-line data-i18n="hero.fine">Windows 10 and 11, 64-bit. Free and open source.</p>
       </div>
+      <!-- the app's icon: its wave draws itself, then a pulse keeps running along it -->
+      <svg class="mark" viewBox="0 0 128 128" aria-hidden="true">
+        <rect class="mark-tile" x="4" y="4" width="120" height="120" rx="30"/>
+        <g transform="translate(28 28) scale(3)">
+          <path class="mark-wave" pathLength="1" d="M3 8c4.5 0 4.5 8 9 8s4.5-8 9-8"/>
+          <path class="mark-pulse" pathLength="1" d="M3 8c4.5 0 4.5 8 9 8s4.5-8 9-8"/>
+        </g>
+      </svg>
       <svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
         <path class="wave-down" pathLength="1" d="M0 70 C 75 70 75 100 150 100 S 225 70 300 70 S 375 100 450 100 S 525 40 600 40 S 675 100 750 100 S 825 20 900 20 S 975 90 1050 90 S 1125 50 1200 50"/>
         <path class="wave-up" pathLength="1" d="M0 96 C 75 96 75 108 150 108 S 225 92 300 92 S 375 104 450 104 S 525 84 600 84 S 675 106 750 106 S 825 78 900 78 S 975 100 1050 100 S 1125 88 1200 88"/>
@@ -64,7 +72,7 @@
         </div>
         <div class="pair">
           <figure class="window">
-            <img src="assets/search.webp" width="1216" height="741" loading="lazy" alt="Tracker search as a grid of posters" data-i18n-alt="alt.search">
+            <img src="assets/search.webp" width="1216" height="622" loading="lazy" alt="Tracker search as a grid of posters" data-i18n-alt="alt.search">
           </figure>
           <figure class="window raised">
             <img src="assets/film.webp" width="1216" height="741" loading="lazy" alt="A film's card with its releases" data-i18n-alt="alt.film">

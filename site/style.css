@@ -113,10 +113,16 @@ img { display: block; max-width: 100%; height: auto; }
 /* --- Hero ------------------------------------------------------------------------------------- */
 .hero {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 48px;
   width: var(--page);
   margin: 0 auto;
   padding: 96px 0 0;
 }
+.hero > .wave,
+.hero > .shot-main { grid-column: 1 / -1; }
 /* the installer's glow: a slow drift of soft light behind the name */
 .glow {
   position: absolute;
@@ -196,6 +202,46 @@ img { display: block; max-width: 100%; height: auto; }
   color: var(--faint);
 }
 .fine a { color: var(--dim); }
+
+/* the app's icon beside the name: the tile comes up, its wave draws itself with the speed graph below,
+   then a pulse of the download colour keeps running along it */
+.mark {
+  width: clamp(168px, 19vw, 236px);
+  height: auto;
+  margin-right: clamp(0px, 3vw, 48px);
+  overflow: visible;
+  filter: drop-shadow(0 30px 70px rgba(96, 165, 250, 0.28));
+  animation: mark-in 0.9s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.mark-tile { fill: var(--text); }
+.mark-wave,
+.mark-pulse {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mark-wave {
+  stroke: var(--bg);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1.6s cubic-bezier(0.23, 1, 0.32, 1) 0.35s forwards;
+}
+/* one short dash and a gap longer than the path: it enters at the start and leaves at the end, resting a
+   little past either end (a dash of no length right on an end would still draw its round cap) */
+.mark-pulse {
+  stroke: var(--down);
+  stroke-dasharray: 0.22 1.5;
+  stroke-dashoffset: 0.25;
+  animation: pulse 2.6s cubic-bezier(0.45, 0, 0.55, 1) 2s infinite;
+}
+@keyframes mark-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.94); }
+}
+@keyframes pulse {
+  from { stroke-dashoffset: 0.25; }
+  70%, to { stroke-dashoffset: -1.05; }
+}
 
 /* the logo's wave, drawn out into a speed graph: down in blue, up in green */
 .wave {
@@ -395,7 +441,8 @@ img { display: block; max-width: 100%; height: auto; }
 @media (max-width: 860px) {
   .bar-links { display: none; }
   .lang { margin-left: auto; }
-  .hero { padding-top: 64px; }
+  .hero { padding-top: 56px; grid-template-columns: minmax(0, 1fr); }
+  .mark { order: -1; width: 96px; margin: 0 0 28px; }
   .features { padding-top: 96px; gap: 88px; }
   .feature { grid-template-columns: 1fr; gap: 28px; }
   .facts { grid-template-columns: 1fr 1fr; }
@@ -412,5 +459,8 @@ img { display: block; max-width: 100%; height: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   .glow { animation: none; }
-  .wave path { animation: none; stroke-dashoffset: 0; }
+  .wave path,
+  .mark-wave { animation: none; stroke-dashoffset: 0; }
+  .mark { animation: none; }
+  .mark-pulse { display: none; }
 }
