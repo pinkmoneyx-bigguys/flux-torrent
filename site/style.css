@@ -387,10 +387,7 @@ img { display: block; max-width: 100%; height: auto; }
 /* --- FAQ -------------------------------------------------------------------------------------- */
 .faq { padding-bottom: 120px; }
 .faq h2 { margin-bottom: 24px; }
-.faq details {
-  max-width: 760px;
-  border-top: 1px solid var(--line);
-}
+.faq details { border-top: 1px solid var(--line); }
 .faq details:last-of-type { border-bottom: 1px solid var(--line); }
 .faq summary {
   cursor: pointer;
