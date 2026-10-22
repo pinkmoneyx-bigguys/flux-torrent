@@ -35,6 +35,8 @@
 <p align="center">
   <a href="https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest"><b>⬇ Pobierz na Windows</b></a>
   &nbsp;·&nbsp;
+  <a href="https://pinkmoneyx-bigguys.github.io/flux-torrent/"><b>Strona</b></a>
+  &nbsp;·&nbsp;
   <a href="#-funkcje">Funkcje</a>
   &nbsp;·&nbsp;
   <a href="#-zrzuty-ekranu">Zrzuty ekranu</a>

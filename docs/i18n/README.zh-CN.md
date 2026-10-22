@@ -35,6 +35,8 @@
 <p align="center">
   <a href="https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest"><b>⬇ 下载 Windows 版</b></a>
   &nbsp;·&nbsp;
+  <a href="https://pinkmoneyx-bigguys.github.io/flux-torrent/"><b>官网</b></a>
+  &nbsp;·&nbsp;
   <a href="#-功能">功能</a>
   &nbsp;·&nbsp;
   <a href="#-截图">截图</a>

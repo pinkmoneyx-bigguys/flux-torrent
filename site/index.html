@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flux Torrent</title>
+  <meta name="description" content="A torrent client for Windows on the qBittorrent engine: tracker search with posters, a player that plays while the torrent downloads, a media library and RSS. Free and open source.">
+  <meta name="theme-color" content="#0A0A0A">
+  <meta property="og:title" content="Flux Torrent">
+  <meta property="og:description" content="A torrent client for Windows that plays a film while it downloads.">
+  <meta property="og:image" content="assets/transfers.webp">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/Geist-Variable.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="#top" aria-label="Flux Torrent">
+      <img src="assets/logo.svg" alt="" width="28" height="28">
+      <span><b>Flux</b> Torrent</span>
+    </a>
+    <nav class="bar-links">
+      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#download" data-i18n="nav.download">Download</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      <a href="https://github.com/pinkmoneyx-bigguys/flux-torrent">GitHub</a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="ru">RU</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- The installer's opening: the glow, the wave drawing itself, the name -->
+    <section class="hero">
+      <div class="glow" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <h1 class="name"><b>Flux</b> Torrent</h1>
+        <p class="lead" data-i18n="hero.lead">A torrent client for Windows that starts playing a film while it is still downloading. Tracker search with posters, a media library and RSS, on the qBittorrent engine.</p>
+        <div class="actions">
+          <a class="button primary" data-asset="setup" href="https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            <span data-i18n="hero.download">Download for Windows</span>
+          </a>
+          <a class="button" data-asset="portable" href="https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest" data-i18n="hero.portable">Portable version</a>
+        </div>
+        <p class="fine" data-release-line data-i18n="hero.fine">Windows 10 and 11, 64-bit. Free and open source.</p>
+      </div>
+      <svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+        <path class="wave-down" pathLength="1" d="M0 70 C 75 70 75 100 150 100 S 225 70 300 70 S 375 100 450 100 S 525 40 600 40 S 675 100 750 100 S 825 20 900 20 S 975 90 1050 90 S 1125 50 1200 50"/>
+        <path class="wave-up" pathLength="1" d="M0 96 C 75 96 75 108 150 108 S 225 92 300 92 S 375 104 450 104 S 525 84 600 84 S 675 106 750 106 S 825 78 900 78 S 975 100 1050 100 S 1125 88 1200 88"/>
+      </svg>
+      <figure class="window shot-main">
+        <img src="assets/transfers.webp" width="1440" height="920" alt="Flux Torrent: transfers with a live speed graph" data-i18n-alt="alt.transfers">
+      </figure>
+    </section>
+
+    <section id="features" class="features">
+      <article class="feature">
+        <div class="feature-copy">
+          <h2 data-i18n="f.search.title">Search the trackers, see the films</h2>
+          <p data-i18n="f.search.text">Results come grouped into film cards with posters. A card shows every release in full, with its quality, HDR, source and voice-overs, the plot from Wikipedia in your language and a trailer. Only films whose titles have your words stay.</p>
+        </div>
+        <div class="pair">
+          <figure class="window">
+            <img src="assets/search.webp" width="1216" height="741" loading="lazy" alt="Tracker search as a grid of posters" data-i18n-alt="alt.search">
+          </figure>
+          <figure class="window raised">
+            <img src="assets/film.webp" width="1216" height="741" loading="lazy" alt="A film's card with its releases" data-i18n-alt="alt.film">
+          </figure>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="feature-copy">
+          <h2 data-i18n="f.library.title">Everything you downloaded, on one shelf</h2>
+          <p data-i18n="f.library.text">The media library finds every video in your torrents: one poster per film or series. A film plays from its poster; a series opens its episodes by season, with what you have watched and what is still on its way.</p>
+        </div>
+        <div class="pair">
+          <figure class="window">
+            <img src="assets/library.webp" width="1216" height="741" loading="lazy" alt="The media library as a shelf of posters" data-i18n-alt="alt.library">
+          </figure>
+          <figure class="window raised">
+            <img src="assets/series.webp" width="1216" height="741" loading="lazy" alt="A series with its episodes" data-i18n-alt="alt.series">
+          </figure>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="feature-copy">
+          <h2 data-i18n="f.rss.title">New episodes come by themselves</h2>
+          <p data-i18n="f.rss.text">Follow a tracker's or a show's RSS feed and read it in Flux. Auto-download rules pick up a new episode in the quality you want as soon as it is out.</p>
+        </div>
+        <figure class="window">
+          <img src="assets/rss.webp" width="1216" height="741" loading="lazy" alt="RSS feeds with the article reader" data-i18n-alt="alt.rss">
+        </figure>
+      </article>
+
+      <dl class="facts">
+        <div><dt data-i18n="x.watch.t">Watch while it downloads</dt><dd data-i18n="x.watch.d">The built-in player asks for the pieces right ahead of the playhead first. Watch without downloading keeps the film in a cache and clears it after.</dd></div>
+        <div><dt data-i18n="x.engine.t">The qBittorrent engine</dt><dd data-i18n="x.engine.d">qBittorrent 5.2 and libtorrent 2.0 underneath: the same downloads, limits, queues and trackers, in a new interface.</dd></div>
+        <div><dt data-i18n="x.move.t">Moves from qBittorrent</dt><dd data-i18n="x.move.d">On the first start Flux brings your torrents and settings over in one click.</dd></div>
+        <div><dt data-i18n="x.lang.t">Nine languages</dt><dd data-i18n="x.lang.d">English, Русский, Українська, Deutsch, Español, Français, Português, Polski and 简体中文, switched on the fly.</dd></div>
+        <div><dt data-i18n="x.update.t">Updates itself</dt><dd data-i18n="x.update.d">A new version is a click away, checked against its SHA-256 before it installs.</dd></div>
+        <div><dt data-i18n="x.tray.t">Keeps going in the tray</dt><dd data-i18n="x.tray.d">Close the window and Flux keeps downloading and seeding, with the speeds by the clock.</dd></div>      </dl>
+    </section>
+
+    <section id="download" class="download">
+      <h2 data-i18n="d.title">Get Flux</h2>
+      <div class="options">
+        <div class="option">
+          <h3 data-i18n="d.setup.title">Installer</h3>
+          <p data-i18n="d.setup.text">Installs for you alone, no administrator rights needed. Start menu and desktop shortcuts, .torrent files and magnet links, updates in place. Remove it from Installed apps.</p>
+          <a class="button primary" data-asset="setup" href="https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            <span data-i18n="d.setup.button">Download the installer</span>
+          </a>
+          <p class="fine" data-size="setup"></p>
+        </div>
+        <div class="option">
+          <h3 data-i18n="d.portable.title">Portable</h3>
+          <p data-i18n="d.portable.text">Unpack it anywhere, a USB stick too, and run Flux.exe. Settings and torrents stay in its profile folder, and it updates itself as well.</p>
+          <a class="button" data-asset="portable" href="https://github.com/pinkmoneyx-bigguys/flux-torrent/releases/latest" data-i18n="d.portable.button">Download the zip</a>
+          <p class="fine" data-size="portable"></p>
+        </div>
+      </div>
+      <p class="fine" data-i18n-html="d.all">Every version and its checksums are on the <a href="https://github.com/pinkmoneyx-bigguys/flux-torrent/releases">releases page</a>.</p>
+    </section>
+
+    <section id="faq" class="faq">
+      <h2 data-i18n="q.title">Questions</h2>
+      <details>
+        <summary data-i18n="q.smart.q">Windows calls the installer an “unrecognized app”. Is it safe?</summary>
+        <p data-i18n="q.smart.a">SmartScreen warns about every new program without a paid code-signing certificate, and Flux has none yet. Click “More info”, then “Run anyway”. To make sure the file is the one published, compare its SHA-256 with SHA256SUMS.txt from the release.</p>
+      </details>
+      <details>
+        <summary data-i18n="q.qbt.q">How is it different from qBittorrent?</summary>
+        <p data-i18n="q.qbt.a">The engine is the same, the interface is new: a player that plays while downloading, search with posters and film cards, a media library, and a look of its own. Your qBittorrent settings and torrents move over on the first start.</p>
+      </details>
+      <details>
+        <summary data-i18n="q.remove.q">How do I remove Flux?</summary>
+        <p data-i18n="q.remove.a">Open Settings, Apps, Installed apps, find Flux Torrent and choose Uninstall. It asks whether to keep your settings and torrent list, and never touches the files you downloaded. The portable version is just a folder: delete it.</p>
+      </details>
+      <details>
+        <summary data-i18n="q.bug.q">Something doesn't work. Where do I tell you?</summary>
+        <p data-i18n-html="q.bug.a">Open an <a href="https://github.com/pinkmoneyx-bigguys/flux-torrent/issues/new/choose">issue on GitHub</a>: the form asks for the Flux version and the steps. English or Russian are both fine.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <a class="brand" href="#top" aria-label="Flux Torrent">
+      <img src="assets/logo.svg" alt="" width="22" height="22">
+      <span><b>Flux</b> Torrent</span>
+    </a>
+    <p data-i18n-html="foot.text">Built on <a href="https://www.qbittorrent.org">qBittorrent</a> and <a href="https://libtorrent.org">libtorrent</a>. Licensed under the GPL.</p>
+    <a href="https://github.com/pinkmoneyx-bigguys/flux-torrent">GitHub</a>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
